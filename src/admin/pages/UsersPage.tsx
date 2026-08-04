@@ -1,0 +1,169 @@
+import React, { useEffect, useState } from 'react';
+import { api, USE_MOCK } from '../../lib/api';
+import { Search, UserX, Ban, CheckCircle } from 'lucide-react';
+
+const ROLES = ['all', 'customer', 'vendor', 'rider', 'branch_manager', 'support_exec', 'super_admin'];
+
+export const UsersPage: React.FC = () => {
+  const [users, setUsers] = useState<any[]>([]);
+  const [role, setRole] = useState('all');
+  const [q, setQ] = useState('');
+  const [loading, setLoading] = useState(true);
+
+  const load = () => {
+    setLoading(true);
+    if (USE_MOCK) {
+      const mockUsers = [
+        { _id: 'u1', name: 'Rajesh Kumar', email: 'rajesh@gmail.com', phone: '9876543210', role: 'customer', status: 'active', createdAt: '2026-07-01' },
+        { _id: 'u2', name: 'Priya Sharma', email: 'priya@gmail.com', phone: '9876543211', role: 'customer', status: 'active', createdAt: '2026-07-05' },
+        { _id: 'u3', name: 'Vendor Demo', email: 'vendor@demo.in', phone: '8888888888', role: 'vendor', status: 'active', createdAt: '2026-06-15' },
+        { _id: 'u4', name: 'Rider Suresh', email: 'suresh@rider.in', phone: '9777777777', role: 'rider', status: 'suspended', createdAt: '2026-06-20' },
+        { _id: 'u5', name: 'Kiran BM', email: 'kiran@branch.in', phone: '9666666666', role: 'branch_manager', status: 'active', createdAt: '2026-05-10' },
+      ];
+      setUsers(mockUsers);
+      setLoading(false);
+    } else {
+      api.get<{ users: any[] }>(`/api/admin/users?${role !== 'all' ? `role=${role}` : ''}&q=${q}`)
+        .then(d => setUsers(d.users))
+        .catch(console.error)
+        .finally(() => setLoading(false));
+    }
+  };
+
+  useEffect(load, [role]);
+
+  const updateStatus = async (id: string, newStatus: string) => {
+    try {
+      if (USE_MOCK) {
+        setUsers(u => u.map(x => x._id === id ? { ...x, status: newStatus } : x));
+      } else {
+        await api.patch(`/api/admin/users/${id}/status`, { status: newStatus });
+        load();
+      }
+    } catch (err: any) {
+      alert(err.message);
+    }
+  };
+
+  const filtered = users.filter(u =>
+    (role === 'all' || u.role === role) &&
+    (!q || u.name.toLowerCase().includes(q.toLowerCase()) || u.email.toLowerCase().includes(q.toLowerCase()))
+  );
+
+  return (
+    <div className="space-y-5">
+      <div>
+        <h1 className="text-2xl font-bold text-gray-900">User Management</h1>
+        <p className="text-sm text-gray-500">View and manage customers, staff, riders, and vendors</p>
+      </div>
+
+      <div className="flex flex-wrap gap-3 items-center justify-between">
+        <div className="relative flex-1 min-w-[200px] max-w-xs">
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+          <input
+            value={q}
+            onChange={e => setQ(e.target.value)}
+            placeholder="Search users..."
+            className="w-full pl-9 pr-4 py-2.5 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-[#0F2C59]/20"
+          />
+        </div>
+
+        <div className="flex gap-1 bg-gray-100 rounded-xl p-1 overflow-x-auto">
+          {ROLES.map(r => (
+            <button
+              key={r}
+              onClick={() => setRole(r)}
+              className={`px-3 py-1.5 rounded-lg text-xs font-medium whitespace-nowrap transition-all ${
+                role === r ? 'bg-white text-gray-900 shadow-sm' : 'text-gray-500 hover:text-gray-700'
+              }`}
+            >
+              {r.replace('_', ' ').toUpperCase()}
+            </button>
+          ))}
+        </div>
+      </div>
+
+      <div className="bg-white rounded-2xl border border-gray-100 shadow-premium overflow-hidden">
+        <div className="overflow-x-auto">
+          <table className="w-full text-sm">
+            <thead>
+              <tr className="bg-gray-50 border-b border-gray-100 text-gray-600">
+                <th className="text-left px-5 py-3.5 font-semibold">User</th>
+                <th className="text-left px-5 py-3.5 font-semibold">Phone</th>
+                <th className="text-left px-5 py-3.5 font-semibold">Role</th>
+                <th className="text-left px-5 py-3.5 font-semibold">Status</th>
+                <th className="text-left px-5 py-3.5 font-semibold">Registered</th>
+                <th className="text-left px-5 py-3.5 font-semibold">Actions</th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-gray-50">
+              {loading ? (
+                Array.from({ length: 4 }).map((_, i) => (
+                  <tr key={i}><td colSpan={6} className="px-5 py-4"><div className="h-4 skeleton-shimmer rounded" /></td></tr>
+                ))
+              ) : filtered.length === 0 ? (
+                <tr><td colSpan={6} className="text-center py-12 text-gray-400">No users found.</td></tr>
+              ) : (
+                filtered.map(u => (
+                  <tr key={u.id || u._id} className="hover:bg-gray-50/50">
+                    <td className="px-5 py-4">
+                      <p className="font-semibold text-gray-900">{u.name}</p>
+                      <p className="text-xs text-gray-400">{u.email}</p>
+                    </td>
+                    <td className="px-5 py-4 text-gray-600">{u.phone}</td>
+                    <td className="px-5 py-4">
+                      <span className="inline-flex items-center px-2.5 py-0.5 rounded-md text-xs font-semibold bg-blue-50 text-blue-700 border border-blue-100">
+                        {u.role}
+                      </span>
+                    </td>
+                    <td className="px-5 py-4">
+                      <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium border ${
+                        u.status === 'active' ? 'bg-emerald-50 text-emerald-700 border-emerald-200' :
+                        u.status === 'suspended' ? 'bg-amber-50 text-amber-700 border-amber-200' :
+                        'bg-red-50 text-red-700 border-red-200'
+                      }`}>
+                        {u.status}
+                      </span>
+                    </td>
+                    <td className="px-5 py-4 text-xs text-gray-400">{u.createdAt?.slice(0, 10)}</td>
+                    <td className="px-5 py-4">
+                      <div className="flex items-center gap-1">
+                        {u.status !== 'active' && (
+                          <button
+                            onClick={() => updateStatus(u.id || u._id, 'active')}
+                            className="p-1.5 rounded-lg bg-emerald-50 text-emerald-600 hover:bg-emerald-100"
+                            title="Activate"
+                          >
+                            <CheckCircle className="w-4 h-4" />
+                          </button>
+                        )}
+                        {u.status !== 'suspended' && (
+                          <button
+                            onClick={() => updateStatus(u.id || u._id, 'suspended')}
+                            className="p-1.5 rounded-lg bg-amber-50 text-amber-600 hover:bg-amber-100"
+                            title="Suspend"
+                          >
+                            <UserX className="w-4 h-4" />
+                          </button>
+                        )}
+                        {u.status !== 'blocked' && (
+                          <button
+                            onClick={() => updateStatus(u.id || u._id, 'blocked')}
+                            className="p-1.5 rounded-lg bg-red-50 text-red-600 hover:bg-red-100"
+                            title="Block"
+                          >
+                            <Ban className="w-4 h-4" />
+                          </button>
+                        )}
+                      </div>
+                    </td>
+                  </tr>
+                ))
+              )}
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  );
+};

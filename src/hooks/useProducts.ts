@@ -1,6 +1,8 @@
 import { useState, useEffect } from 'react';
-import { supabase } from '../lib/supabase';
 import type { Product } from '../data/mockData';
+
+const RAW_BASE = import.meta.env.VITE_API_URL || 'http://localhost:5001';
+const BASE = RAW_BASE.replace(/\/api\/?$/, '').replace(/\/$/, '');
 
 export const useProducts = () => {
   const [products, setProducts] = useState<Product[]>([]);
@@ -11,35 +13,12 @@ export const useProducts = () => {
     const fetchProducts = async () => {
       try {
         setLoading(true);
-        // Supabase query to get all active products
-        const { data, error } = await supabase
-          .from('products')
-          .select('*');
-
-        if (error) {
-          throw error;
+        const res = await fetch(`${BASE}/api/products`);
+        if (!res.ok) {
+          throw new Error(`HTTP ${res.status}`);
         }
-
-        if (data) {
-          // Map DB snake_case fields to camelCase Product interface expected by UI
-          const formattedProducts: Product[] = data.map((item: any) => ({
-            id: item.id,
-            title: item.title,
-            description: item.description,
-            price: item.price,
-            originalPrice: item.original_price || item.price,
-            rating: item.rating || 4.5,
-            ratingCount: item.rating_count || Math.floor(Math.random() * 1000),
-            image: item.image,
-            category: item.category,
-            brand: item.brand,
-            vertical: item.vertical,
-            specs: item.specs,
-            deliveryTime: item.delivery_time,
-            isAssured: item.is_assured
-          }));
-          setProducts(formattedProducts);
-        }
+        const data = await res.json();
+        setProducts(data);
       } catch (err: any) {
         console.error('Error fetching products:', err.message);
         setError(err.message);
