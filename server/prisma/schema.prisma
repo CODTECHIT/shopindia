@@ -1,0 +1,572 @@
+// Prisma schema for ShopIndia PostgreSQL / Amazon RDS Migration
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// ─── Enums ────────────────────────────────────────────────────────────────────
+
+enum UserRole {
+  super_admin
+  branch_manager
+  support_exec
+  vendor
+  rider
+  customer
+}
+
+enum UserStatus {
+  active
+  suspended
+  blocked
+}
+
+enum VendorApprovalStatus {
+  pending
+  approved
+  rejected
+  suspended
+}
+
+enum FulfillmentType {
+  quick_commerce
+  traditional
+  hvac
+  hvac_service
+}
+
+enum ProductStatus {
+  active
+  inactive
+  deleted
+}
+
+enum OrderStatus {
+  placed
+  confirmed
+  packing
+  ready_to_ship
+  shipped
+  in_transit
+  delivered
+  cancelled
+  refunded
+}
+
+enum PaymentStatus {
+  pending
+  paid
+  failed
+  refunded
+}
+
+enum TicketCategory {
+  order_issue
+  payment
+  refund
+  product
+  delivery
+  other
+}
+
+enum TicketPriority {
+  low
+  medium
+  high
+  urgent
+}
+
+enum TicketStatus {
+  open
+  in_progress
+  resolved
+  closed
+}
+
+enum RefundStatus {
+  none
+  pending
+  approved
+  rejected
+}
+
+// ─── Models ───────────────────────────────────────────────────────────────────
+
+model User {
+  id          String     @id @default(uuid())
+  name        String
+  email       String     @unique
+  phone       String?
+  password    String
+  role        UserRole   @default(customer)
+  permissions String[]   @default([])
+  status      UserStatus @default(active)
+  avatar      String?
+
+  branchId String?
+  branch   Branch? @relation("BranchStaffUsers", fields: [branchId], references: [id])
+
+  vendorId String?
+  vendor   Vendor? @relation("UserVendor", fields: [vendorId], references: [id])
+
+  riderProfile RiderProfile?
+
+  // Reverse relations
+  vendorsCreated  Vendor[]        @relation("VendorUser")
+  approvedVendors Vendor[]        @relation("VendorApprovedBy")
+  orders          Order[]         @relation("CustomerOrders")
+  managedBranches Branch[]        @relation("BranchManager")
+  branchStaffLink BranchStaff[]
+  customerTickets Ticket[]        @relation("CustomerTickets")
+  assignedTickets Ticket[]        @relation("AssignedTickets")
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@map("users")
+}
+
+model Vendor {
+  id           String               @id @default(uuid())
+  userId       String               @unique
+  user         User                 @relation("VendorUser", fields: [userId], references: [id], onDelete: Cascade)
+  businessName String
+  contactName  String
+  email        String
+  phone        String
+  street       String?
+  city         String?
+  state        String?
+  pincode      String?
+  country      String               @default("India")
+  gstNumber    String?
+  panNumber    String?
+  
+  approvalStatus VendorApprovalStatus @default(pending)
+  approvalNote   String?
+  approvedById   String?
+  approvedBy     User?                @relation("VendorApprovedBy", fields: [approvedById], references: [id])
+  approvedAt     DateTime?
+
+  walletBalance  Float              @default(0) // paise / cents or currency amount
+  commissionRate Decimal            @default(10.00) @db.Decimal(5, 2)
+
+  accountHolder String?
+  accountNumber String?
+  ifsc          String?
+  bankName      String?
+
+  logo        String?
+  description String?
+  category    String?
+  isActive    Boolean @default(true)
+
+  documents VendorDocument[]
+  products  Product[]
+  orders    Order[]
+  linkedUsers User[]          @relation("UserVendor")
+  technicians Technician[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@map("vendors")
+}
+
+model VendorDocument {
+  id         String   @id @default(uuid())
+  vendorId   String
+  vendor     Vendor   @relation(fields: [vendorId], references: [id], onDelete: Cascade)
+  name       String
+  url        String
+  uploadedAt DateTime @default(now())
+
+  @@map("vendor_documents")
+}
+
+model Product {
+  id              String          @id @default(uuid())
+  vendorId        String
+  vendor          Vendor          @relation(fields: [vendorId], references: [id], onDelete: Cascade)
+  categoryId      String?
+  category        Category?  @relation(fields: [categoryId], references: [id])
+  name            String
+  description     String?
+  brand           String?
+  basePrice       Float
+  mrp             Float?
+  stock           Int             @default(0)
+  unit            String          @default("piece")
+  isOutOfStock    Boolean         @default(false)
+  fulfillmentType FulfillmentType @default(traditional)
+  status          ProductStatus   @default(active)
+  ratingAvg       Float           @default(0)
+  ratingCount     Int             @default(0)
+  tags            String[]        @default([])
+
+  variants   ProductVariant[]
+  images     ProductImage[]
+  orderItems OrderItem[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([vendorId, status])
+  @@map("products")
+}
+
+model ProductVariant {
+  id        String  @id @default(uuid())
+  productId String
+  product   Product @relation(fields: [productId], references: [id], onDelete: Cascade)
+  name      String
+  price     Float
+  stock     Int     @default(0)
+  sku       String?
+
+  @@map("product_variants")
+}
+
+model ProductImage {
+  id           String  @id @default(uuid())
+  productId    String
+  product      Product @relation(fields: [productId], references: [id], onDelete: Cascade)
+  url          String
+  displayOrder Int     @default(0)
+
+  @@map("product_images")
+}
+
+model Order {
+  id          String          @id @default(uuid())
+  orderNumber String          @unique
+  customerId  String
+  customer    User            @relation("CustomerOrders", fields: [customerId], references: [id])
+  vendorId    String?
+  vendor      Vendor?         @relation(fields: [vendorId], references: [id])
+  branchId    String?
+  branch      Branch?         @relation(fields: [branchId], references: [id])
+  type        FulfillmentType
+  status      OrderStatus     @default(placed)
+
+  couponId    String?
+  coupon      Coupon?         @relation(fields: [couponId], references: [id])
+
+  subtotal   Float?
+  discount   Float    @default(0)
+  commission Float    @default(0)
+  total      Float?
+
+  deliveryLine1   String?
+  deliveryLine2   String?
+  deliveryCity    String?
+  deliveryState   String?
+  deliveryPincode String?
+  deliveryCountry String? @default("India")
+
+  paymentMethod String?
+  paymentStatus PaymentStatus @default(pending)
+  paymentRef    String?
+
+  refundAmount Float?    @default(0)
+  refundReason String?
+  refundedAt   DateTime?
+
+  notes String?
+
+  items       OrderItem[]
+  tickets     Ticket[]
+  serviceJobs ServiceJob[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([customerId, createdAt(sort: Desc)])
+  @@index([vendorId, status])
+  @@map("orders")
+}
+
+model OrderItem {
+  id        String   @id @default(uuid())
+  orderId   String
+  order     Order    @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  productId String?
+  product   Product? @relation(fields: [productId], references: [id])
+  vendorId  String?
+  name      String
+  price     Float
+  quantity  Int
+
+  @@map("order_items")
+}
+
+model Branch {
+  id        String   @id @default(uuid())
+  name      String
+  code      String?  @unique
+  managerId String?
+  manager   User?    @relation("BranchManager", fields: [managerId], references: [id])
+  phone     String?
+  email     String?
+  street    String?
+  city      String?
+  state     String?
+  pincode   String?
+  isActive  Boolean  @default(true)
+
+  staff        User[]        @relation("BranchStaffUsers")
+  staffLinks   BranchStaff[]
+  serviceAreas ServiceArea[]
+  orders       Order[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@map("branches")
+}
+
+model BranchStaff {
+  id       String @id @default(uuid())
+  branchId String
+  branch   Branch @relation(fields: [branchId], references: [id], onDelete: Cascade)
+  userId   String
+  user     User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([branchId, userId])
+  @@map("branch_staff")
+}
+
+model Role {
+  id          String   @id @default(uuid())
+  name        String   @unique
+  displayName String
+  isSystem    Boolean  @default(false)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  permissions RolePermission[]
+
+  @@map("roles")
+}
+
+model RolePermission {
+  id         String @id @default(uuid())
+  roleId     String
+  role       Role   @relation(fields: [roleId], references: [id], onDelete: Cascade)
+  permission String
+
+  @@unique([roleId, permission])
+  @@map("role_permissions")
+}
+
+model Ticket {
+  id           String         @id @default(uuid())
+  ticketNumber String         @unique
+  customerId   String
+  customer     User           @relation("CustomerTickets", fields: [customerId], references: [id])
+  orderId      String?
+  order        Order?         @relation(fields: [orderId], references: [id])
+  assignedToId String?
+  assignedTo   User?          @relation("AssignedTickets", fields: [assignedToId], references: [id])
+
+  subject  String
+  category TicketCategory @default(other)
+  priority TicketPriority @default(medium)
+  status   TicketStatus   @default(open)
+
+  refundRequested Boolean      @default(false)
+  refundAmount    Float?
+  refundStatus    RefundStatus @default(none)
+
+  messages TicketMessage[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@map("tickets")
+}
+
+model TicketMessage {
+  id         String   @id @default(uuid())
+  ticketId   String
+  ticket     Ticket   @relation(fields: [ticketId], references: [id], onDelete: Cascade)
+  senderRole String
+  text       String
+  sentAt     DateTime @default(now())
+
+  @@map("ticket_messages")
+}
+
+model ServiceArea {
+  id           String   @id @default(uuid())
+  branchId     String?
+  branch       Branch?  @relation(fields: [branchId], references: [id])
+  name         String
+  city         String?
+  state        String?
+  isActive     Boolean  @default(true)
+  deliveryType String   @default("both")
+
+  pincodes ServiceAreaPincode[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@map("service_areas")
+}
+
+model ServiceAreaPincode {
+  id            String      @id @default(uuid())
+  serviceAreaId String
+  serviceArea   ServiceArea @relation(fields: [serviceAreaId], references: [id], onDelete: Cascade)
+  pincode       String
+
+  @@unique([serviceAreaId, pincode])
+  @@map("service_area_pincodes")
+}
+
+// ─── Rider Management ────────────────────────────────────────────────────────
+
+model RiderProfile {
+  id            String   @id @default(uuid())
+  userId        String   @unique
+  user          User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  vehicleType   String?
+  licenseNumber String?
+  isActive      Boolean  @default(true)
+  walletBalance Float    @default(0)
+  deliveries    Delivery[]
+
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  @@map("rider_profiles")
+}
+
+model Delivery {
+  id              String       @id @default(uuid())
+  orderNumber     String       @unique
+  riderProfileId  String
+  riderProfile    RiderProfile @relation(fields: [riderProfileId], references: [id], onDelete: Cascade)
+  status          String       @default("assigned") // assigned, picked_up, in_transit, delivered, failed
+  payoutAmount    Float        @default(0)
+  customerName    String
+  deliveryAddress String
+
+  assignedAt      DateTime @default(now())
+  completedAt     DateTime?
+
+  @@map("deliveries")
+}
+
+// ─── Notification System ─────────────────────────────────────────────────────
+
+model NotificationTemplate {
+  id          String   @id @default(uuid())
+  event       String   @unique // e.g., 'ORDER_PLACED', 'REFUND_PROCESSED'
+  smsBody     String?
+  emailSubject String?
+  emailBody   String?
+  isActive    Boolean  @default(true)
+
+  updatedAt   DateTime @updatedAt
+
+  @@map("notification_templates")
+}
+
+model NotificationLog {
+  id        String   @id @default(uuid())
+  recipient String   // phone or email
+  type      String   // 'SMS' or 'EMAIL'
+  event     String
+  status    String   // 'sent', 'failed'
+  message   String
+  sentAt    DateTime @default(now())
+
+  @@map("notification_logs")
+}
+
+// ─── Offers & Coupons ────────────────────────────────────────────────────────
+
+model Coupon {
+  id            String   @id @default(uuid())
+  code          String   @unique
+  discountType  String   // 'PERCENTAGE' or 'FLAT'
+  discountValue Float
+  minOrderValue Float    @default(0)
+  maxDiscount   Float?
+  validFrom     DateTime @default(now())
+  validUntil    DateTime
+  usageLimit    Int      @default(0) // 0 = unlimited
+  usedCount     Int      @default(0)
+  isActive      Boolean  @default(true)
+
+  orders        Order[]
+
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  @@map("coupons")
+}
+
+// ─── Technician Management (Vendor) ──────────────────────────────────────────
+
+model Technician {
+  id            String   @id @default(uuid())
+  vendorId      String
+  vendor        Vendor   @relation(fields: [vendorId], references: [id], onDelete: Cascade)
+  name          String
+  phone         String
+  email         String?
+  skills        String[] @default([])
+  isActive      Boolean  @default(true)
+  currentStatus String   @default("available") // available, busy, offline
+
+  serviceJobs   ServiceJob[]
+
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  @@map("technicians")
+}
+
+model ServiceJob {
+  id            String      @id @default(uuid())
+  orderId       String
+  order         Order       @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  technicianId  String?
+  technician    Technician? @relation(fields: [technicianId], references: [id])
+  
+  status        String      @default("pending") // pending, scheduled, in_progress, completed, failed
+  scheduledDate DateTime?
+  notes         String?
+  
+  completedAt   DateTime?
+  createdAt     DateTime    @default(now())
+  updatedAt     DateTime    @updatedAt
+
+  @@map("service_jobs")
+}
+
+
+model Category {
+  id        String   @id @default(uuid())
+  name      String
+  slug      String?  @unique
+  vertical  String   @default("shop") // 'shop' | 'quick' | 'services'
+  image     String?
+  sortOrder Int      @default(0)
+  isActive  Boolean  @default(true)
+
+  products Product[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@map("categories")
+}

@@ -110,6 +110,7 @@ router.post('/', async (req, res) => {
       data: {
         orderNumber,
         customerId,
+        vendorId: resolved.length ? resolved[0].vendorId : null,
         type: mapType(vertical),
         status: 'placed',
         subtotal,
