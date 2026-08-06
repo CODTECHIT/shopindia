@@ -40,25 +40,35 @@ async function verifyToken(req, res, next) {
       };
       return next();
     } catch (cognitoErr) {
-      if (process.env.NODE_ENV === 'production') {
-        return res.status(401).json({ error: 'Cognito authentication failed: ' + cognitoErr.message });
-      }
+      // Fall through to app-token check below (valid for any NODE_ENV)
     }
   }
 
-  // 2. Dev fallback check: gated behind NODE_ENV !== 'production'
-  if (process.env.NODE_ENV === 'production') {
-    return res.status(401).json({ error: 'Authentication failed. Cognito configuration required in production.' });
+  // 2. App-issued JWT — used by the admin/vendor portals.
+  //    Only accepted when JWT_SECRET is configured, so the dev secret can
+  //    never be used to forge tokens in production.
+  if (process.env.JWT_SECRET) {
+    try {
+      const payload = jwt.verify(token, process.env.JWT_SECRET);
+      req.user = payload;
+      return next();
+    } catch (_err) {
+      // invalid app token — try remaining paths
+    }
   }
 
-  // Local development JWT fallback
-  try {
-    const payload = jwt.verify(token, process.env.JWT_SECRET || 'shopindia_dev_secret');
-    req.user = payload;
-    next();
-  } catch (_err) {
-    return res.status(401).json({ error: 'Token expired or invalid.' });
+  // 3. Local development fallback — never active in production
+  if (process.env.NODE_ENV !== 'production') {
+    try {
+      const payload = jwt.verify(token, 'shopindia_dev_secret');
+      req.user = payload;
+      return next();
+    } catch (_err) {
+      // ignore
+    }
   }
+
+  return res.status(401).json({ error: 'Token expired or invalid.' });
 }
 
 module.exports = { verifyToken };
