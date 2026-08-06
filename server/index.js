@@ -29,8 +29,9 @@ app.get('/api/health', (_req, res) => res.json({ status: 'ok', engine: 'PostgreS
 
 app.use('/api/auth', require('./routes/auth'));
 
-// Public storefront catalog
+// Public storefront
 app.use('/api/products', require('./routes/products'));
+app.use('/api/orders', require('./routes/orders'));
 
 // Admin routes (all guarded by verifyToken + requireRole in each route file)
 app.use('/api/admin/dashboard',    require('./routes/admin/dashboard'));

@@ -1,6 +1,9 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import type { Product } from '../data/mockData';
 
+const RAW_API = import.meta.env.VITE_API_URL || 'http://localhost:5001';
+const API_BASE = RAW_API.replace(/\/api\/?$/, '').replace(/\/$/, '');
+
 export type VerticalType = 'shop' | 'quick' | 'services';
 export type PathType = 'home' | 'search' | 'detail' | 'cart' | 'orders' | 'profile';
 
@@ -174,8 +177,8 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     return cart.reduce((total, item) => total + item.product.price * item.quantity, 0);
   };
 
-  // Order placement
-  const placeOrder = () => {
+  // Order placement (persists to the backend API)
+  const placeOrder = async () => {
     if (cart.length === 0) return;
 
     // Estimate delivery time depending on current vertical
@@ -188,26 +191,54 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       deliveryTimeEstimate = 'Tomorrow, by 12 PM';
     }
 
-    const newOrder: Order = {
-      id: 'OD' + Math.floor(Math.random() * 90000000 + 10000000),
-      date: new Date().toLocaleDateString('en-IN', {
-        year: 'numeric',
-        month: 'short',
-        day: 'numeric',
-        hour: '2-digit',
-        minute: '2-digit'
-      }),
-      items: [...cart],
-      total: getCartTotal(),
+    const payload = {
+      items: cart.map((item) => ({
+        productId: item.product.id,
+        name: item.product.title,
+        price: item.product.price,
+        quantity: item.quantity,
+      })),
       vertical: currentVertical,
-      status: 'placed',
-      deliveryTimeEstimate,
-      location
+      location,
+      paymentMethod: 'COD',
     };
 
-    setOrders(prev => [newOrder, ...prev]);
-    clearCart();
-    navigateTo('orders');
+    try {
+      const res = await fetch(`${API_BASE}/api/orders`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload),
+      });
+      if (!res.ok) {
+        const body = await res.json().catch(() => ({}));
+        throw new Error(body.error || `HTTP ${res.status}`);
+      }
+      const data = await res.json();
+
+      const newOrder: Order = {
+        id: data.orderNumber,
+        date: new Date(data.createdAt).toLocaleDateString('en-IN', {
+          year: 'numeric',
+          month: 'short',
+          day: 'numeric',
+          hour: '2-digit',
+          minute: '2-digit'
+        }),
+        items: [...cart],
+        total: data.total,
+        vertical: currentVertical,
+        status: 'placed',
+        deliveryTimeEstimate,
+        location
+      };
+
+      setOrders(prev => [newOrder, ...prev]);
+      clearCart();
+      navigateTo('orders');
+    } catch (err: any) {
+      console.error('Order placement failed:', err.message);
+      alert('Could not place order. Please try again.');
+    }
   };
 
   return (

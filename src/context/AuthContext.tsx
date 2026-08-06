@@ -57,7 +57,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const hasPermission = useCallback((...perms: string[]) => {
     if (!user) return false;
     if (user.role === 'super_admin') return true;
-    return perms.some((p) => user.permissions.includes(p));
+    return perms.some((p) => user.permissions?.includes(p) ?? false);
   }, [user]);
 
   return (
