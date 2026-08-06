@@ -24,7 +24,7 @@ router.get('/', async (_req, res) => {
       rating: p.ratingAvg,
       ratingCount: p.ratingCount,
       image: p.images && p.images.length ? p.images[0].url : '',
-      category: p.vendor && p.vendor.category ? p.vendor.category : '',
+      category: p.tags && p.tags.length ? p.tags[0] : (p.vendor && p.vendor.category ? p.vendor.category : ''),
       brand: p.brand || '',
       vertical: mapVertical(p.fulfillmentType),
       isAssured: false,

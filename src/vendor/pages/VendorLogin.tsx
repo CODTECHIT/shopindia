@@ -3,9 +3,9 @@ import { useAuth } from '../../context/AuthContext';
 import { api } from '../../lib/api';
 import { Store, Eye, EyeOff, Loader2 } from 'lucide-react';
 
-export const VendorLogin: React.FC = () => {
+export const VendorLogin: React.FC<{ initialRegister?: boolean }> = ({ initialRegister = false }) => {
   const { login } = useAuth();
-  const [isRegister, setIsRegister] = useState(false);
+  const [isRegister, setIsRegister] = useState(initialRegister);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');

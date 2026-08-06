@@ -5,6 +5,7 @@ const rateLimit = require('express-rate-limit');
 const prisma = require('./lib/prisma');
 
 const app = express();
+app.set('trust proxy', 1); // trust Nginx reverse proxy so req.ip is the real client IP
 const PORT = process.env.PORT || 5001;
 
 // ─── Middleware ───────────────────────────────────────────────────────────────
