@@ -1,14 +1,118 @@
 import React, { useState } from 'react';
 import { useApp } from '../context/AppContext';
 import { useIsMobile } from '../hooks/useMediaQuery';
-import { User, MapPin, ShieldCheck, Mail, Phone, Home, Sparkles } from 'lucide-react';
+import { User, MapPin, ShieldCheck, Mail, Phone, Home, Sparkles, LogIn, LogOut, Loader2 } from 'lucide-react';
 import { motion } from 'framer-motion';
+import type { CustomerUser } from '../lib/customerAuth';
+import {
+  getCustomerToken,
+  getCustomerUser,
+  loginCustomer,
+  registerCustomer,
+  setCustomerSession,
+  clearCustomerSession,
+} from '../lib/customerAuth';
 
 export const ProfilePage: React.FC = () => {
   const { location, setLocation } = useApp();
   const isMobile = useIsMobile();
   const [newAddress, setNewAddress] = useState('');
   const [isSaved, setIsSaved] = useState(false);
+
+  const [authUser, setAuthUser] = useState<CustomerUser | null>(() => {
+    const u = getCustomerUser();
+    return u && getCustomerToken() ? u : null;
+  });
+  const [authMode, setAuthMode] = useState<'login' | 'register'>('login');
+  const [aName, setAName] = useState('');
+  const [aEmail, setAEmail] = useState('');
+  const [aPass, setAPass] = useState('');
+  const [aError, setAError] = useState('');
+  const [authLoading, setAuthLoading] = useState(false);
+
+  const handleAuthSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setAError('');
+    setAuthLoading(true);
+    try {
+      const data = authMode === 'login'
+        ? await loginCustomer(aEmail.trim(), aPass)
+        : await registerCustomer(aName.trim(), aEmail.trim(), aPass);
+      setCustomerSession(data.token, data.user);
+      setAuthUser(data.user);
+      setAName('');
+      setAEmail('');
+      setAPass('');
+    } catch (err: any) {
+      setAError(err.message || 'Authentication failed');
+    } finally {
+      setAuthLoading(false);
+    }
+  };
+
+  const handleLogout = () => {
+    clearCustomerSession();
+    setAuthUser(null);
+  };
+
+  const renderAuthBar = () => {
+    const pad = isMobile ? 'px-4' : 'px-12';
+    if (authUser) {
+      return (
+        <div className={`max-w-7xl mx-auto ${pad} pt-6 text-left`}>
+          <div className="bg-white border border-brand-border rounded-card p-6 shadow-premium flex items-center justify-between flex-wrap gap-3">
+            <div className="flex items-center gap-3">
+              <div className="w-9 h-9 rounded-full bg-brand-blue/10 flex items-center justify-center text-brand-blue font-black">
+                <User size={18} />
+              </div>
+              <div className="flex flex-col leading-tight">
+                <span className="font-extrabold text-xs text-brand-graphite font-heading">Signed in as {authUser.name}</span>
+                <span className="text-[10px] text-brand-slate font-bold">{authUser.email}</span>
+              </div>
+            </div>
+            <button onClick={handleLogout} className="px-4 py-2 bg-slate-100 hover:bg-slate-200 text-brand-graphite text-xs font-black rounded-full uppercase tracking-wider flex items-center gap-1.5">
+              <LogOut size={14} /> Log out
+            </button>
+          </div>
+        </div>
+      );
+    }
+    return (
+      <div className={`max-w-7xl mx-auto ${pad} pt-6 text-left`}>
+        <div className="bg-white border border-brand-border rounded-card p-6 shadow-premium">
+          <span className="text-brand-graphite font-black text-xs uppercase tracking-wider font-heading border-b border-brand-border/10 pb-3 block mb-4">
+            {authMode === 'login' ? 'Log in to track orders' : 'Create an account'}
+          </span>
+          <form onSubmit={handleAuthSubmit} className="flex flex-wrap items-end gap-3">
+            {authMode === 'register' && (
+              <div className="flex flex-col gap-1">
+                <label className="text-[9px] font-black text-brand-slate uppercase tracking-wider">Name</label>
+                <input value={aName} onChange={(e) => setAName(e.target.value)} placeholder="Your name" required className="p-2.5 border border-brand-border rounded-input text-xs font-bold text-brand-graphite" />
+              </div>
+            )}
+            <div className="flex flex-col gap-1">
+              <label className="text-[9px] font-black text-brand-slate uppercase tracking-wider">Email</label>
+              <input type="email" value={aEmail} onChange={(e) => setAEmail(e.target.value)} placeholder="you@example.com" required className="p-2.5 border border-brand-border rounded-input text-xs font-bold text-brand-graphite" />
+            </div>
+            <div className="flex flex-col gap-1">
+              <label className="text-[9px] font-black text-brand-slate uppercase tracking-wider">Password</label>
+              <input type="password" value={aPass} onChange={(e) => setAPass(e.target.value)} required className="p-2.5 border border-brand-border rounded-input text-xs font-bold text-brand-graphite" />
+            </div>
+            <motion.button whileTap={{ scale: 0.95 }} type="submit" disabled={authLoading}
+              className="px-5 py-2.5 bg-brand-blue text-white text-xs font-black uppercase tracking-wider rounded-button shadow-soft flex items-center gap-1.5 disabled:opacity-60">
+              {authLoading ? <Loader2 size={14} className="animate-spin" /> : <LogIn size={14} />}
+              {authMode === 'login' ? 'Log in' : 'Register'}
+            </motion.button>
+            <button type="button" onClick={() => { setAuthMode(authMode === 'login' ? 'register' : 'login'); setAError(''); }}
+              className="text-[11px] text-brand-blue font-bold underline px-2 py-2.5">
+              {authMode === 'login' ? 'Need an account? Register' : 'Have an account? Log in'}
+            </button>
+          </form>
+          {aError && <p className="text-[11px] text-red-500 font-bold mt-3">{aError}</p>}
+        </div>
+      </div>
+    );
+  };
 
   const handleSaveAddress = (e: React.FormEvent) => {
     e.preventDefault();
@@ -221,5 +325,10 @@ export const ProfilePage: React.FC = () => {
     );
   };
 
-  return isMobile ? renderMobile() : renderDesktop();
+  return (
+    <>
+      {renderAuthBar()}
+      {isMobile ? renderMobile() : renderDesktop()}
+    </>
+  );
 };

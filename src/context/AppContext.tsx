@@ -3,6 +3,7 @@ import type { Product } from '../data/mockData';
 
 const RAW_API = import.meta.env.VITE_API_URL || 'http://localhost:5001';
 const API_BASE = RAW_API.replace(/\/api\/?$/, '').replace(/\/$/, '');
+import { getCustomerToken } from '../lib/customerAuth';
 
 export type VerticalType = 'shop' | 'quick' | 'services';
 export type PathType = 'home' | 'search' | 'detail' | 'cart' | 'orders' | 'profile';
@@ -204,9 +205,13 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     };
 
     try {
+      const token = getCustomerToken();
       const res = await fetch(`${API_BASE}/api/orders`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: {
+          'Content-Type': 'application/json',
+          ...(token ? { Authorization: `Bearer ${token}` } : {}),
+        },
         body: JSON.stringify(payload),
       });
       if (!res.ok) {

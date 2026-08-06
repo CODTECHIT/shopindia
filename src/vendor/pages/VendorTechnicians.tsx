@@ -1,37 +1,40 @@
 import React, { useEffect, useState } from 'react';
 import { api, USE_MOCK } from '../../lib/api';
-import { Wrench, Plus, UserCircle2, Calendar, CheckCircle, Ban } from 'lucide-react';
+import { Wrench, Plus, UserCircle2, Calendar, CheckCircle, Ban, UserPlus } from 'lucide-react';
 
 export const VendorTechnicians: React.FC = () => {
   const [activeTab, setActiveTab] = useState<'technicians' | 'jobs'>('technicians');
   const [technicians, setTechnicians] = useState<any[]>([]);
   const [jobs, setJobs] = useState<any[]>([]);
-  
+
   // Tech Form
   const [showTechForm, setShowTechForm] = useState(false);
   const [techForm, setTechForm] = useState({ name: '', phone: '', email: '', skills: '' });
 
-  const loadData = async () => {
-    if (USE_MOCK) {
-      setTechnicians([{ id: '1', name: 'John Doe', phone: '9876543210', skills: ['HVAC', 'Plumbing'], currentStatus: 'available', isActive: true }]);
-      setJobs([{ id: 'j1', order: { orderNumber: 'ORD-123', status: 'confirmed' }, technician: { name: 'John Doe' }, status: 'scheduled', scheduledDate: new Date().toISOString() }]);
-      return;
-    }
-    
+  // Assign modal
+  const [assignTarget, setAssignTarget] = useState<any | null>(null);
+  const [assignTechId, setAssignTechId] = useState('');
+  const [assignDate, setAssignDate] = useState('');
+
+  const loadAll = async () => {
     try {
-      if (activeTab === 'technicians') {
-        const res = await api.get<{ technicians: any[] }>('/api/vendor/technicians');
-        setTechnicians(res.technicians);
-      } else {
-        const res = await api.get<{ serviceJobs: any[] }>('/api/vendor/service-jobs');
-        setJobs(res.serviceJobs);
+      if (USE_MOCK) {
+        setTechnicians([{ id: '1', name: 'John Doe', phone: '9876543210', skills: ['HVAC', 'Plumbing'], currentStatus: 'available', isActive: true }]);
+        setJobs([{ id: 'j1', order: { orderNumber: 'ORD-123', status: 'confirmed' }, technician: null, status: 'pending', scheduledDate: null }]);
+        return;
       }
+      const [techRes, jobRes] = await Promise.all([
+        api.get<{ technicians: any[] }>('/api/vendor/technicians'),
+        api.get<{ serviceJobs: any[] }>('/api/vendor/service-jobs'),
+      ]);
+      setTechnicians(techRes.technicians);
+      setJobs(jobRes.serviceJobs);
     } catch (e) {
       console.error(e);
     }
   };
 
-  useEffect(() => { loadData(); }, [activeTab]);
+  useEffect(() => { loadAll(); }, []);
 
   const handleCreateTech = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -40,7 +43,7 @@ export const VendorTechnicians: React.FC = () => {
       await api.post('/api/vendor/technicians', techForm);
       setShowTechForm(false);
       setTechForm({ name: '', phone: '', email: '', skills: '' });
-      loadData();
+      loadAll();
     } catch (err: any) { alert(err.message); }
   };
 
@@ -48,7 +51,7 @@ export const VendorTechnicians: React.FC = () => {
     if (USE_MOCK) return;
     try {
       await api.patch(`/api/vendor/technicians/${id}/status`, { isActive: !currentIsActive });
-      loadData();
+      loadAll();
     } catch (err: any) { alert(err.message); }
   };
 
@@ -56,7 +59,18 @@ export const VendorTechnicians: React.FC = () => {
     if (USE_MOCK) return;
     try {
       await api.patch(`/api/vendor/service-jobs/${id}`, { status });
-      loadData();
+      loadAll();
+    } catch (err: any) { alert(err.message); }
+  };
+
+  const assignJob = async () => {
+    if (!assignTarget || !assignTechId) return alert('Select a technician.');
+    try {
+      const payload: any = { status: 'scheduled', technicianId: assignTechId };
+      if (assignDate) payload.scheduledDate = new Date(assignDate).toISOString();
+      await api.patch(`/api/vendor/service-jobs/${assignTarget.id}`, payload);
+      setAssignTarget(null); setAssignTechId(''); setAssignDate('');
+      loadAll();
     } catch (err: any) { alert(err.message); }
   };
 
@@ -167,21 +181,58 @@ export const VendorTechnicians: React.FC = () => {
                     {j.scheduledDate ? new Date(j.scheduledDate).toLocaleString() : 'Pending'}
                   </td>
                   <td className="px-5 py-4">
-                    <span className="text-xs px-2 py-1 rounded bg-gray-100 text-gray-700 font-medium">
+                    <span className="text-xs px-2 py-1 rounded bg-gray-100 capitalize text-gray-700 font-medium">
                       {j.status.replace('_', ' ')}
                     </span>
                   </td>
                   <td className="px-5 py-4">
-                    {j.status !== 'completed' && (
-                      <button onClick={() => updateJobStatus(j.id, 'completed')} className="text-xs font-semibold text-emerald-600 hover:underline">
-                        Mark Complete
-                      </button>
-                    )}
+                    <div className="flex items-center gap-2">
+                      {j.status === 'pending' && (
+                        <button
+                          onClick={() => {
+                            if (technicians.length === 0) return alert('Add a technician first (Field Staff tab).');
+                            setAssignTarget(j); setAssignTechId(''); setAssignDate('');
+                          }}
+                          className="flex items-center gap-1 text-xs font-semibold text-emerald-600 hover:underline"
+                        >
+                          <UserPlus className="w-3.5 h-3.5" /> Assign
+                        </button>
+                      )}
+                      {j.status !== 'completed' && j.status !== 'pending' && (
+                        <button onClick={() => updateJobStatus(j.id, 'completed')} className="text-xs font-semibold text-emerald-600 hover:underline">
+                          Mark Complete
+                        </button>
+                      )}
+                    </div>
                   </td>
                 </tr>
               ))}
             </tbody>
           </table>
+        </div>
+      )}
+
+      {assignTarget && (
+        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-2xl p-6 w-full max-w-sm shadow-2xl space-y-4">
+            <h3 className="font-bold text-gray-900 text-lg">Assign Technician</h3>
+            <p className="text-xs text-gray-500">Order <span className="font-semibold text-gray-700">{assignTarget.order?.orderNumber}</span></p>
+            <div>
+              <label className="block text-xs font-semibold text-gray-600 mb-1">Technician</label>
+              <select value={assignTechId} onChange={e => setAssignTechId(e.target.value)} className="w-full px-3 py-2 border rounded-xl text-sm">
+                <option value="">Select technician…</option>
+                {technicians.map(t => <option key={t.id} value={t.id}>{t.name} {t.isActive ? '' : '(inactive)'}</option>)}
+              </select>
+            </div>
+            <div>
+              <label className="block text-xs font-semibold text-gray-600 mb-1">Schedule Date & Time</label>
+              <input type="datetime-local" value={assignDate} onChange={e => setAssignDate(e.target.value)} className="w-full px-3 py-2 border rounded-xl text-sm font-numbers" />
+            </div>
+            <div className="flex gap-2 pt-1">
+              <button onClick={() => setAssignTarget(null)} className="flex-1 py-2.5 border border-gray-200 rounded-xl text-sm font-medium text-gray-600 hover:bg-gray-50">Cancel</button>
+              <button onClick={assignJob} className="flex-1 py-2.5 bg-emerald-600 text-white rounded-xl text-sm font-semibold hover:bg-emerald-700">Assign & Schedule</button>
+            </div>
+          </div>
         </div>
       )}
     </div>
