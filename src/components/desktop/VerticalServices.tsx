@@ -1,11 +1,13 @@
 import React, { useState } from 'react';
 import { useApp } from '../../context/AppContext';
-import { PRODUCTS, CATEGORIES } from '../../data/mockData';
+import { CATEGORIES } from '../../data/mockData';
+import { useProducts } from '../../hooks/useProducts';
 import { Star, Clock, CheckCircle2, Calendar, ShieldCheck, MapPin, Heart } from 'lucide-react';
 import { motion } from 'framer-motion';
 
 export const VerticalServices: React.FC = () => {
   const { addToCart, navigateTo, location } = useApp();
+  const { products } = useProducts();
   const [selectedCategory, setSelectedCategory] = useState('v-appliance');
   const [selectedServiceIdForBooking, setSelectedServiceIdForBooking] = useState<string | null>(null);
   const [selectedDate, setSelectedDate] = useState('Tomorrow');
@@ -13,9 +15,9 @@ export const VerticalServices: React.FC = () => {
   const [wishlist, setWishlist] = useState<Record<string, boolean>>({});
 
   // Filter professional service vertical items
-  const services = PRODUCTS.filter(p => p.vertical === 'services');
+  const services = products.filter(p => p.vertical === 'services');
   const serviceCategories = CATEGORIES.filter(c => c.vertical === 'services');
-  const activeServices = services.filter(p => p.category === selectedCategory);
+  const activeServices = services.filter(p => !p.category || p.category === selectedCategory);
 
   const dates = ['Today', 'Tomorrow', 'Saturday', 'Sunday'];
   const times = ['08:00 AM', '10:00 AM', '01:00 PM', '04:00 PM', '06:00 PM'];

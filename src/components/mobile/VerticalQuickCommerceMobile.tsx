@@ -1,17 +1,19 @@
 import React, { useState } from 'react';
 import { useApp } from '../../context/AppContext';
-import { PRODUCTS, CATEGORIES } from '../../data/mockData';
+import { CATEGORIES } from '../../data/mockData';
+import { useProducts } from '../../hooks/useProducts';
 import { Plus, Minus, ShoppingBag, Clock, ArrowRight, Heart } from 'lucide-react';
 import { motion } from 'framer-motion';
 
 export const VerticalQuickCommerceMobile: React.FC = () => {
   const { cart, addToCart, updateQuantity, navigateTo } = useApp();
+  const { products } = useProducts();
   const [activeCat, setActiveCat] = useState('q-fruits');
   const [wishlist, setWishlist] = useState<Record<string, boolean>>({});
 
-  const quickProducts = PRODUCTS.filter(p => p.vertical === 'quick');
+  const quickProducts = products.filter(p => p.vertical === 'quick');
   const quickCategories = CATEGORIES.filter(c => c.vertical === 'quick');
-  const currentProducts = quickProducts.filter(p => p.category === activeCat);
+  const currentProducts = quickProducts.filter(p => !p.category || p.category === activeCat);
 
   const getCartQty = (id: string) => {
     const item = cart.find(i => i.product.id === id);
