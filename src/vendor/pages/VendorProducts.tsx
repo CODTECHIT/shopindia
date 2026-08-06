@@ -12,6 +12,8 @@ export const VendorProducts: React.FC = () => {
   const [price, setPrice] = useState<number>(0);
   const [stock, setStock] = useState<number>(10);
   const [fulfillmentType, setFulfillmentType] = useState('traditional');
+  const [categoryId, setCategoryId] = useState('');
+  const [categories, setCategories] = useState<any[]>([]);
   const [imageFile, setImageFile] = useState<File | null>(null);
   const [uploading, setUploading] = useState(false);
 
@@ -28,7 +30,14 @@ export const VendorProducts: React.FC = () => {
     }
   };
 
-  useEffect(load, []);
+  useEffect(() => { load(); }, []);
+
+  useEffect(() => {
+    if (USE_MOCK) return;
+    api.get<any[]>('/api/categories')
+      .then(setCategories)
+      .catch(console.error);
+  }, []);
 
   const toggleStock = async (id: string, currentOut: boolean) => {
     try {
@@ -68,11 +77,12 @@ export const VendorProducts: React.FC = () => {
         setProducts(prev => [...prev, { _id: 'vp' + Date.now(), name, basePrice: price, stock, isOutOfStock: false, status: 'active', fulfillmentType, images: imageFile ? [{url: 'mock_image.jpg'}] : [] }]);
       } else {
         const payload: any = { name, basePrice: price, stock, fulfillmentType };
+        if (categoryId) payload.categoryId = categoryId;
         if (imageUrl) payload.images = [imageUrl];
         await api.post('/api/vendor/products', payload);
         load();
       }
-      setModal(false); setName(''); setPrice(0); setStock(10); setImageFile(null);
+      setModal(false); setName(''); setPrice(0); setStock(10); setFulfillmentType('traditional'); setCategoryId(''); setImageFile(null);
     } catch (err: any) {
       setUploading(false);
       alert(err.message);
@@ -156,6 +166,15 @@ export const VendorProducts: React.FC = () => {
                 <option value="traditional">Traditional E-Commerce</option>
                 <option value="quick_commerce">Quick Commerce (Instant)</option>
                 <option value="hvac">HVAC Service & Parts</option>
+              </select>
+            </div>
+            <div>
+              <label className="block text-xs font-semibold text-gray-600 mb-1">Category</label>
+              <select value={categoryId} onChange={e => setCategoryId(e.target.value)} className="w-full px-3 py-2 border rounded-xl text-sm">
+                <option value="">Uncategorized</option>
+                {categories.filter((c: any) => !c.vertical || c.vertical === (fulfillmentType === 'quick_commerce' ? 'quick' : fulfillmentType === 'hvac' ? 'services' : 'shop')).map((c: any) => (
+                  <option key={c.id} value={c.id}>{c.name}</option>
+                ))}
               </select>
             </div>
             <div>

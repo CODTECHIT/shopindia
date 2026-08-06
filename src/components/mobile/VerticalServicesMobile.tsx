@@ -1,13 +1,14 @@
 import React, { useState } from 'react';
 import { useApp } from '../../context/AppContext';
-import { CATEGORIES } from '../../data/mockData';
 import { useProducts } from '../../hooks/useProducts';
+import { useCategories } from '../../hooks/useCategories';
 import { Star, Calendar, ShieldCheck, Heart } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 
 export const VerticalServicesMobile: React.FC = () => {
   const { addToCart, navigateTo } = useApp();
   const { products } = useProducts();
+  const { categories } = useCategories();
   const [selectedCategory, setSelectedCategory] = useState('v-appliance');
   const [bookingServiceId, setBookingServiceId] = useState<string | null>(null);
   const [selectedDate, setSelectedDate] = useState('Tomorrow');
@@ -15,7 +16,7 @@ export const VerticalServicesMobile: React.FC = () => {
   const [wishlist, setWishlist] = useState<Record<string, boolean>>({});
 
   const services = products.filter(p => p.vertical === 'services');
-  const serviceCategories = CATEGORIES.filter(c => c.vertical === 'services');
+  const serviceCategories = categories.filter(c => c.vertical === 'services');
   const activeServices = services.filter(p => !p.category || p.category === selectedCategory);
 
   const dates = ['Today', 'Tomorrow', 'Saturday', 'Sunday'];
@@ -72,7 +73,7 @@ export const VerticalServicesMobile: React.FC = () => {
             <div className={`w-11 h-11 rounded-full border overflow-hidden mb-1 flex items-center justify-center bg-zinc-900 transition-all shadow-soft ${
               selectedCategory === cat.id ? 'border-services-gold' : 'border-zinc-800'
             }`}>
-              <img src={cat.image} alt={cat.name} className="w-full h-full object-cover" />
+              <img src={cat.image ?? ''} alt={cat.name} className="w-full h-full object-cover" />
             </div>
             <span className={`text-[9px] font-black truncate w-full tracking-wide font-heading ${selectedCategory === cat.id ? 'text-services-gold' : 'text-zinc-550'}`}>
               {cat.name}

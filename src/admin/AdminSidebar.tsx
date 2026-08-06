@@ -3,7 +3,7 @@ import { useAuth } from '../context/AuthContext';
 import {
   LayoutDashboard, Users, Store, Package, ShoppingBag,
   Building2, ShieldCheck, MapPin, Headphones, Percent, LogOut,
-  Truck, Tag, BarChart3, Bell
+  Truck, Tag, BarChart3, Bell, LayoutGrid
 } from 'lucide-react';
 
 interface SidebarProps {
@@ -27,6 +27,7 @@ export const AdminSidebar: React.FC<SidebarProps> = ({ currentTab, onTabChange }
     { id: 'support', label: 'Support Queue', icon: Headphones, perm: 'view_support' },
     { id: 'commissions', label: 'Commissions', icon: Percent, perm: 'manage_commissions' },
     { id: 'offers', label: 'Offers & Coupons', icon: Tag, perm: 'manage_commissions' },
+    { id: 'categories', label: 'Categories', icon: LayoutGrid, perm: 'view_products' },
     { id: 'reports', label: 'Deep Reporting', icon: BarChart3, perm: 'view_dashboard' },
     { id: 'notifications', label: 'Notifications', icon: Bell, perm: 'manage_users' },
   ];

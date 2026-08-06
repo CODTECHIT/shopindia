@@ -1,13 +1,14 @@
 import React, { useState } from 'react';
 import { useApp } from '../../context/AppContext';
-import { CATEGORIES } from '../../data/mockData';
 import { useProducts } from '../../hooks/useProducts';
+import { useCategories } from '../../hooks/useCategories';
 import { Star, Clock, CheckCircle2, Calendar, ShieldCheck, MapPin, Heart } from 'lucide-react';
 import { motion } from 'framer-motion';
 
 export const VerticalServices: React.FC = () => {
   const { addToCart, navigateTo, location } = useApp();
   const { products } = useProducts();
+  const { categories } = useCategories();
   const [selectedCategory, setSelectedCategory] = useState('v-appliance');
   const [selectedServiceIdForBooking, setSelectedServiceIdForBooking] = useState<string | null>(null);
   const [selectedDate, setSelectedDate] = useState('Tomorrow');
@@ -16,7 +17,7 @@ export const VerticalServices: React.FC = () => {
 
   // Filter professional service vertical items
   const services = products.filter(p => p.vertical === 'services');
-  const serviceCategories = CATEGORIES.filter(c => c.vertical === 'services');
+  const serviceCategories = categories.filter(c => c.vertical === 'services');
   const activeServices = services.filter(p => !p.category || p.category === selectedCategory);
 
   const dates = ['Today', 'Tomorrow', 'Saturday', 'Sunday'];
@@ -99,7 +100,7 @@ export const VerticalServices: React.FC = () => {
             }`}
           >
             <div className="w-12 h-12 rounded-full overflow-hidden mb-3 flex items-center justify-center bg-zinc-900 border border-zinc-800">
-              <img src={cat.image} alt={cat.name} className="w-full h-full object-cover" />
+              <img src={cat.image ?? ''} alt={cat.name} className="w-full h-full object-cover" />
             </div>
             <span className="text-xs font-extrabold text-white tracking-wide font-heading">{cat.name}</span>
           </div>

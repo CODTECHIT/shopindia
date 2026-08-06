@@ -16,6 +16,7 @@ import { RidersPage } from './pages/RidersPage';
 import { ReportsPage } from './pages/ReportsPage';
 import { NotificationsPage } from './pages/NotificationsPage';
 import { OffersPage } from './pages/OffersPage';
+import { CategoriesPage } from './pages/CategoriesPage';
 
 const AdminContent: React.FC = () => {
   const { isAuthenticated } = useAuth();
@@ -41,6 +42,7 @@ const AdminContent: React.FC = () => {
       case 'reports':       return <ReportsPage />;
       case 'notifications': return <NotificationsPage />;
       case 'offers':        return <OffersPage />;
+      case 'categories':    return <CategoriesPage />;
       default:              return <Dashboard />;
     }
   };

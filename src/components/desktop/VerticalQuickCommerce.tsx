@@ -1,19 +1,20 @@
 import React, { useState } from 'react';
 import { useApp } from '../../context/AppContext';
-import { CATEGORIES } from '../../data/mockData';
 import { useProducts } from '../../hooks/useProducts';
+import { useCategories } from '../../hooks/useCategories';
 import { Plus, Minus, Clock, ShoppingCart, ArrowRight, Heart } from 'lucide-react';
 import { motion } from 'framer-motion';
 
 export const VerticalQuickCommerce: React.FC = () => {
   const { cart, addToCart, updateQuantity, navigateTo } = useApp();
   const { products } = useProducts();
+  const { categories } = useCategories();
   const [selectedCatId, setSelectedCatId] = useState<string>('q-fruits');
   const [wishlist, setWishlist] = useState<Record<string, boolean>>({});
 
   // Filter 10-Min quick commerce items
   const quickProducts = products.filter(p => p.vertical === 'quick');
-  const quickCategories = CATEGORIES.filter(c => c.vertical === 'quick');
+  const quickCategories = categories.filter(c => c.vertical === 'quick');
   const activeProducts = quickProducts.filter(p => !p.category || p.category === selectedCatId);
 
   // Cart matching helper
@@ -63,7 +64,7 @@ export const VerticalQuickCommerce: React.FC = () => {
                 }`}
               >
                 <div className="w-8 h-8 rounded-full bg-slate-50 overflow-hidden shrink-0 flex items-center justify-center border border-brand-border">
-                  <img src={cat.image} alt={cat.name} className="w-full h-full object-cover" />
+                  <img src={cat.image ?? ''} alt={cat.name} className="w-full h-full object-cover" />
                 </div>
                 <span className="font-heading">{cat.name}</span>
               </button>
