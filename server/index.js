@@ -33,6 +33,7 @@ app.use('/api/auth', require('./routes/auth'));
 app.use('/api/customer', require('./routes/customer-auth'));
 app.use('/api/products', require('./routes/products'));
 app.use('/api/categories', require('./routes/categories'));
+app.use('/api/banners', require('./routes/banners'));
 app.use('/api/orders', require('./routes/orders'));
 
 // Customer account dashboard (all guarded by customerAuth inside each route file)
@@ -63,6 +64,7 @@ app.use('/api/admin/reports',      require('./routes/admin/reports'));
 app.use('/api/admin/offers',       require('./routes/admin/offers'));
 app.use('/api/admin/notifications',require('./routes/admin/notifications'));
 app.use('/api/admin/categories',   require('./routes/admin/categories'));
+app.use('/api/admin/banners',      require('./routes/admin/banners'));
 
 // Vendor routes (guarded by verifyToken + requireRole('vendor') in each file)
 app.use('/api/vendor/auth',       require('./routes/vendor/auth'));

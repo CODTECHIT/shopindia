@@ -1,9 +1,10 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useApp } from '../../context/AppContext';
 import { useProducts } from '../../hooks/useProducts';
 import { useCategories } from '../../hooks/useCategories';
 import { Star, Clock, CheckCircle2, Calendar, ShieldCheck, MapPin, Heart, LayoutGrid } from 'lucide-react';
-import { motion } from 'framer-motion';
+import { motion, AnimatePresence } from 'framer-motion';
+import { api } from '../../lib/api';
 
 export const VerticalServices: React.FC = () => {
   const { addToCart, navigateTo, location } = useApp();
@@ -14,7 +15,23 @@ export const VerticalServices: React.FC = () => {
   const [selectedDate, setSelectedDate] = useState('Tomorrow');
   const [selectedTime, setSelectedTime] = useState('10:00 AM');
   const [wishlist, setWishlist] = useState<Record<string, boolean>>({});
+  const [currentSlide, setCurrentSlide] = useState(0);
+  const [isHoveringCarousel, setIsHoveringCarousel] = useState(false);
+  const [banners, setBanners] = useState<any[]>([]);
 
+  useEffect(() => {
+    api.get<{ banners: any[] }>('/api/banners')
+      .then(d => setBanners(d.banners.filter((b: any) => b.vertical === 'services')))
+      .catch(console.error);
+  }, []);
+
+  useEffect(() => {
+    if (isHoveringCarousel || banners.length === 0) return;
+    const timer = setInterval(() => {
+      setCurrentSlide(prev => (prev + 1) % banners.length);
+    }, 6000);
+    return () => clearInterval(timer);
+  }, [isHoveringCarousel, banners.length]);
   // Filter professional service vertical items
   const services = products.filter(p => p.vertical === 'services');
   const serviceCategories = categories.filter(c => c.vertical === 'services');
@@ -50,6 +67,79 @@ export const VerticalServices: React.FC = () => {
 
   return (
     <div className="w-full flex flex-col min-h-screen bg-[#FAF9F6] text-brand-slate py-10 px-12 select-none font-sans text-left">
+      {/* Hero Banner Carousel */}
+      <div className="max-w-[1440px] mx-auto w-full mb-8">
+        <div 
+          className="w-full h-[360px] rounded-hero overflow-hidden shadow-premium relative bg-zinc-950 group"
+          onMouseEnter={() => setIsHoveringCarousel(true)}
+          onMouseLeave={() => setIsHoveringCarousel(false)}
+        >
+          {banners.length > 0 ? (
+            <AnimatePresence mode="wait">
+              <motion.div
+                key={currentSlide}
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                exit={{ opacity: 0 }}
+                transition={{ duration: 0.8, ease: [0.16, 1, 0.3, 1] }}
+                className="absolute inset-0 w-full h-full"
+              >
+                <motion.img
+                  initial={{ scale: 1.06 }}
+                  animate={{ scale: 1 }}
+                  transition={{ duration: 6, ease: 'easeOut' }}
+                  src={banners[currentSlide]?.image}
+                  alt={banners[currentSlide]?.title}
+                  className="absolute inset-0 w-full h-full object-cover opacity-70 select-none"
+                />
+                <div className="absolute inset-0 bg-gradient-to-r from-zinc-950/75 via-zinc-950/20 to-transparent z-0" />
+                
+                <div className="absolute inset-y-0 left-0 pl-20 flex flex-col justify-center max-w-xl z-10 text-left text-white select-none">
+                  <motion.span
+                    initial={{ opacity: 0, y: 10 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ delay: 0.2, duration: 0.5 }}
+                    className="bg-brand-blue/90 text-[9px] font-bold uppercase px-3 py-1 rounded-sm w-max tracking-widest mb-5 shadow-soft"
+                  >
+                    Home Services
+                  </motion.span>
+                  <motion.h2
+                    initial={{ opacity: 0, y: 15 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ delay: 0.3, duration: 0.6 }}
+                    className="text-4xl font-bold tracking-tight mb-3 font-heading leading-tight drop-shadow-[0_2px_8px_rgba(0,0,0,0.4)]"
+                  >
+                    {banners[currentSlide]?.title}
+                  </motion.h2>
+                  <motion.p
+                    initial={{ opacity: 0, y: 15 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ delay: 0.4, duration: 0.6 }}
+                    className="text-sm font-medium text-zinc-300 mb-8 leading-relaxed max-w-md"
+                  >
+                    {banners[currentSlide]?.subtitle}
+                  </motion.p>
+                  
+                  <motion.button
+                    initial={{ opacity: 0, scale: 0.95 }}
+                    animate={{ opacity: 1, scale: 1 }}
+                    transition={{ delay: 0.5, duration: 0.4 }}
+                    whileHover={{ scale: 1.02 }}
+                    whileTap={{ scale: 0.98 }}
+                    onClick={() => navigateTo('search')}
+                    className="group px-8 py-3.5 bg-white text-zinc-950 rounded-full font-bold text-xs tracking-wider shadow-[0_8px_20px_rgba(0,0,0,0.3)] hover:shadow-[0_8px_25px_rgba(255,255,255,0.2)] hover:bg-zinc-50 transition-all w-max uppercase flex items-center gap-2.5"
+                  >
+                    <span>Book Now</span>
+                    <span className="text-brand-blue group-hover:translate-x-1 transition-transform">→</span>
+                  </motion.button>
+                </div>
+              </motion.div>
+            </AnimatePresence>
+          ) : (
+            <div className="absolute inset-0 flex items-center justify-center text-zinc-500 text-sm bg-[#FAF9F6]">Loading promotions...</div>
+          )}
+        </div>
+      </div>
       {/* Search Header Banner */}
       <div className="w-full py-12 flex flex-col items-center justify-center text-center max-w-[1440px] px-8 mx-auto">
         <span className="text-[10px] font-black tracking-widest text-services-gold uppercase bg-services-gold/10 px-3.5 py-1.5 rounded-full mb-4.5 border border-services-gold/20 font-heading">

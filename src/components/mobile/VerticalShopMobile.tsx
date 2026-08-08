@@ -1,24 +1,30 @@
 import React, { useState, useEffect } from 'react';
 import { useApp } from '../../context/AppContext';
-import { BANNERS } from '../../data/types';
 import { useProducts } from '../../hooks/useProducts';
 import { useCategories } from '../../hooks/useCategories';
 import { 
-  Star, Clock, Heart, ChevronRight, 
-  Truck, Award, RotateCcw, ShieldCheck, Apple
+  Heart, Search, ShieldCheck, MapPin, Search as SearchIcon, ArrowRight,
+  Clock, ChevronRight, Truck, Award, RotateCcw, Apple, Star
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
+import { api } from '../../lib/api';
 
 export const VerticalShopMobile: React.FC = () => {
   const { navigateTo, setSearchQuery } = useApp();
   const [timeLeft, setTimeLeft] = useState({ hours: 12, minutes: 44, seconds: 12 });
   const [wishlist, setWishlist] = useState<Record<string, boolean>>({});
   const [currentSlide, setCurrentSlide] = useState(0);
+  const [banners, setBanners] = useState<any[]>([]);
+
+  useEffect(() => {
+    api.get<{ banners: any[] }>('/api/banners')
+      .then(d => setBanners(d.banners.filter((b: any) => b.vertical === 'shop')))
+      .catch(console.error);
+  }, []);
 
   const { products } = useProducts();
   const { categories } = useCategories();
   const shopProducts = products.filter(p => p.vertical === 'shop');
-  const banners = BANNERS.filter(b => b.vertical === 'shop');
   
   const shopCategories = categories.filter(c => c.vertical === 'shop');
 
@@ -60,7 +66,7 @@ export const VerticalShopMobile: React.FC = () => {
       
       {/* 2. Circular Categories Grid (2x5 structure layout matching user reference) */}
       <div className="w-full bg-white border border-brand-border rounded-card p-4 shadow-soft grid grid-cols-5 gap-y-4.5 gap-x-2 select-none justify-items-center">
-        {shopCategories.slice(0, 10).map((cat, idx) => {
+        {shopCategories.map((cat, idx) => {
           return (
             <div
               key={cat.id}
@@ -127,7 +133,7 @@ export const VerticalShopMobile: React.FC = () => {
             </div>
           </>
         ) : (
-          <div className="absolute inset-0 flex items-center justify-center text-zinc-500 text-xs">Loading promotions...</div>
+          <div className="absolute inset-0 flex items-center justify-center text-zinc-500 text-xs bg-[#FAF9F6]">Loading promotions...</div>
         )}
       </div>
 

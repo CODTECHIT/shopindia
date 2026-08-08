@@ -1,23 +1,41 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useApp } from '../../context/AppContext';
 import { useProducts } from '../../hooks/useProducts';
 import { useCategories } from '../../hooks/useCategories';
-import { Star, Calendar, ShieldCheck, Heart } from 'lucide-react';
+import { Star, Calendar, ShieldCheck, Heart, LayoutGrid } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
+import { api } from '../../lib/api';
 
 export const VerticalServicesMobile: React.FC = () => {
   const { addToCart, navigateTo } = useApp();
   const { products } = useProducts();
   const { categories } = useCategories();
-  const [selectedCategory, setSelectedCategory] = useState('v-appliance');
+  const [selectedCategory, setSelectedCategory] = useState('');
   const [bookingServiceId, setBookingServiceId] = useState<string | null>(null);
   const [selectedDate, setSelectedDate] = useState('Tomorrow');
   const [selectedTime, setSelectedTime] = useState('10:00 AM');
   const [wishlist, setWishlist] = useState<Record<string, boolean>>({});
+  const [currentSlide, setCurrentSlide] = useState(0);
+  const [banners, setBanners] = useState<any[]>([]);
 
+  useEffect(() => {
+    api.get<{ banners: any[] }>('/api/banners')
+      .then(d => setBanners(d.banners.filter((b: any) => b.vertical === 'services')))
+      .catch(console.error);
+  }, []);
+
+  useEffect(() => {
+    if (banners.length === 0) return;
+    const timer = setInterval(() => {
+      setCurrentSlide(prev => (prev + 1) % banners.length);
+    }, 5000);
+    return () => clearInterval(timer);
+  }, [banners.length]);
   const services = products.filter(p => p.vertical === 'services');
   const serviceCategories = categories.filter(c => c.vertical === 'services');
-  const activeServices = services.filter(p => !p.category || p.category === selectedCategory);
+  const activeServices = !selectedCategory 
+    ? services 
+    : services.filter(p => p.category === selectedCategory);
 
   const dates = ['Today', 'Tomorrow', 'Saturday', 'Sunday'];
   const times = ['08:00 AM', '10:00 AM', '01:00 PM', '04:00 PM', '06:00 PM'];
@@ -48,20 +66,85 @@ export const VerticalServicesMobile: React.FC = () => {
 
   return (
     <div className="w-full flex flex-col gap-4 py-4 px-3 bg-[#FAF9F6] text-brand-slate min-h-screen pb-16 select-none text-left font-sans">
-      {/* Top Banner Box */}
-      <div className="bg-white border border-brand-border rounded-[20px] p-4.5 text-left shadow-soft">
-        <span className="text-[8px] bg-amber-50 border border-amber-200 text-amber-700 px-2.5 py-1 rounded-full font-black uppercase tracking-widest font-heading">
-          Certified Experts Only
+      {/* Hero Banner Carousel (Now at the very top to match desktop) */}
+      <div className="w-full aspect-[2/1] rounded-[24px] overflow-hidden shadow-soft relative bg-zinc-950 mt-1 mb-2">
+        {banners.length > 0 ? (
+          <>
+            <AnimatePresence mode="wait">
+              <motion.div
+                key={currentSlide}
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                exit={{ opacity: 0 }}
+                transition={{ duration: 0.6 }}
+                className="absolute inset-0 w-full h-full"
+                onClick={() => navigateTo('search')}
+              >
+                <img src={banners[currentSlide].image} alt={banners[currentSlide].title} className="w-full h-full object-cover opacity-50" />
+                <div className="absolute inset-0 bg-gradient-to-r from-zinc-950/80 via-zinc-950/30 to-transparent flex flex-col justify-center px-6 text-white text-left select-none">
+                  <span className="text-[7.5px] bg-brand-blue text-white font-black px-2 py-0.5 rounded w-max uppercase tracking-wider mb-2 shadow-soft">
+                    Home Services
+                  </span>
+                  <h3 className="text-xs font-black line-clamp-1 font-heading uppercase tracking-wide leading-tight drop-shadow">
+                    {banners[currentSlide].title}
+                  </h3>
+                  <p className="text-[9.5px] opacity-90 line-clamp-1 text-zinc-300 font-semibold mt-1">
+                    {banners[currentSlide].subtitle}
+                  </p>
+                </div>
+              </motion.div>
+            </AnimatePresence>
+
+            <div className="absolute bottom-3 left-0 right-0 flex justify-center gap-1.5 z-20">
+              {banners.map((_, idx) => (
+                <div
+                  key={idx}
+                  className={`h-1 rounded-full transition-all duration-300 ${
+                    idx === currentSlide ? 'w-4 bg-brand-blue' : 'w-1 bg-white/40'
+                  }`}
+                />
+              ))}
+            </div>
+          </>
+        ) : (
+          <div className="absolute inset-0 flex flex-col items-center justify-center text-zinc-500 bg-[#FAF9F6] border border-brand-border">
+            <span className="text-[10px] font-bold">Loading...</span>
+          </div>
+        )}
+      </div>
+
+      {/* Top Banner Box (Now centered to match Desktop Search Header Banner) */}
+      <div className="w-full py-4 flex flex-col items-center justify-center text-center px-4">
+        <span className="text-[8px] font-black tracking-widest text-amber-700 uppercase bg-amber-50 px-3 py-1 rounded-full mb-3 border border-amber-200 font-heading">
+          PRO PROFESSIONAL HOME SERVICES
         </span>
-        <h2 className="text-sm font-extrabold text-brand-graphite mt-2 leading-snug font-heading">Professional Home Services</h2>
-        <div className="flex items-center gap-1.5 mt-2 text-[9px] text-brand-slate font-bold">
-          <ShieldCheck size={12} className="text-amber-500" />
-          <span>Equipped with sanitization and safety gear</span>
-        </div>
+        <h2 className="text-xl font-extrabold tracking-tight text-brand-graphite mb-1.5 leading-tight font-heading">
+          Certified Services at Your Doorstep
+        </h2>
+        <p className="text-[10px] text-brand-slate max-w-[280px] mb-2 leading-relaxed font-semibold">
+          Pre-vetted partners, strict safety protocols, and transparent upfront pricing.
+        </p>
       </div>
 
       {/* Category circular select scrollbar list */}
-      <div className="w-full flex gap-3.5 overflow-x-auto py-2.5 no-scrollbar">
+      <div className="w-full flex gap-4 overflow-x-auto py-2.5 px-1 no-scrollbar">
+        {/* 'All' Option */}
+        <div
+          onClick={() => setSelectedCategory('')}
+          className={`flex flex-col items-center shrink-0 w-16 text-center cursor-pointer transition-all ${
+            selectedCategory === '' ? 'scale-105 font-bold' : ''
+          }`}
+        >
+          <div className={`w-11 h-11 rounded-full border overflow-hidden mb-1 flex items-center justify-center bg-white transition-all shadow-soft ${
+            selectedCategory === '' ? 'border-amber-500 ring-2 ring-amber-100' : 'border-brand-border'
+          }`}>
+            <LayoutGrid size={20} className={selectedCategory === '' ? "text-amber-600" : "text-brand-slate/60"} />
+          </div>
+          <span className={`text-[9px] font-black truncate w-full tracking-wide font-heading ${selectedCategory === '' ? 'text-amber-600' : 'text-brand-slate'}`}>
+            All
+          </span>
+        </div>
+
         {serviceCategories.map(cat => (
           <div
             key={cat.id}

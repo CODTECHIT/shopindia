@@ -1,20 +1,39 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useApp } from '../../context/AppContext';
 import { useProducts } from '../../hooks/useProducts';
 import { useCategories } from '../../hooks/useCategories';
-import { Plus, Minus, ShoppingBag, Clock, ArrowRight, Heart } from 'lucide-react';
-import { motion } from 'framer-motion';
+import { Plus, Minus, ShoppingBag, Clock, ArrowRight, Heart, LayoutGrid } from 'lucide-react';
+import { motion, AnimatePresence } from 'framer-motion';
+import { api } from '../../lib/api';
 
 export const VerticalQuickCommerceMobile: React.FC = () => {
   const { cart, addToCart, updateQuantity, navigateTo } = useApp();
   const { products } = useProducts();
   const { categories } = useCategories();
-  const [activeCat, setActiveCat] = useState('q-fruits');
+  const [activeCat, setActiveCat] = useState('');
   const [wishlist, setWishlist] = useState<Record<string, boolean>>({});
+  const [currentSlide, setCurrentSlide] = useState(0);
+  const [banners, setBanners] = useState<any[]>([]);
+
+  useEffect(() => {
+    api.get<{ banners: any[] }>('/api/banners')
+      .then(d => setBanners(d.banners.filter((b: any) => b.vertical === 'quick')))
+      .catch(console.error);
+  }, []);
+
+  useEffect(() => {
+    if (banners.length === 0) return;
+    const timer = setInterval(() => {
+      setCurrentSlide(prev => (prev + 1) % banners.length);
+    }, 5000);
+    return () => clearInterval(timer);
+  }, [banners.length]);
 
   const quickProducts = products.filter(p => p.vertical === 'quick');
   const quickCategories = categories.filter(c => c.vertical === 'quick');
-  const currentProducts = quickProducts.filter(p => !p.category || p.category === activeCat);
+  const currentProducts = !activeCat 
+    ? quickProducts 
+    : quickProducts.filter(p => p.category === activeCat);
 
   const getCartQty = (id: string) => {
     const item = cart.find(i => i.product.id === id);
@@ -41,13 +60,79 @@ export const VerticalQuickCommerceMobile: React.FC = () => {
         <span className="text-[8px] uppercase tracking-wider bg-brand-green text-white px-2 py-0.5 rounded-full font-black">10 MINS</span>
       </div>
 
+      {/* Hero Banner Carousel */}
+      <div className="w-full aspect-[2/1] rounded-[24px] overflow-hidden shadow-soft relative bg-zinc-950 mt-1 mb-2">
+        {banners.length > 0 ? (
+          <>
+            <AnimatePresence mode="wait">
+              <motion.div
+                key={currentSlide}
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                exit={{ opacity: 0 }}
+                transition={{ duration: 0.6 }}
+                className="absolute inset-0 w-full h-full"
+                onClick={() => navigateTo('search')}
+              >
+                <img src={banners[currentSlide].image} alt={banners[currentSlide].title} className="w-full h-full object-cover opacity-50" />
+                <div className="absolute inset-0 bg-gradient-to-r from-zinc-950/80 via-zinc-950/30 to-transparent flex flex-col justify-center px-6 text-white text-left select-none">
+                  <span className="text-[7.5px] bg-brand-green text-white font-black px-2 py-0.5 rounded w-max uppercase tracking-wider mb-2 shadow-soft">
+                    10-Min Delivery
+                  </span>
+                  <h3 className="text-xs font-black line-clamp-1 font-heading uppercase tracking-wide leading-tight drop-shadow">
+                    {banners[currentSlide].title}
+                  </h3>
+                  <p className="text-[9.5px] opacity-90 line-clamp-1 text-zinc-300 font-semibold mt-1">
+                    {banners[currentSlide].subtitle}
+                  </p>
+                </div>
+              </motion.div>
+            </AnimatePresence>
+
+            <div className="absolute bottom-3 left-0 right-0 flex justify-center gap-1.5 z-20">
+              {banners.map((_, idx) => (
+                <div
+                  key={idx}
+                  className={`h-1 rounded-full transition-all duration-300 ${
+                    idx === currentSlide ? 'w-4 bg-brand-green' : 'w-1 bg-white/40'
+                  }`}
+                />
+              ))}
+            </div>
+          </>
+        ) : (
+          <div className="absolute inset-0 flex flex-col items-center justify-center text-zinc-500 bg-[#FAF9F6] border border-brand-border">
+            <span className="text-[10px] font-bold">Loading...</span>
+          </div>
+        )}
+      </div>
+
       {/* Category Grid */}
-      <div className="w-full grid grid-cols-4 gap-2 py-2 select-none">
+      <div className="w-full grid grid-cols-5 gap-y-3 gap-x-2 py-2 select-none justify-items-center">
+        {/* 'All' Option */}
+        <button
+          onClick={() => setActiveCat('')}
+          className={`flex flex-col items-center gap-1.5 p-1.5 rounded-xl border transition-all ${
+            activeCat === ''
+              ? 'bg-[#ECFDF5] border-brand-green shadow-soft'
+              : 'bg-white border-brand-border hover:border-brand-green/30'
+          }`}
+        >
+          <div className="w-11 h-11 flex items-center justify-center rounded-full overflow-hidden bg-brand-elevated border border-black/5 shadow-sm">
+            <LayoutGrid size={20} className={activeCat === '' ? "text-brand-green" : "text-brand-slate/60"} />
+          </div>
+          <span className={`text-center text-[9px] leading-tight font-heading ${
+            activeCat === '' ? 'font-black text-brand-green' : 'font-bold text-brand-slate'
+          }`}>
+            All
+          </span>
+        </button>
+
         {quickCategories.map(cat => (
           <button
             key={cat.id}
             onClick={() => setActiveCat(cat.id)}
-            className={`flex flex-col items-center gap-1.5 p-2 rounded-xl border transition-all ${
+            className={`flex flex-col items-center gap-1.5 p-1.5 rounded-xl border transition-all w-16 ${
               activeCat === cat.id
                 ? 'bg-[#ECFDF5] border-brand-green shadow-soft'
                 : 'bg-white border-brand-border hover:border-brand-green/30'

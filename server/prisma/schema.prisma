@@ -122,24 +122,24 @@ model User {
   riderProfile RiderProfile?
 
   // Reverse relations
-  vendorsCreated  Vendor[]        @relation("VendorUser")
-  approvedVendors Vendor[]        @relation("VendorApprovedBy")
-  orders          Order[]         @relation("CustomerOrders")
-  managedBranches Branch[]        @relation("BranchManager")
+  vendorsCreated  Vendor[]           @relation("VendorUser")
+  approvedVendors Vendor[]           @relation("VendorApprovedBy")
+  orders          Order[]            @relation("CustomerOrders")
+  managedBranches Branch[]           @relation("BranchManager")
   branchStaffLink BranchStaff[]
-  customerTickets Ticket[]        @relation("CustomerTickets")
-  assignedTickets Ticket[]        @relation("AssignedTickets")
-  addresses       Address[]       @relation("CustomerAddresses")
-  paymentMethods  PaymentMethod[] @relation("CustomerPayments")
-  transactions    Transaction[]   @relation("CustomerTransactions")
-  rewards         Reward[]        @relation("CustomerRewards")
+  customerTickets Ticket[]           @relation("CustomerTickets")
+  assignedTickets Ticket[]           @relation("AssignedTickets")
+  addresses       Address[]          @relation("CustomerAddresses")
+  paymentMethods  PaymentMethod[]    @relation("CustomerPayments")
+  transactions    Transaction[]      @relation("CustomerTransactions")
+  rewards         Reward[]           @relation("CustomerRewards")
   notifications   UserNotification[] @relation("CustomerNotifications")
-  activities      UserActivity[]  @relation("CustomerActivity")
-  reviews         Review[]        @relation("CustomerReviews")
-  cartItems       CartItem[]      @relation("CustomerCart")
-  wishlistItems   WishlistItem[]  @relation("CustomerWishlist")
-  cart            Cart?           @relation("CustomerCartOwner")
-  wishlist        Wishlist?       @relation("CustomerWishlistOwner")
+  activities      UserActivity[]     @relation("CustomerActivity")
+  reviews         Review[]           @relation("CustomerReviews")
+  cartItems       CartItem[]         @relation("CustomerCart")
+  wishlistItems   WishlistItem[]     @relation("CustomerWishlist")
+  cart            Cart?              @relation("CustomerCartOwner")
+  wishlist        Wishlist?          @relation("CustomerWishlistOwner")
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -148,9 +148,9 @@ model User {
 }
 
 model Vendor {
-  id           String               @id @default(uuid())
-  userId       String               @unique
-  user         User                 @relation("VendorUser", fields: [userId], references: [id], onDelete: Cascade)
+  id           String  @id @default(uuid())
+  userId       String  @unique
+  user         User    @relation("VendorUser", fields: [userId], references: [id], onDelete: Cascade)
   businessName String
   contactName  String
   email        String
@@ -159,18 +159,18 @@ model Vendor {
   city         String?
   state        String?
   pincode      String?
-  country      String               @default("India")
+  country      String  @default("India")
   gstNumber    String?
   panNumber    String?
-  
+
   approvalStatus VendorApprovalStatus @default(pending)
   approvalNote   String?
   approvedById   String?
   approvedBy     User?                @relation("VendorApprovedBy", fields: [approvedById], references: [id])
   approvedAt     DateTime?
 
-  walletBalance  Float              @default(0) // paise / cents or currency amount
-  commissionRate Decimal            @default(10.00) @db.Decimal(5, 2)
+  walletBalance  Float   @default(0) // paise / cents or currency amount
+  commissionRate Decimal @default(10.00) @db.Decimal(5, 2)
 
   accountHolder String?
   accountNumber String?
@@ -182,10 +182,10 @@ model Vendor {
   category    String?
   isActive    Boolean @default(true)
 
-  documents VendorDocument[]
-  products  Product[]
-  orders    Order[]
-  linkedUsers User[]          @relation("UserVendor")
+  documents   VendorDocument[]
+  products    Product[]
+  orders      Order[]
+  linkedUsers User[]           @relation("UserVendor")
   technicians Technician[]
 
   createdAt DateTime @default(now())
@@ -210,7 +210,7 @@ model Product {
   vendorId        String
   vendor          Vendor          @relation(fields: [vendorId], references: [id], onDelete: Cascade)
   categoryId      String?
-  category        Category?  @relation(fields: [categoryId], references: [id])
+  category        Category?       @relation(fields: [categoryId], references: [id])
   name            String
   description     String?
   brand           String?
@@ -225,11 +225,11 @@ model Product {
   ratingCount     Int             @default(0)
   tags            String[]        @default([])
 
-  variants   ProductVariant[]
-  images     ProductImage[]
-  orderItems OrderItem[]
-  reviews    Review[]
-  cartItems  CartItem[]
+  variants      ProductVariant[]
+  images        ProductImage[]
+  orderItems    OrderItem[]
+  reviews       Review[]
+  cartItems     CartItem[]
   wishlistItems WishlistItem[]
 
   createdAt DateTime @default(now())
@@ -273,12 +273,12 @@ model Order {
   type        FulfillmentType
   status      OrderStatus     @default(placed)
 
-  couponId    String?
-  coupon      Coupon?         @relation(fields: [couponId], references: [id])
+  couponId String?
+  coupon   Coupon? @relation(fields: [couponId], references: [id])
 
   subtotal   Float?
-  discount   Float    @default(0)
-  commission Float    @default(0)
+  discount   Float  @default(0)
+  commission Float  @default(0)
   total      Float?
 
   deliveryLine1   String?
@@ -298,9 +298,9 @@ model Order {
 
   notes String?
 
-  items       OrderItem[]
-  tickets     Ticket[]
-  serviceJobs ServiceJob[]
+  items        OrderItem[]
+  tickets      Ticket[]
+  serviceJobs  ServiceJob[]
   transactions Transaction[] @relation("OrderTransactions")
 
   createdAt DateTime @default(now())
@@ -327,18 +327,18 @@ model OrderItem {
 }
 
 model Branch {
-  id        String   @id @default(uuid())
+  id        String  @id @default(uuid())
   name      String
-  code      String?  @unique
+  code      String? @unique
   managerId String?
-  manager   User?    @relation("BranchManager", fields: [managerId], references: [id])
+  manager   User?   @relation("BranchManager", fields: [managerId], references: [id])
   phone     String?
   email     String?
   street    String?
   city      String?
   state     String?
   pincode   String?
-  isActive  Boolean  @default(true)
+  isActive  Boolean @default(true)
 
   staff        User[]        @relation("BranchStaffUsers")
   staffLinks   BranchStaff[]
@@ -386,14 +386,14 @@ model RolePermission {
 }
 
 model Ticket {
-  id           String         @id @default(uuid())
-  ticketNumber String         @unique
+  id           String  @id @default(uuid())
+  ticketNumber String  @unique
   customerId   String
-  customer     User           @relation("CustomerTickets", fields: [customerId], references: [id])
+  customer     User    @relation("CustomerTickets", fields: [customerId], references: [id])
   orderId      String?
-  order        Order?         @relation(fields: [orderId], references: [id])
+  order        Order?  @relation(fields: [orderId], references: [id])
   assignedToId String?
-  assignedTo   User?          @relation("AssignedTickets", fields: [assignedToId], references: [id])
+  assignedTo   User?   @relation("AssignedTickets", fields: [assignedToId], references: [id])
 
   subject  String
   category TicketCategory @default(other)
@@ -424,14 +424,14 @@ model TicketMessage {
 }
 
 model ServiceArea {
-  id           String   @id @default(uuid())
+  id           String  @id @default(uuid())
   branchId     String?
-  branch       Branch?  @relation(fields: [branchId], references: [id])
+  branch       Branch? @relation(fields: [branchId], references: [id])
   name         String
   city         String?
   state        String?
-  isActive     Boolean  @default(true)
-  deliveryType String   @default("both")
+  isActive     Boolean @default(true)
+  deliveryType String  @default("both")
 
   pincodes ServiceAreaPincode[]
 
@@ -454,17 +454,17 @@ model ServiceAreaPincode {
 // ─── Rider Management ────────────────────────────────────────────────────────
 
 model RiderProfile {
-  id            String   @id @default(uuid())
-  userId        String   @unique
-  user          User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  id            String     @id @default(uuid())
+  userId        String     @unique
+  user          User       @relation(fields: [userId], references: [id], onDelete: Cascade)
   vehicleType   String?
   licenseNumber String?
-  isActive      Boolean  @default(true)
-  walletBalance Float    @default(0)
+  isActive      Boolean    @default(true)
+  walletBalance Float      @default(0)
   deliveries    Delivery[]
 
-  createdAt     DateTime @default(now())
-  updatedAt     DateTime @updatedAt
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
   @@map("rider_profiles")
 }
@@ -479,8 +479,8 @@ model Delivery {
   customerName    String
   deliveryAddress String
 
-  assignedAt      DateTime @default(now())
-  completedAt     DateTime?
+  assignedAt  DateTime  @default(now())
+  completedAt DateTime?
 
   @@map("deliveries")
 }
@@ -488,24 +488,24 @@ model Delivery {
 // ─── Notification System ─────────────────────────────────────────────────────
 
 model NotificationTemplate {
-  id          String   @id @default(uuid())
-  event       String   @unique // e.g., 'ORDER_PLACED', 'REFUND_PROCESSED'
-  smsBody     String?
+  id           String  @id @default(uuid())
+  event        String  @unique // e.g., 'ORDER_PLACED', 'REFUND_PROCESSED'
+  smsBody      String?
   emailSubject String?
-  emailBody   String?
-  isActive    Boolean  @default(true)
+  emailBody    String?
+  isActive     Boolean @default(true)
 
-  updatedAt   DateTime @updatedAt
+  updatedAt DateTime @updatedAt
 
   @@map("notification_templates")
 }
 
 model NotificationLog {
   id        String   @id @default(uuid())
-  recipient String   // phone or email
-  type      String   // 'SMS' or 'EMAIL'
+  recipient String // phone or email
+  type      String // 'SMS' or 'EMAIL'
   event     String
-  status    String   // 'sent', 'failed'
+  status    String // 'sent', 'failed'
   message   String
   sentAt    DateTime @default(now())
 
@@ -517,7 +517,7 @@ model NotificationLog {
 model Coupon {
   id            String   @id @default(uuid())
   code          String   @unique
-  discountType  String   // 'PERCENTAGE' or 'FLAT'
+  discountType  String // 'PERCENTAGE' or 'FLAT'
   discountValue Float
   minOrderValue Float    @default(0)
   maxDiscount   Float?
@@ -527,10 +527,10 @@ model Coupon {
   usedCount     Int      @default(0)
   isActive      Boolean  @default(true)
 
-  orders        Order[]
+  orders Order[]
 
-  createdAt     DateTime @default(now())
-  updatedAt     DateTime @updatedAt
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
   @@map("coupons")
 }
@@ -548,41 +548,40 @@ model Technician {
   isActive      Boolean  @default(true)
   currentStatus String   @default("available") // available, busy, offline
 
-  serviceJobs   ServiceJob[]
+  serviceJobs ServiceJob[]
 
-  createdAt     DateTime @default(now())
-  updatedAt     DateTime @updatedAt
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
   @@map("technicians")
 }
 
 model ServiceJob {
-  id            String      @id @default(uuid())
-  orderId       String
-  order         Order       @relation(fields: [orderId], references: [id], onDelete: Cascade)
-  technicianId  String?
-  technician    Technician? @relation(fields: [technicianId], references: [id])
-  
-  status        String      @default("pending") // pending, scheduled, in_progress, completed, failed
+  id           String      @id @default(uuid())
+  orderId      String
+  order        Order       @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  technicianId String?
+  technician   Technician? @relation(fields: [technicianId], references: [id])
+
+  status        String    @default("pending") // pending, scheduled, in_progress, completed, failed
   scheduledDate DateTime?
   notes         String?
-  
-  completedAt   DateTime?
-  createdAt     DateTime    @default(now())
-  updatedAt     DateTime    @updatedAt
+
+  completedAt DateTime?
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
 
   @@map("service_jobs")
 }
 
-
 model Review {
-  id         String   @id @default(uuid())
-  userId     String
-  user       User     @relation("CustomerReviews", fields: [userId], references: [id], onDelete: Cascade)
-  productId  String
-  product    Product  @relation(fields: [productId], references: [id], onDelete: Cascade)
+  id          String     @id @default(uuid())
+  userId      String
+  user        User       @relation("CustomerReviews", fields: [userId], references: [id], onDelete: Cascade)
+  productId   String
+  product     Product    @relation(fields: [productId], references: [id], onDelete: Cascade)
   orderItemId String?
-  orderItem  OrderItem? @relation(fields: [orderItemId], references: [id], onDelete: SetNull)
+  orderItem   OrderItem? @relation(fields: [orderItemId], references: [id], onDelete: SetNull)
 
   rating     Int
   title      String?
@@ -590,8 +589,8 @@ model Review {
   images     String[] @default([])
   isVerified Boolean  @default(false)
 
-  createdAt  DateTime @default(now())
-  updatedAt  DateTime @updatedAt
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
   @@unique([userId, productId])
   @@index([productId])
@@ -599,28 +598,28 @@ model Review {
 }
 
 model Cart {
-  id        String   @id @default(uuid())
-  userId    String   @unique
-  user      User     @relation("CustomerCartOwner", fields: [userId], references: [id], onDelete: Cascade)
+  id        String     @id @default(uuid())
+  userId    String     @unique
+  user      User       @relation("CustomerCartOwner", fields: [userId], references: [id], onDelete: Cascade)
   items     CartItem[]
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  createdAt DateTime   @default(now())
+  updatedAt DateTime   @updatedAt
 
   @@map("carts")
 }
 
 model CartItem {
-  id           String   @id @default(uuid())
-  cartId       String
-  cart         Cart     @relation(fields: [cartId], references: [id], onDelete: Cascade)
-  userId       String
-  user         User     @relation("CustomerCart", fields: [userId], references: [id], onDelete: Cascade)
-  productId    String
-  product      Product  @relation(fields: [productId], references: [id], onDelete: Cascade)
-  quantity     Int      @default(1)
+  id            String  @id @default(uuid())
+  cartId        String
+  cart          Cart    @relation(fields: [cartId], references: [id], onDelete: Cascade)
+  userId        String
+  user          User    @relation("CustomerCart", fields: [userId], references: [id], onDelete: Cascade)
+  productId     String
+  product       Product @relation(fields: [productId], references: [id], onDelete: Cascade)
+  quantity      Int     @default(1)
   savedForLater Boolean @default(false)
 
-  createdAt    DateTime @default(now())
+  createdAt DateTime @default(now())
 
   @@unique([cartId, productId])
   @@index([userId])
@@ -628,27 +627,27 @@ model CartItem {
 }
 
 model Wishlist {
-  id        String        @id @default(uuid())
-  userId    String        @unique
-  user      User          @relation("CustomerWishlistOwner", fields: [userId], references: [id], onDelete: Cascade)
+  id        String         @id @default(uuid())
+  userId    String         @unique
+  user      User           @relation("CustomerWishlistOwner", fields: [userId], references: [id], onDelete: Cascade)
   items     WishlistItem[]
-  createdAt DateTime      @default(now())
-  updatedAt DateTime      @updatedAt
+  createdAt DateTime       @default(now())
+  updatedAt DateTime       @updatedAt
 
   @@map("wishlists")
 }
 
 model WishlistItem {
-  id          String    @id @default(uuid())
-  wishlistId  String
-  wishlist    Wishlist  @relation(fields: [wishlistId], references: [id], onDelete: Cascade)
-  userId      String
-  user        User      @relation("CustomerWishlist", fields: [userId], references: [id], onDelete: Cascade)
-  productId   String
-  product     Product   @relation(fields: [productId], references: [id], onDelete: Cascade)
-  priceDropAlert Boolean @default(false)
+  id             String   @id @default(uuid())
+  wishlistId     String
+  wishlist       Wishlist @relation(fields: [wishlistId], references: [id], onDelete: Cascade)
+  userId         String
+  user           User     @relation("CustomerWishlist", fields: [userId], references: [id], onDelete: Cascade)
+  productId      String
+  product        Product  @relation(fields: [productId], references: [id], onDelete: Cascade)
+  priceDropAlert Boolean  @default(false)
 
-  createdAt   DateTime  @default(now())
+  createdAt DateTime @default(now())
 
   @@unique([wishlistId, productId])
   @@index([userId])
@@ -656,13 +655,13 @@ model WishlistItem {
 }
 
 model Category {
-  id        String   @id @default(uuid())
+  id        String  @id @default(uuid())
   name      String
-  slug      String?  @unique
-  vertical  String   @default("shop") // 'shop' | 'quick' | 'services'
+  slug      String? @unique
+  vertical  String  @default("shop") // 'shop' | 'quick' | 'services'
   image     String?
-  sortOrder Int      @default(0)
-  isActive  Boolean  @default(true)
+  sortOrder Int     @default(0)
+  isActive  Boolean @default(true)
 
   products Product[]
 
@@ -681,26 +680,26 @@ enum AddressType {
 }
 
 model Address {
-  id          String     @id @default(uuid())
-  userId      String
-  user        User       @relation("CustomerAddresses", fields: [userId], references: [id], onDelete: Cascade)
+  id     String @id @default(uuid())
+  userId String
+  user   User   @relation("CustomerAddresses", fields: [userId], references: [id], onDelete: Cascade)
 
-  label       String     @default("Home")
-  type        AddressType @default(home)
-  fullName    String
-  mobile      String
-  line1       String
-  line2       String?
-  city        String
-  state       String
-  country     String     @default("India")
-  pincode     String
-  landmark    String?
-  isDefault   Boolean    @default(false)
-  isActive    Boolean    @default(true)
+  label     String      @default("Home")
+  type      AddressType @default(home)
+  fullName  String
+  mobile    String
+  line1     String
+  line2     String?
+  city      String
+  state     String
+  country   String      @default("India")
+  pincode   String
+  landmark  String?
+  isDefault Boolean     @default(false)
+  isActive  Boolean     @default(true)
 
-  createdAt   DateTime   @default(now())
-  updatedAt   DateTime   @updatedAt
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
   @@index([userId])
   @@map("addresses")
@@ -714,59 +713,59 @@ enum PaymentMethodType {
 }
 
 model PaymentMethod {
-  id            String            @id @default(uuid())
-  userId        String
-  user          User              @relation("CustomerPayments", fields: [userId], references: [id], onDelete: Cascade)
+  id     String @id @default(uuid())
+  userId String
+  user   User   @relation("CustomerPayments", fields: [userId], references: [id], onDelete: Cascade)
 
-  type          PaymentMethodType
-  label         String
+  type         PaymentMethodType
+  label        String
   // UPI
-  upiId         String?
+  upiId        String?
   // Cards
-  last4         String?
-  cardBrand     String?
-  expiry        String?
+  last4        String?
+  cardBrand    String?
+  expiry       String?
   // Net banking
-  bankName      String?
-  isDefault     Boolean           @default(false)
-  transactions  Transaction[]
+  bankName     String?
+  isDefault    Boolean           @default(false)
+  transactions Transaction[]
 
-  createdAt     DateTime          @default(now())
-  updatedAt     DateTime          @updatedAt
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
   @@index([userId])
   @@map("payment_methods")
 }
 
 model Transaction {
-  id          String        @id @default(uuid())
-  userId      String
-  user        User          @relation("CustomerTransactions", fields: [userId], references: [id], onDelete: Cascade)
-  orderId     String?
-  order       Order?        @relation("OrderTransactions", fields: [orderId], references: [id])
-  type        String        // 'payment' | 'refund' | 'cashback'
-  methodId    String?
-  method      PaymentMethod? @relation(fields: [methodId], references: [id], onDelete: SetNull)
-  amount      Float
-  status      PaymentStatus @default(pending)
-  gatewayRef  String?
+  id         String         @id @default(uuid())
+  userId     String
+  user       User           @relation("CustomerTransactions", fields: [userId], references: [id], onDelete: Cascade)
+  orderId    String?
+  order      Order?         @relation("OrderTransactions", fields: [orderId], references: [id])
+  type       String // 'payment' | 'refund' | 'cashback'
+  methodId   String?
+  method     PaymentMethod? @relation(fields: [methodId], references: [id], onDelete: SetNull)
+  amount     Float
+  status     PaymentStatus  @default(pending)
+  gatewayRef String?
 
-  createdAt   DateTime      @default(now())
+  createdAt DateTime @default(now())
 
   @@index([userId])
   @@map("transactions")
 }
 
 model Reward {
-  id            String  @id @default(uuid())
-  userId        String
-  user          User    @relation("CustomerRewards", fields: [userId], references: [id], onDelete: Cascade)
-  points        Int     @default(0)
-  source        String  // 'order' | 'review' | 'referral' | 'signup'
-  metadata      String? // JSON-ish description
-  expiresAt     DateTime?
+  id        String    @id @default(uuid())
+  userId    String
+  user      User      @relation("CustomerRewards", fields: [userId], references: [id], onDelete: Cascade)
+  points    Int       @default(0)
+  source    String // 'order' | 'review' | 'referral' | 'signup'
+  metadata  String? // JSON-ish description
+  expiresAt DateTime?
 
-  createdAt     DateTime @default(now())
+  createdAt DateTime @default(now())
 
   @@index([userId])
   @@map("rewards")
@@ -780,34 +779,45 @@ enum NotificationChannel {
 }
 
 model UserNotification {
-  id          String       @id @default(uuid())
-  userId      String
-  user        User         @relation("CustomerNotifications", fields: [userId], references: [id], onDelete: Cascade)
-  category    String       // 'order' | 'shipping' | 'promotion' | 'coupon' | 'price_drop' | 'stock'
-  title       String
-  message     String
-  channel     NotificationChannel @default(IN_APP)
-  isRead      Boolean      @default(false)
-  link        String?
+  id       String              @id @default(uuid())
+  userId   String
+  user     User                @relation("CustomerNotifications", fields: [userId], references: [id], onDelete: Cascade)
+  category String // 'order' | 'shipping' | 'promotion' | 'coupon' | 'price_drop' | 'stock'
+  title    String
+  message  String
+  channel  NotificationChannel @default(IN_APP)
+  isRead   Boolean             @default(false)
+  link     String?
 
-  createdAt   DateTime     @default(now())
+  createdAt DateTime @default(now())
 
   @@index([userId, isRead])
   @@map("user_notifications")
 }
 
 model UserActivity {
-  id        String   @id @default(uuid())
-  userId    String
-  user      User     @relation("CustomerActivity", fields: [userId], references: [id], onDelete: Cascade)
-  event     String   // PRODUCT_VIEWED | ADDED_TO_CART | ... 
-  entityId  String?
+  id         String  @id @default(uuid())
+  userId     String
+  user       User    @relation("CustomerActivity", fields: [userId], references: [id], onDelete: Cascade)
+  event      String // PRODUCT_VIEWED | ADDED_TO_CART | ... 
+  entityId   String?
   entityType String?
-  metadata  String?  // JSON string
-  sessionId String?
+  metadata   String? // JSON string
+  sessionId  String?
 
   createdAt DateTime @default(now())
 
   @@index([userId, createdAt])
   @@map("user_activities")
+}
+
+model Banner {
+  id        String   @id @default(uuid())
+  title     String?
+  subtitle  String?
+  image     String
+  vertical  String   @default("shop")
+  isActive  Boolean  @default(true)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 }

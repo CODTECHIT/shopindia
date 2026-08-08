@@ -16,6 +16,7 @@ import { RidersPage } from './pages/RidersPage';
 import { ReportsPage } from './pages/ReportsPage';
 import { NotificationsPage } from './pages/NotificationsPage';
 import { OffersPage } from './pages/OffersPage';
+import { PromotionsPage } from './pages/PromotionsPage';
 import { CategoriesPage } from './pages/CategoriesPage';
 
 const AdminContent: React.FC = () => {
@@ -40,6 +41,7 @@ const AdminContent: React.FC = () => {
       case 'commissions':   return <CommissionsPage />;
       case 'riders':        return <RidersPage />;
       case 'reports':       return <ReportsPage />;
+      case 'promotions':    return <PromotionsPage />;
       case 'notifications': return <NotificationsPage />;
       case 'offers':        return <OffersPage />;
       case 'categories':    return <CategoriesPage />;

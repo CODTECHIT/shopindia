@@ -5,19 +5,26 @@ import { useProducts } from '../../hooks/useProducts';
 import { useCategories } from '../../hooks/useCategories';
 import { Star, Award, Heart, ChevronLeft, ChevronRight, Clock, ShoppingCart } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
+import { api } from '../../lib/api';
 
 export const VerticalShop: React.FC = () => {
   const { navigateTo, setSearchQuery, addToCart } = useApp();
-  const { products, loading } = useProducts();
+  const { products, loading: productsLoading } = useProducts();
   const { categories } = useCategories();
   const [timeLeft, setTimeLeft] = useState({ hours: 14, minutes: 32, seconds: 45 });
   const [wishlist, setWishlist] = useState<Record<string, boolean>>({});
   const [currentSlide, setCurrentSlide] = useState(0);
   const [isHoveringCarousel, setIsHoveringCarousel] = useState(false);
+  const [banners, setBanners] = useState<any[]>([]);
+
+  useEffect(() => {
+    api.get<{ banners: any[] }>('/api/banners')
+      .then(d => setBanners(d.banners.filter((b: any) => b.vertical === 'shop')))
+      .catch(console.error);
+  }, []);
 
   // Filter products for this vertical
   const shopProducts = products.filter(p => p.vertical === 'shop');
-  const banners = BANNERS.filter(b => b.vertical === 'shop');
 
   // Dynamic sections
   const topBrands = Array.from(new Set(shopProducts.map(p => p.brand))).filter(Boolean).slice(0, 8);
@@ -165,16 +172,16 @@ export const VerticalShop: React.FC = () => {
                   whileHover={{ scale: 1.02 }}
                   whileTap={{ scale: 0.98 }}
                   onClick={() => navigateTo('search')}
-                  className="px-8.5 py-4 bg-[#1C1C1E] text-white rounded-full font-bold text-[11px] tracking-wider shadow-elevated hover:bg-neutral-800 transition-all w-max uppercase flex items-center gap-2.5"
+                  className="group px-8 py-3.5 bg-white text-zinc-950 rounded-full font-bold text-xs tracking-wider shadow-[0_8px_20px_rgba(0,0,0,0.3)] hover:shadow-[0_8px_25px_rgba(255,255,255,0.2)] hover:bg-zinc-50 transition-all w-max uppercase flex items-center gap-2.5"
                 >
                   <span>Shop Collection</span>
-                  <span>→</span>
+                  <span className="text-brand-orange group-hover:translate-x-1 transition-transform">→</span>
                 </motion.button>
               </div>
             </motion.div>
           </AnimatePresence>
         ) : (
-          <div className="absolute inset-0 flex items-center justify-center text-zinc-500 text-sm">Loading promotions...</div>
+          <div className="absolute inset-0 flex items-center justify-center text-zinc-500 text-sm bg-[#FAF9F6]">Loading promotions...</div>
         )}
 
         {/* Carousel Prev/Next Arrows (Elegant & unobtrusive) */}
@@ -431,7 +438,7 @@ export const VerticalShop: React.FC = () => {
                 </div>
 
                 <div className="grid grid-cols-3 gap-6">
-                  {loading ? (
+                  {productsLoading ? (
                     Array(3).fill(0).map((_, i) => (
                       <div key={i} className="border border-brand-border rounded-card p-5.5 flex flex-col bg-brand-card h-full relative">
                         <div className="w-full aspect-[5/4] bg-slate-100/80 rounded-card mb-4 animate-pulse"></div>
