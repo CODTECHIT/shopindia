@@ -1,6 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { useApp } from '../../context/AppContext';
-import { PRODUCTS, BANNERS } from '../../data/mockData';
+import { BANNERS } from '../../data/types';
+import { useProducts } from '../../hooks/useProducts';
+import { useCategories } from '../../hooks/useCategories';
 import { 
   Star, Clock, Heart, ChevronRight, 
   Truck, Award, RotateCcw, ShieldCheck, Apple
@@ -13,11 +15,16 @@ export const VerticalShopMobile: React.FC = () => {
   const [wishlist, setWishlist] = useState<Record<string, boolean>>({});
   const [currentSlide, setCurrentSlide] = useState(0);
 
-  const shopProducts = PRODUCTS.filter(p => p.vertical === 'shop');
+  const { products } = useProducts();
+  const { categories } = useCategories();
+  const shopProducts = products.filter(p => p.vertical === 'shop');
   const banners = BANNERS.filter(b => b.vertical === 'shop');
+  
+  const shopCategories = categories.filter(c => c.vertical === 'shop');
 
   // Autoplay for Hero Carousel
   useEffect(() => {
+    if (banners.length === 0) return;
     const timer = setInterval(() => {
       setCurrentSlide(prev => (prev + 1) % banners.length);
     }, 5000);
@@ -46,36 +53,25 @@ export const VerticalShopMobile: React.FC = () => {
 
   // 2x5 Mobile Categories circular list (styled with pastel background rings)
   // Premium 3D Categories matching the mockup
-  const mobileCategoriesList = [
-    { name: 'All Categories', image: '/categories/mobiles.png', color: 'bg-indigo-50 text-indigo-600', query: '' },
-    { name: 'Grocery', image: '/categories/grocery.png', color: 'bg-emerald-50 text-emerald-600', query: 'Grocery', vertical: 'quick' },
-    { name: 'Electronics', image: '/categories/headphones.png', color: 'bg-blue-50 text-blue-600', query: 'Electronics' },
-    { name: 'Fashion', image: '/categories/tshirt.png', color: 'bg-purple-50 text-purple-600', query: 'Fashion' },
-    { name: 'Beauty', image: '/categories/makeup.png', color: 'bg-pink-50 text-pink-600', query: 'Beauty' },
-    { name: 'Pharmacy', image: '/categories/medicine.png', color: 'bg-red-50 text-red-600', query: 'Pharmacy' },
-    { name: 'Home & Kitchen', image: '/categories/sofa.png', color: 'bg-amber-50 text-amber-600', query: 'Home' },
-    { name: 'Food & Drinks', image: '/categories/drink.png', color: 'bg-cyan-50 text-cyan-600', query: 'Snacks' },
-    { name: 'Baby Care', image: '/categories/teddy.png', color: 'bg-teal-50 text-teal-600', query: 'Baby' },
-    { name: 'More', image: '/categories/dots.png', color: 'bg-slate-50 text-slate-600', query: '' }
-  ];
+  // Removed hardcoded mobileCategoriesList
 
   return (
     <div className="w-full flex flex-col gap-7 py-6 px-4 bg-brand-bg min-h-screen text-brand-graphite font-sans pb-24 transition-colors duration-300">
       
       {/* 2. Circular Categories Grid (2x5 structure layout matching user reference) */}
       <div className="w-full bg-white border border-brand-border rounded-card p-4 shadow-soft grid grid-cols-5 gap-y-4.5 gap-x-2 select-none justify-items-center">
-        {mobileCategoriesList.map((cat, idx) => {
+        {shopCategories.slice(0, 10).map((cat, idx) => {
           return (
             <div
-              key={idx}
+              key={cat.id}
               onClick={() => { 
-                setSearchQuery(cat.query); 
+                setSearchQuery(cat.name); 
                 navigateTo('search'); 
               }}
               className="flex flex-col items-center text-center cursor-pointer active:scale-90 transition-transform w-14"
             >
-              <div className={`w-11 h-11 rounded-full flex items-center justify-center mb-1.5 shadow-soft ${cat.color} transition-all`}>
-                <img src={cat.image} alt={cat.name} className="w-[34px] h-[34px] object-contain mix-blend-multiply" onError={(e) => { e.currentTarget.src = 'data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/></svg>' }} />
+              <div className={`w-11 h-11 rounded-full flex items-center justify-center mb-1.5 shadow-soft bg-slate-50 text-slate-600 transition-all overflow-hidden border border-brand-border/60`}>
+                <img src={cat.image || undefined} alt={cat.name} className="w-full h-full object-cover" />
               </div>
               <div className="h-6.5 flex items-start justify-center w-full overflow-hidden">
                 <span className="text-[8.5px] font-semibold text-brand-graphite opacity-90 line-clamp-2 w-full tracking-tight leading-tight font-heading">
@@ -89,44 +85,50 @@ export const VerticalShopMobile: React.FC = () => {
 
       {/* 3. Hero Banner Carousel */}
       <div className="w-full aspect-[2/1] rounded-[28px] overflow-hidden shadow-soft relative bg-zinc-950">
-        <AnimatePresence mode="wait">
-          <motion.div
-            key={currentSlide}
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            transition={{ duration: 0.6 }}
-            className="absolute inset-0 w-full h-full"
-            onClick={() => navigateTo('search')}
-          >
-            <img src={banners[currentSlide].image} alt={banners[currentSlide].title} className="w-full h-full object-cover opacity-50" />
-            <div className="absolute inset-0 bg-gradient-to-r from-zinc-950/80 via-zinc-950/30 to-transparent flex flex-col justify-center px-6 text-white text-left select-none">
-              <span className="text-[7.5px] bg-brand-orange text-white font-black px-2 py-0.5 rounded w-max uppercase tracking-wider mb-2 shadow-soft">
-                Super Deal
-              </span>
-              <h3 className="text-xs font-black line-clamp-1 font-heading uppercase tracking-wide leading-tight drop-shadow">
-                {banners[currentSlide].title}
-              </h3>
-              <p className="text-[9.5px] opacity-90 line-clamp-1 text-zinc-300 font-semibold mt-1">
-                {banners[currentSlide].subtitle}
-              </p>
-            </div>
-          </motion.div>
-        </AnimatePresence>
+        {banners.length > 0 ? (
+          <>
+            <AnimatePresence mode="wait">
+              <motion.div
+                key={currentSlide}
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                exit={{ opacity: 0 }}
+                transition={{ duration: 0.6 }}
+                className="absolute inset-0 w-full h-full"
+                onClick={() => navigateTo('search')}
+              >
+                <img src={banners[currentSlide].image} alt={banners[currentSlide].title} className="w-full h-full object-cover opacity-50" />
+                <div className="absolute inset-0 bg-gradient-to-r from-zinc-950/80 via-zinc-950/30 to-transparent flex flex-col justify-center px-6 text-white text-left select-none">
+                  <span className="text-[7.5px] bg-brand-orange text-white font-black px-2 py-0.5 rounded w-max uppercase tracking-wider mb-2 shadow-soft">
+                    Super Deal
+                  </span>
+                  <h3 className="text-xs font-black line-clamp-1 font-heading uppercase tracking-wide leading-tight drop-shadow">
+                    {banners[currentSlide].title}
+                  </h3>
+                  <p className="text-[9.5px] opacity-90 line-clamp-1 text-zinc-300 font-semibold mt-1">
+                    {banners[currentSlide].subtitle}
+                  </p>
+                </div>
+              </motion.div>
+            </AnimatePresence>
 
-        {/* Carousel indicators dots */}
-        <div className="absolute bottom-3 left-1/2 -translate-x-1/2 flex items-center gap-1.5 z-10">
-          {banners.map((_, idx) => (
-            <button
-              key={idx}
-              onClick={() => setCurrentSlide(idx)}
-              className={`h-1 rounded-full transition-all duration-300 ${
-                currentSlide === idx ? 'w-4 bg-white' : 'w-1 bg-white/40'
-              }`}
-              aria-label={`Slide ${idx + 1}`}
-            />
-          ))}
-        </div>
+            {/* Carousel indicators dots */}
+            <div className="absolute bottom-3 left-1/2 -translate-x-1/2 flex items-center gap-1.5 z-10">
+              {banners.map((_, idx) => (
+                <button
+                  key={idx}
+                  onClick={() => setCurrentSlide(idx)}
+                  className={`h-1 rounded-full transition-all duration-300 ${
+                    currentSlide === idx ? 'w-4 bg-white' : 'w-1 bg-white/40'
+                  }`}
+                  aria-label={`Slide ${idx + 1}`}
+                />
+              ))}
+            </div>
+          </>
+        ) : (
+          <div className="absolute inset-0 flex items-center justify-center text-zinc-500 text-xs">Loading promotions...</div>
+        )}
       </div>
 
       {/* 4. Mobile Deals of the Day Box */}
@@ -168,12 +170,14 @@ export const VerticalShopMobile: React.FC = () => {
                   <Heart size={10} className={isWishlisted ? "fill-brand-red text-brand-red" : ""} />
                 </motion.button>
 
-                <div className="w-[110px] h-[110px] border border-brand-border rounded-[20px] flex items-center justify-center p-2.5 bg-brand-elevated mb-2 overflow-hidden shadow-soft">
+                <div className="w-[110px] aspect-[5/4] border border-brand-border/60 rounded-[16px] flex items-center justify-center p-1 bg-white mb-2 overflow-hidden shadow-sm">
                   <img src={product.image} alt={product.title} className="max-h-full max-w-full object-contain" />
                 </div>
                 <h4 className="text-[10px] font-bold text-brand-graphite line-clamp-1 leading-snug font-heading px-1">{product.title}</h4>
                 <span className="text-[10px] font-extrabold text-brand-graphite mt-0.5 font-numbers px-1">₹{product.price.toLocaleString('en-IN')}</span>
-                <span className="text-[8.5px] font-black text-brand-orange uppercase tracking-wider font-numbers px-1 mt-0.5">{discount}% OFF</span>
+                {product.originalPrice > product.price && (
+                  <span className="text-[8.5px] font-black text-brand-orange uppercase tracking-wider font-numbers px-1 mt-0.5">{discount}% OFF</span>
+                )}
               </div>
             );
           })}
@@ -257,7 +261,7 @@ export const VerticalShopMobile: React.FC = () => {
               <div
                 key={product.id}
                 onClick={() => navigateTo('detail', product.id)}
-                className="bg-white border border-brand-border rounded-[20px] p-3 flex flex-col cursor-pointer relative shadow-soft active:scale-[0.98] transition-transform"
+                className="bg-white border border-brand-border/80 rounded-[16px] p-2.5 flex flex-col cursor-pointer relative shadow-sm active:scale-[0.98] transition-transform"
               >
                 {/* Wishlist Heart */}
                 <motion.button
@@ -276,7 +280,7 @@ export const VerticalShopMobile: React.FC = () => {
                 )}
                 
                 {/* Image panel */}
-                <div className="w-full aspect-square flex items-center justify-center mb-3 bg-brand-elevated rounded-[20px] p-2 overflow-hidden shadow-soft border border-brand-border/40">
+                <div className="w-full aspect-[5/4] flex items-center justify-center mb-2 bg-white rounded-[16px] overflow-hidden shadow-sm border border-brand-border/60">
                   <img src={product.image} alt={product.title} className="max-h-full max-w-full object-contain" />
                 </div>
                 
@@ -297,8 +301,12 @@ export const VerticalShopMobile: React.FC = () => {
                 {/* Price block details */}
                 <div className="flex items-baseline gap-1 mt-1 leading-none font-numbers px-0.5">
                   <span className="text-[11px] font-extrabold text-brand-graphite">₹{product.price.toLocaleString('en-IN')}</span>
-                  <span className="text-[9px] text-brand-slate line-through">₹{product.originalPrice.toLocaleString('en-IN')}</span>
-                  <span className="text-[8px] font-black text-brand-orange uppercase tracking-wider">{discount}% Off</span>
+                  {product.originalPrice > product.price && (
+                    <>
+                      <span className="text-[9px] text-brand-slate line-through">₹{product.originalPrice.toLocaleString('en-IN')}</span>
+                      <span className="text-[8px] font-black text-brand-orange uppercase tracking-wider">{discount}% Off</span>
+                    </>
+                  )}
                 </div>
               </div>
             );
@@ -308,3 +316,4 @@ export const VerticalShopMobile: React.FC = () => {
     </div>
   );
 };
+

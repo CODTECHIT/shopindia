@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { api, USE_MOCK } from '../../lib/api';
+import { api } from '../../lib/api';
 import { Mail, MessageSquare, Save } from 'lucide-react';
 
 export const NotificationsPage: React.FC = () => {
@@ -14,7 +14,6 @@ export const NotificationsPage: React.FC = () => {
   const [emailBody, setEmailBody] = useState('');
 
   const loadTemplates = async () => {
-    if (USE_MOCK) return;
     try {
       const res = await api.get<{ templates: any[] }>('/api/admin/notifications/templates');
       setTemplates(res.templates);
@@ -28,10 +27,6 @@ export const NotificationsPage: React.FC = () => {
   };
 
   const loadLogs = async () => {
-    if (USE_MOCK) {
-      setLogs([{ id: '1', recipient: 'john@example.com', type: 'EMAIL', event: 'ORDER_PLACED', status: 'sent', message: 'Order #123 placed successfully.', sentAt: new Date().toISOString() }]);
-      return;
-    }
     try {
       const res = await api.get<{ logs: any[] }>('/api/admin/notifications/logs');
       setLogs(res.logs);
@@ -45,7 +40,6 @@ export const NotificationsPage: React.FC = () => {
 
   const handleSave = async () => {
     try {
-      if (USE_MOCK) return alert("Mock saved!");
       await api.put('/api/admin/notifications/templates', {
         event: eventKey, smsBody, emailSubject, emailBody, isActive: true
       });

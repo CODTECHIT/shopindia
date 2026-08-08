@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { api, USE_MOCK } from '../../lib/api';
+import { api } from '../../lib/api';
 import { Search, UserX, Ban, CheckCircle } from 'lucide-react';
 
 const ROLES = ['all', 'customer', 'vendor', 'rider', 'branch_manager', 'support_exec', 'super_admin'];
@@ -12,34 +12,19 @@ export const UsersPage: React.FC = () => {
 
   const load = () => {
     setLoading(true);
-    if (USE_MOCK) {
-      const mockUsers = [
-        { _id: 'u1', name: 'Rajesh Kumar', email: 'rajesh@gmail.com', phone: '9876543210', role: 'customer', status: 'active', createdAt: '2026-07-01' },
-        { _id: 'u2', name: 'Priya Sharma', email: 'priya@gmail.com', phone: '9876543211', role: 'customer', status: 'active', createdAt: '2026-07-05' },
-        { _id: 'u3', name: 'Vendor Demo', email: 'vendor@demo.in', phone: '8888888888', role: 'vendor', status: 'active', createdAt: '2026-06-15' },
-        { _id: 'u4', name: 'Rider Suresh', email: 'suresh@rider.in', phone: '9777777777', role: 'rider', status: 'suspended', createdAt: '2026-06-20' },
-        { _id: 'u5', name: 'Kiran BM', email: 'kiran@branch.in', phone: '9666666666', role: 'branch_manager', status: 'active', createdAt: '2026-05-10' },
-      ];
-      setUsers(mockUsers);
-      setLoading(false);
-    } else {
-      api.get<{ users: any[] }>(`/api/admin/users?${role !== 'all' ? `role=${role}` : ''}&q=${q}`)
-        .then(d => setUsers(d.users))
-        .catch(console.error)
-        .finally(() => setLoading(false));
-    }
+    const qs = [role !== 'all' ? `role=${role}` : '', q ? `q=${q}` : ''].filter(Boolean).join('&');
+    api.get<{ users: any[] }>(`/api/admin/users?${qs}`)
+      .then(d => setUsers(d.users))
+      .catch(console.error)
+      .finally(() => setLoading(false));
   };
 
   useEffect(load, [role]);
 
   const updateStatus = async (id: string, newStatus: string) => {
     try {
-      if (USE_MOCK) {
-        setUsers(u => u.map(x => x._id === id ? { ...x, status: newStatus } : x));
-      } else {
-        await api.patch(`/api/admin/users/${id}/status`, { status: newStatus });
-        load();
-      }
+      await api.patch(`/api/admin/users/${id}/status`, { status: newStatus });
+      load();
     } catch (err: any) {
       alert(err.message);
     }
@@ -129,29 +114,20 @@ export const UsersPage: React.FC = () => {
                     <td className="px-5 py-4">
                       <div className="flex items-center gap-1">
                         {u.status !== 'active' && (
-                          <button
-                            onClick={() => updateStatus(u.id || u._id, 'active')}
-                            className="p-1.5 rounded-lg bg-emerald-50 text-emerald-600 hover:bg-emerald-100"
-                            title="Activate"
-                          >
+                          <button onClick={() => updateStatus(u.id || u._id, 'active')}
+                            className="p-1.5 rounded-lg bg-emerald-50 text-emerald-600 hover:bg-emerald-100" title="Activate">
                             <CheckCircle className="w-4 h-4" />
                           </button>
                         )}
                         {u.status !== 'suspended' && (
-                          <button
-                            onClick={() => updateStatus(u.id || u._id, 'suspended')}
-                            className="p-1.5 rounded-lg bg-amber-50 text-amber-600 hover:bg-amber-100"
-                            title="Suspend"
-                          >
+                          <button onClick={() => updateStatus(u.id || u._id, 'suspended')}
+                            className="p-1.5 rounded-lg bg-amber-50 text-amber-600 hover:bg-amber-100" title="Suspend">
                             <UserX className="w-4 h-4" />
                           </button>
                         )}
                         {u.status !== 'blocked' && (
-                          <button
-                            onClick={() => updateStatus(u.id || u._id, 'blocked')}
-                            className="p-1.5 rounded-lg bg-red-50 text-red-600 hover:bg-red-100"
-                            title="Block"
-                          >
+                          <button onClick={() => updateStatus(u.id || u._id, 'blocked')}
+                            className="p-1.5 rounded-lg bg-red-50 text-red-600 hover:bg-red-100" title="Block">
                             <Ban className="w-4 h-4" />
                           </button>
                         )}

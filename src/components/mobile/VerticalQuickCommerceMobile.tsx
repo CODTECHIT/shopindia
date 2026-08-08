@@ -41,19 +41,26 @@ export const VerticalQuickCommerceMobile: React.FC = () => {
         <span className="text-[8px] uppercase tracking-wider bg-brand-green text-white px-2 py-0.5 rounded-full font-black">10 MINS</span>
       </div>
 
-      {/* Horizontal Scroll Categories Tag List */}
-      <div className="w-full flex gap-2 overflow-x-auto py-1 no-scrollbar select-none">
+      {/* Category Grid */}
+      <div className="w-full grid grid-cols-4 gap-2 py-2 select-none">
         {quickCategories.map(cat => (
           <button
             key={cat.id}
             onClick={() => setActiveCat(cat.id)}
-            className={`px-4.5 py-2.5 rounded-full font-bold text-[10px] whitespace-nowrap tracking-wide border transition-all font-heading ${
+            className={`flex flex-col items-center gap-1.5 p-2 rounded-xl border transition-all ${
               activeCat === cat.id
-                ? 'bg-brand-green text-white border-brand-green shadow-soft font-black'
-                : 'bg-white text-brand-slate border-brand-border hover:text-brand-graphite'
+                ? 'bg-[#ECFDF5] border-brand-green shadow-soft'
+                : 'bg-white border-brand-border hover:border-brand-green/30'
             }`}
           >
-            {cat.name}
+            <div className="w-12 h-12 rounded-full overflow-hidden bg-brand-elevated border border-black/5 shadow-sm">
+              <img src={cat.image || undefined} alt={cat.name} className="w-full h-full object-cover" fetchPriority="high" />
+            </div>
+            <span className={`text-center text-[9px] leading-tight font-heading ${
+              activeCat === cat.id ? 'font-black text-brand-green' : 'font-bold text-brand-slate'
+            }`}>
+              {cat.name}
+            </span>
           </button>
         ))}
       </div>
@@ -69,7 +76,7 @@ export const VerticalQuickCommerceMobile: React.FC = () => {
             <div
               key={product.id}
               onClick={() => navigateTo('detail', product.id)}
-              className="bg-white border border-brand-border rounded-[20px] p-3 flex flex-col relative h-full cursor-pointer hover:shadow-soft"
+              className="bg-white border border-brand-border/80 rounded-[16px] p-2.5 flex flex-col relative h-full cursor-pointer hover:shadow-soft shadow-sm active:scale-[0.98] transition-transform"
             >
               {/* Wishlist Button */}
               <motion.button
@@ -88,8 +95,8 @@ export const VerticalQuickCommerceMobile: React.FC = () => {
               )}
 
               {/* Product Image */}
-              <div className="w-full aspect-square flex items-center justify-center mb-2.5 bg-brand-elevated rounded-[20px] overflow-hidden p-1.5 shadow-soft border border-brand-border/40">
-                <img src={product.image} alt={product.title} className="max-h-full max-w-full object-contain rounded" />
+              <div className="w-full aspect-[5/4] flex items-center justify-center mb-2 bg-white rounded-[16px] overflow-hidden p-1 shadow-sm border border-brand-border/60">
+                <img src={product.image} alt={product.title} className="max-h-full max-w-full object-contain rounded" loading="lazy" decoding="async" />
               </div>
 
               {/* Title & Info */}

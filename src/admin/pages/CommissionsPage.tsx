@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { api, MOCK, USE_MOCK } from '../../lib/api';
+import { api } from '../../lib/api';
 import { Save } from 'lucide-react';
 
 export const CommissionsPage: React.FC = () => {
@@ -10,27 +10,18 @@ export const CommissionsPage: React.FC = () => {
 
   const load = () => {
     setLoading(true);
-    if (USE_MOCK) {
-      setVendors(MOCK.vendors);
-      setLoading(false);
-    } else {
-      api.get<any[]>('/api/admin/commissions')
-        .then(d => setVendors(d))
-        .catch(console.error)
-        .finally(() => setLoading(false));
-    }
+    api.get<any[]>('/api/admin/commissions')
+      .then(d => setVendors(d))
+      .catch(console.error)
+      .finally(() => setLoading(false));
   };
 
   useEffect(load, []);
 
   const saveRate = async (id: string) => {
     try {
-      if (USE_MOCK) {
-        setVendors(v => v.map(x => x._id === id ? { ...x, commissionRate: rate } : x));
-      } else {
-        await api.patch(`/api/admin/commissions/${id}`, { commissionRate: rate });
-        load();
-      }
+      await api.patch(`/api/admin/commissions/${id}`, { commissionRate: rate });
+      load();
       setEditingId(null);
     } catch (err: any) {
       alert(err.message);
@@ -62,8 +53,8 @@ export const CommissionsPage: React.FC = () => {
             ) : vendors.length === 0 ? (
               <tr><td colSpan={4} className="text-center py-12 text-gray-400">No active vendors found.</td></tr>
             ) : (
-              vendors.map(v => (
-                <tr key={v._id} className="hover:bg-gray-50/50">
+              vendors.map((v, i) => (
+                <tr key={v._id || v.id || i} className="hover:bg-gray-50/50">
                   <td className="px-5 py-4 font-semibold text-gray-900">{v.businessName}</td>
                   <td className="px-5 py-4 text-xs font-semibold capitalize text-emerald-700">{v.approvalStatus}</td>
                   <td className="px-5 py-4 font-numbers">

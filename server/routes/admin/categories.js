@@ -1,15 +1,32 @@
 const express = require('express');
+const multer = require('multer');
+const { uploadToS3 } = require('../../lib/s3');
 const prisma = require('../../lib/prisma');
 const { verifyToken } = require('../../middleware/auth');
 const { requireRole } = require('../../middleware/rbac');
 
 const router = express.Router();
+const upload = multer({ storage: multer.memoryStorage(), limits: { fileSize: 5 * 1024 * 1024 } });
 router.use(verifyToken);
 router.use(requireRole('super_admin', 'branch_manager'));
 
 function slugify(name) {
   return name.toLowerCase().trim().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '');
 }
+
+// POST /api/admin/categories/upload-image
+router.post('/upload-image', upload.single('image'), async (req, res) => {
+  try {
+    if (!req.file) return res.status(400).json({ error: 'No image provided' });
+    const result = await uploadToS3({
+      key: `categories/${Date.now()}-${req.file.originalname}`,
+      body: req.file.buffer,
+      contentType: req.file.mimetype,
+      isPrivate: false,
+    });
+    res.json({ imageUrl: result.url });
+  } catch (e) { res.status(500).json({ error: e.message }); }
+});
 
 // GET /api/admin/categories — list with product counts
 router.get('/', async (req, res) => {
@@ -27,6 +44,11 @@ router.post('/', async (req, res) => {
   try {
     const { name, vertical = 'shop', image, sortOrder = 0, slug } = req.body;
     if (!name) return res.status(400).json({ error: 'name is required' });
+    
+    // Check duplicate
+    const existing = await prisma.category.findFirst({ where: { name, vertical } });
+    if (existing) return res.status(409).json({ error: `Category '${name}' already exists in '${vertical}'` });
+
     const category = await prisma.category.create({
       data: {
         name,
@@ -47,6 +69,13 @@ router.post('/', async (req, res) => {
 router.patch('/:id', async (req, res) => {
   try {
     const { name, vertical, image, sortOrder, slug } = req.body;
+    
+    if (name) {
+      const checkVertical = vertical || (await prisma.category.findUnique({ where: { id: req.params.id } })).vertical;
+      const existing = await prisma.category.findFirst({ where: { name, vertical: checkVertical, id: { not: req.params.id } } });
+      if (existing) return res.status(409).json({ error: `Category '${name}' already exists in '${checkVertical}'` });
+    }
+
     const data = {};
     if (name !== undefined) data.name = name;
     if (vertical !== undefined) data.vertical = vertical;

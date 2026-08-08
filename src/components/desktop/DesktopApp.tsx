@@ -10,6 +10,7 @@ import { ProductDetailPage } from '../../pages/ProductDetail';
 import { CartPage } from '../../pages/Cart';
 import { OrdersPage } from '../../pages/Orders';
 import { ProfilePage } from '../../pages/Profile';
+import { DashboardInner } from '../../pages/dashboard/DashboardPortal';
 
 export const DesktopApp: React.FC = () => {
   const { currentVertical, currentPath } = useApp();
@@ -30,6 +31,8 @@ export const DesktopApp: React.FC = () => {
         return <OrdersPage />;
       case 'profile':
         return <ProfilePage />;
+      case 'dashboard':
+        return <DashboardInner />;
       default:
         return <VerticalShop />;
     }

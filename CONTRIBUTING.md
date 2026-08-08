@@ -23,4 +23,3 @@ npm run build
 ## What to Include in a PR
 
 - A clear description of the user-facing behavior change
-- Any schema/seed updates under `supabase/` if the data model changed

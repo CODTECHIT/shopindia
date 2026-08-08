@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { api, MOCK, USE_MOCK } from '../../lib/api';
+import { api } from '../../lib/api';
 
 export const VendorOrders: React.FC = () => {
   const [orders, setOrders] = useState<any[]>([]);
@@ -7,27 +7,18 @@ export const VendorOrders: React.FC = () => {
 
   const load = () => {
     setLoading(true);
-    if (USE_MOCK) {
-      setOrders(MOCK.vendorDashboard.recentOrders);
-      setLoading(false);
-    } else {
-      api.get<{ orders: any[] }>('/api/vendor/orders')
-        .then(d => setOrders(d.orders))
-        .catch(console.error)
-        .finally(() => setLoading(false));
-    }
+    api.get<{ orders: any[] }>('/api/vendor/orders')
+      .then(d => setOrders(d.orders))
+      .catch(console.error)
+      .finally(() => setLoading(false));
   };
 
   useEffect(load, []);
 
   const updateStatus = async (id: string, status: string) => {
     try {
-      if (USE_MOCK) {
-        setOrders(prev => prev.map(o => o._id === id ? { ...o, status } : o));
-      } else {
-        await api.patch(`/api/vendor/orders/${id}/status`, { status });
-        load();
-      }
+      await api.patch(`/api/vendor/orders/${id}/status`, { status });
+      load();
     } catch (err: any) {
       alert(err.message);
     }

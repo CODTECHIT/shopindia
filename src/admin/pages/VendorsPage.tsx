@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { api, MOCK, USE_MOCK } from '../../lib/api';
+import { api } from '../../lib/api';
 import { CheckCircle, XCircle, Ban, Search } from 'lucide-react';
 
 const STATUSES = ['all', 'pending', 'approved', 'rejected', 'suspended'];
@@ -29,12 +29,11 @@ export const VendorsPage: React.FC = () => {
 
   const load = () => {
     setLoading(true);
-    (USE_MOCK
-      ? Promise.resolve({ vendors: MOCK.vendors })
-      : api.get<{ vendors: any[] }>(`/api/admin/vendors?${filter !== 'all' ? `status=${filter}` : ''}&q=${q}`)
-    ).then(d => setVendors(d.vendors))
-     .catch(console.error)
-     .finally(() => setLoading(false));
+    const qs = [filter !== 'all' ? `status=${filter}` : '', q ? `q=${q}` : ''].filter(Boolean).join('&');
+    api.get<{ vendors: any[] }>(`/api/admin/vendors?${qs}`)
+      .then(d => setVendors(d.vendors))
+      .catch(console.error)
+      .finally(() => setLoading(false));
   };
 
   useEffect(load, [filter]);
@@ -42,12 +41,8 @@ export const VendorsPage: React.FC = () => {
   const approve = async (id: string, approvalStatus: string) => {
     setActionId(id);
     try {
-      if (USE_MOCK) {
-        setVendors(v => v.map(x => x._id === id ? { ...x, approvalStatus } : x));
-      } else {
-        await api.patch(`/api/admin/vendors/${id}/approval`, { approvalStatus, approvalNote: note });
-        load();
-      }
+      await api.patch(`/api/admin/vendors/${id}/approval`, { approvalStatus, approvalNote: note });
+      load();
     } catch (err: any) { alert(err.message); }
     finally { setActionId(null); setModal(null); setNote(''); }
   };

@@ -48,6 +48,8 @@ enum ProductStatus {
 
 enum OrderStatus {
   placed
+  pending
+  processing
   confirmed
   packing
   ready_to_ship
@@ -55,6 +57,9 @@ enum OrderStatus {
   in_transit
   delivered
   cancelled
+  returned
+  return_requested
+  exchange_requested
   refunded
 }
 
@@ -124,6 +129,17 @@ model User {
   branchStaffLink BranchStaff[]
   customerTickets Ticket[]        @relation("CustomerTickets")
   assignedTickets Ticket[]        @relation("AssignedTickets")
+  addresses       Address[]       @relation("CustomerAddresses")
+  paymentMethods  PaymentMethod[] @relation("CustomerPayments")
+  transactions    Transaction[]   @relation("CustomerTransactions")
+  rewards         Reward[]        @relation("CustomerRewards")
+  notifications   UserNotification[] @relation("CustomerNotifications")
+  activities      UserActivity[]  @relation("CustomerActivity")
+  reviews         Review[]        @relation("CustomerReviews")
+  cartItems       CartItem[]      @relation("CustomerCart")
+  wishlistItems   WishlistItem[]  @relation("CustomerWishlist")
+  cart            Cart?           @relation("CustomerCartOwner")
+  wishlist        Wishlist?       @relation("CustomerWishlistOwner")
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -212,6 +228,9 @@ model Product {
   variants   ProductVariant[]
   images     ProductImage[]
   orderItems OrderItem[]
+  reviews    Review[]
+  cartItems  CartItem[]
+  wishlistItems WishlistItem[]
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -282,6 +301,7 @@ model Order {
   items       OrderItem[]
   tickets     Ticket[]
   serviceJobs ServiceJob[]
+  transactions Transaction[] @relation("OrderTransactions")
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -301,6 +321,7 @@ model OrderItem {
   name      String
   price     Float
   quantity  Int
+  reviews   Review[]
 
   @@map("order_items")
 }
@@ -554,6 +575,86 @@ model ServiceJob {
 }
 
 
+model Review {
+  id         String   @id @default(uuid())
+  userId     String
+  user       User     @relation("CustomerReviews", fields: [userId], references: [id], onDelete: Cascade)
+  productId  String
+  product    Product  @relation(fields: [productId], references: [id], onDelete: Cascade)
+  orderItemId String?
+  orderItem  OrderItem? @relation(fields: [orderItemId], references: [id], onDelete: SetNull)
+
+  rating     Int
+  title      String?
+  body       String
+  images     String[] @default([])
+  isVerified Boolean  @default(false)
+
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  @@unique([userId, productId])
+  @@index([productId])
+  @@map("reviews")
+}
+
+model Cart {
+  id        String   @id @default(uuid())
+  userId    String   @unique
+  user      User     @relation("CustomerCartOwner", fields: [userId], references: [id], onDelete: Cascade)
+  items     CartItem[]
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@map("carts")
+}
+
+model CartItem {
+  id           String   @id @default(uuid())
+  cartId       String
+  cart         Cart     @relation(fields: [cartId], references: [id], onDelete: Cascade)
+  userId       String
+  user         User     @relation("CustomerCart", fields: [userId], references: [id], onDelete: Cascade)
+  productId    String
+  product      Product  @relation(fields: [productId], references: [id], onDelete: Cascade)
+  quantity     Int      @default(1)
+  savedForLater Boolean @default(false)
+
+  createdAt    DateTime @default(now())
+
+  @@unique([cartId, productId])
+  @@index([userId])
+  @@map("cart_items")
+}
+
+model Wishlist {
+  id        String        @id @default(uuid())
+  userId    String        @unique
+  user      User          @relation("CustomerWishlistOwner", fields: [userId], references: [id], onDelete: Cascade)
+  items     WishlistItem[]
+  createdAt DateTime      @default(now())
+  updatedAt DateTime      @updatedAt
+
+  @@map("wishlists")
+}
+
+model WishlistItem {
+  id          String    @id @default(uuid())
+  wishlistId  String
+  wishlist    Wishlist  @relation(fields: [wishlistId], references: [id], onDelete: Cascade)
+  userId      String
+  user        User      @relation("CustomerWishlist", fields: [userId], references: [id], onDelete: Cascade)
+  productId   String
+  product     Product   @relation(fields: [productId], references: [id], onDelete: Cascade)
+  priceDropAlert Boolean @default(false)
+
+  createdAt   DateTime  @default(now())
+
+  @@unique([wishlistId, productId])
+  @@index([userId])
+  @@map("wishlist_items")
+}
+
 model Category {
   id        String   @id @default(uuid())
   name      String
@@ -569,4 +670,144 @@ model Category {
   updatedAt DateTime @updatedAt
 
   @@map("categories")
+}
+
+// ─── Customer Account Dashboard Models ───────────────────────────────────────
+
+enum AddressType {
+  home
+  work
+  other
+}
+
+model Address {
+  id          String     @id @default(uuid())
+  userId      String
+  user        User       @relation("CustomerAddresses", fields: [userId], references: [id], onDelete: Cascade)
+
+  label       String     @default("Home")
+  type        AddressType @default(home)
+  fullName    String
+  mobile      String
+  line1       String
+  line2       String?
+  city        String
+  state       String
+  country     String     @default("India")
+  pincode     String
+  landmark    String?
+  isDefault   Boolean    @default(false)
+  isActive    Boolean    @default(true)
+
+  createdAt   DateTime   @default(now())
+  updatedAt   DateTime   @updatedAt
+
+  @@index([userId])
+  @@map("addresses")
+}
+
+enum PaymentMethodType {
+  UPI
+  CREDIT_CARD
+  DEBIT_CARD
+  NET_BANKING
+}
+
+model PaymentMethod {
+  id            String            @id @default(uuid())
+  userId        String
+  user          User              @relation("CustomerPayments", fields: [userId], references: [id], onDelete: Cascade)
+
+  type          PaymentMethodType
+  label         String
+  // UPI
+  upiId         String?
+  // Cards
+  last4         String?
+  cardBrand     String?
+  expiry        String?
+  // Net banking
+  bankName      String?
+  isDefault     Boolean           @default(false)
+  transactions  Transaction[]
+
+  createdAt     DateTime          @default(now())
+  updatedAt     DateTime          @updatedAt
+
+  @@index([userId])
+  @@map("payment_methods")
+}
+
+model Transaction {
+  id          String        @id @default(uuid())
+  userId      String
+  user        User          @relation("CustomerTransactions", fields: [userId], references: [id], onDelete: Cascade)
+  orderId     String?
+  order       Order?        @relation("OrderTransactions", fields: [orderId], references: [id])
+  type        String        // 'payment' | 'refund' | 'cashback'
+  methodId    String?
+  method      PaymentMethod? @relation(fields: [methodId], references: [id], onDelete: SetNull)
+  amount      Float
+  status      PaymentStatus @default(pending)
+  gatewayRef  String?
+
+  createdAt   DateTime      @default(now())
+
+  @@index([userId])
+  @@map("transactions")
+}
+
+model Reward {
+  id            String  @id @default(uuid())
+  userId        String
+  user          User    @relation("CustomerRewards", fields: [userId], references: [id], onDelete: Cascade)
+  points        Int     @default(0)
+  source        String  // 'order' | 'review' | 'referral' | 'signup'
+  metadata      String? // JSON-ish description
+  expiresAt     DateTime?
+
+  createdAt     DateTime @default(now())
+
+  @@index([userId])
+  @@map("rewards")
+}
+
+enum NotificationChannel {
+  IN_APP
+  EMAIL
+  SMS
+  PUSH
+}
+
+model UserNotification {
+  id          String       @id @default(uuid())
+  userId      String
+  user        User         @relation("CustomerNotifications", fields: [userId], references: [id], onDelete: Cascade)
+  category    String       // 'order' | 'shipping' | 'promotion' | 'coupon' | 'price_drop' | 'stock'
+  title       String
+  message     String
+  channel     NotificationChannel @default(IN_APP)
+  isRead      Boolean      @default(false)
+  link        String?
+
+  createdAt   DateTime     @default(now())
+
+  @@index([userId, isRead])
+  @@map("user_notifications")
+}
+
+model UserActivity {
+  id        String   @id @default(uuid())
+  userId    String
+  user      User     @relation("CustomerActivity", fields: [userId], references: [id], onDelete: Cascade)
+  event     String   // PRODUCT_VIEWED | ADDED_TO_CART | ... 
+  entityId  String?
+  entityType String?
+  metadata  String?  // JSON string
+  sessionId String?
+
+  createdAt DateTime @default(now())
+
+  @@index([userId, createdAt])
+  @@map("user_activities")
 }

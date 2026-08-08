@@ -2,20 +2,21 @@ import React, { useState } from 'react';
 import { useApp } from '../../context/AppContext';
 import { useProducts } from '../../hooks/useProducts';
 import { useCategories } from '../../hooks/useCategories';
-import { Plus, Minus, Clock, ShoppingCart, ArrowRight, Heart } from 'lucide-react';
+import { Plus, Minus, Clock, ShoppingCart, ArrowRight, Heart, LayoutGrid } from 'lucide-react';
 import { motion } from 'framer-motion';
 
 export const VerticalQuickCommerce: React.FC = () => {
   const { cart, addToCart, updateQuantity, navigateTo } = useApp();
   const { products } = useProducts();
   const { categories } = useCategories();
-  const [selectedCatId, setSelectedCatId] = useState<string>('q-fruits');
+  const [selectedCatId, setSelectedCatId] = useState<string>('');
   const [wishlist, setWishlist] = useState<Record<string, boolean>>({});
 
   // Filter 10-Min quick commerce items
   const quickProducts = products.filter(p => p.vertical === 'quick');
   const quickCategories = categories.filter(c => c.vertical === 'quick');
-  const activeProducts = quickProducts.filter(p => !p.category || p.category === selectedCatId);
+  
+  const activeProducts = selectedCatId === '' ? quickProducts : quickProducts.filter(p => p.category === selectedCatId);
 
   // Cart matching helper
   const getCartQty = (id: string) => {
@@ -46,13 +47,26 @@ export const VerticalQuickCommerce: React.FC = () => {
         </div>
       </div>
 
-      <div className="max-w-7xl mx-auto w-full px-12 py-8 flex gap-6">
+      <div className="max-w-[1440px] mx-auto w-full px-8 py-8 flex gap-6">
         {/* Left Column: Vertical Category Navigation Menu (Stripe/Blinkit style) */}
         <aside className="w-[240px] flex flex-col bg-white border border-brand-border rounded-card shadow-premium shrink-0 h-fit sticky top-[130px]">
           <span className="p-4 border-b border-brand-border font-extrabold text-xs uppercase tracking-wider text-brand-green font-heading">
             Categories
           </span>
-          <div className="flex flex-col py-2 max-h-[500px] overflow-y-auto no-scrollbar">
+          <div className="flex flex-col py-2">
+            <button
+              onClick={() => setSelectedCatId('')}
+              className={`flex items-center gap-3.5 px-4.5 py-3.5 text-left transition-all border-l-4 font-bold text-xs ${
+                selectedCatId === '' 
+                ? 'bg-green-50/20 text-brand-green border-brand-green font-extrabold' 
+                : 'border-transparent hover:bg-slate-50/50 text-brand-slate hover:text-brand-graphite'
+              }`}
+            >
+              <div className="w-8 h-8 rounded-full bg-brand-green/10 border border-brand-green/20 overflow-hidden shrink-0 flex items-center justify-center p-1.5">
+                <LayoutGrid size={16} className="text-brand-green" />
+              </div>
+              <span className="font-heading text-xs">All Categories</span>
+            </button>
             {quickCategories.map(cat => (
               <button
                 key={cat.id}
@@ -64,7 +78,7 @@ export const VerticalQuickCommerce: React.FC = () => {
                 }`}
               >
                 <div className="w-8 h-8 rounded-full bg-slate-50 overflow-hidden shrink-0 flex items-center justify-center border border-brand-border">
-                  <img src={cat.image ?? ''} alt={cat.name} className="w-full h-full object-cover" />
+                  <img src={cat.image || undefined} alt={cat.name} className="w-full h-full object-cover" />
                 </div>
                 <span className="font-heading">{cat.name}</span>
               </button>
@@ -87,7 +101,7 @@ export const VerticalQuickCommerce: React.FC = () => {
           </div>
 
           {/* Product Grid with design system cards (20px curves) */}
-          <div className="grid grid-cols-4 gap-4.5">
+          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4">
             {activeProducts.map(product => {
               const qty = getCartQty(product.id);
               const discount = Math.round(((product.originalPrice - product.price) / product.originalPrice) * 100);
@@ -96,7 +110,7 @@ export const VerticalQuickCommerce: React.FC = () => {
               return (
                 <div
                   key={product.id}
-                  className="bg-white border border-brand-border rounded-card p-4.5 flex flex-col relative hover:shadow-hover-lift hover:-translate-y-1 transition-all duration-350 group h-full cursor-pointer"
+                  className="bg-white border border-brand-border/60 rounded-card p-3.5 flex flex-col relative hover:shadow-md hover:border-brand-green/40 hover:-translate-y-1 transition-all duration-350 group h-full cursor-pointer"
                   onClick={() => navigateTo('detail', product.id)}
                 >
                   {/* Wishlist Button */}
@@ -116,7 +130,7 @@ export const VerticalQuickCommerce: React.FC = () => {
                   )}
 
                   {/* Image container */}
-                  <div className="w-full aspect-square flex items-center justify-center mb-4 bg-brand-elevated rounded-card border border-brand-border/40 p-2 overflow-hidden shadow-soft">
+                  <div className="w-full aspect-square flex items-center justify-center mb-3 bg-white rounded-card overflow-hidden">
                     <img src={product.image} alt={product.title} className="max-h-full max-w-full object-contain group-hover:scale-105 transition-transform duration-300" />
                   </div>
 

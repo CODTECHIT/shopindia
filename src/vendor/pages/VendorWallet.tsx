@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { api, USE_MOCK } from '../../lib/api';
+import { api } from '../../lib/api';
 import { ArrowDownRight } from 'lucide-react';
 
 export const VendorWallet: React.FC = () => {
@@ -10,34 +10,18 @@ export const VendorWallet: React.FC = () => {
 
   const load = () => {
     setLoading(true);
-    if (USE_MOCK) {
-      setWallet({
-        walletBalance: 22400,
-        commissionRate: 10,
-        grossRevenue: 284760,
-        totalCommission: 28476,
-        netEarnings: 256284,
-        bankDetails: { bankName: 'HDFC Bank', accountNumber: 'XXXXXX4920', ifsc: 'HDFC0001234' },
-      });
-      setLoading(false);
-    } else {
-      api.get<any>('/api/vendor/wallet')
-        .then(d => setWallet(d))
-        .catch(console.error)
-        .finally(() => setLoading(false));
-    }
+    api.get<any>('/api/vendor/wallet')
+      .then(d => setWallet(d))
+      .catch(console.error)
+      .finally(() => setLoading(false));
   };
 
   useEffect(load, []);
 
   const handleWithdraw = async () => {
     try {
-      if (USE_MOCK) {
-        setWallet((w: any) => ({ ...w, walletBalance: (w?.walletBalance || 0) - amount }));
-      } else {
-        await api.post('/api/vendor/wallet/withdraw', { amount });
-        load();
-      }
+      await api.post('/api/vendor/wallet/withdraw', { amount });
+      load();
       setWithdrawModal(false);
     } catch (err: any) {
       alert(err.message);

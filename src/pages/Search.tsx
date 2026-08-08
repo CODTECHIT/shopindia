@@ -1,6 +1,6 @@
 import React, { useState, useMemo } from 'react';
 import { useApp } from '../context/AppContext';
-import { PRODUCTS } from '../data/mockData';
+import { useProducts } from '../hooks/useProducts';
 import { useIsMobile } from '../hooks/useMediaQuery';
 import { Search, Star, Filter, ArrowUpDown, Heart } from 'lucide-react';
 import { motion } from 'framer-motion';
@@ -8,6 +8,7 @@ import { motion } from 'framer-motion';
 export const SearchPage: React.FC = () => {
   const { currentVertical, searchQuery, setSearchQuery, navigateTo } = useApp();
   const isMobile = useIsMobile();
+  const { products: allProducts, loading } = useProducts();
   const [wishlist, setWishlist] = useState<Record<string, boolean>>({});
 
   // Filters state
@@ -19,7 +20,7 @@ export const SearchPage: React.FC = () => {
 
   // Filter products
   const searchedProducts = useMemo(() => {
-    let filtered = PRODUCTS.filter(p => p.vertical === currentVertical);
+    let filtered = allProducts.filter(p => p.vertical === currentVertical);
 
     // Apply search query
     if (searchQuery.trim()) {
@@ -51,12 +52,12 @@ export const SearchPage: React.FC = () => {
     }
 
     return filtered;
-  }, [currentVertical, searchQuery, selectedBrand, minRating, maxPrice, sortBy]);
+  }, [allProducts, currentVertical, searchQuery, selectedBrand, minRating, maxPrice, sortBy]);
 
   const brands = useMemo(() => {
-    const allBrands = PRODUCTS.filter(p => p.vertical === currentVertical).map(p => p.brand);
+    const allBrands = allProducts.filter(p => p.vertical === currentVertical).map(p => p.brand);
     return Array.from(new Set(allBrands));
-  }, [currentVertical]);
+  }, [allProducts, currentVertical]);
 
   const toggleWishlist = (productId: string, e: React.MouseEvent) => {
     e.stopPropagation();
@@ -176,7 +177,11 @@ export const SearchPage: React.FC = () => {
             </span>
           </div>
 
-          {searchedProducts.length === 0 ? (
+          {loading ? (
+            <div className="w-full py-16 flex justify-center items-center">
+              <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-brand-blue"></div>
+            </div>
+          ) : searchedProducts.length === 0 ? (
             <div className="w-full py-16 bg-white border border-brand-border rounded-card flex flex-col items-center justify-center text-center p-6 shadow-premium">
               <span className="text-4xl mb-4">🔍</span>
               <h3 className="text-sm font-extrabold text-brand-graphite mb-1.5 font-heading">No matches found</h3>
@@ -284,7 +289,11 @@ export const SearchPage: React.FC = () => {
           </button>
         </div>
 
-        {searchedProducts.length === 0 ? (
+        {loading ? (
+          <div className="w-full py-16 flex justify-center items-center">
+            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-brand-blue"></div>
+          </div>
+        ) : searchedProducts.length === 0 ? (
           <div className="w-full py-16 bg-white border border-brand-border rounded-[20px] flex flex-col items-center justify-center text-center p-6 shadow-soft mt-2">
             <span className="text-3xl mb-4">🔍</span>
             <h3 className="text-xs font-extrabold text-brand-graphite mb-1.5 font-heading">No matches found</h3>
@@ -410,3 +419,4 @@ export const SearchPage: React.FC = () => {
 
   return isMobile ? renderMobile() : renderDesktop();
 };
+

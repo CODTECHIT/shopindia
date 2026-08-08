@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { api, USE_MOCK } from '../../lib/api';
+import { api } from '../../lib/api';
 import { Tag, Plus, CheckCircle, Ban } from 'lucide-react';
 
 export const OffersPage: React.FC = () => {
@@ -15,17 +15,10 @@ export const OffersPage: React.FC = () => {
 
   const load = () => {
     setLoading(true);
-    if (USE_MOCK) {
-      setCoupons([
-        { id: '1', code: 'WELCOME50', discountType: 'PERCENTAGE', discountValue: 50, maxDiscount: 100, minOrderValue: 200, validUntil: '2026-12-31', usedCount: 15, usageLimit: 100, isActive: true }
-      ]);
-      setLoading(false);
-    } else {
-      api.get<{ coupons: any[] }>('/api/admin/offers')
-        .then(d => setCoupons(d.coupons))
-        .catch(console.error)
-        .finally(() => setLoading(false));
-    }
+    api.get<{ coupons: any[] }>('/api/admin/offers')
+      .then(d => setCoupons(d.coupons))
+      .catch(console.error)
+      .finally(() => setLoading(false));
   };
 
   useEffect(load, []);
@@ -33,7 +26,6 @@ export const OffersPage: React.FC = () => {
   const handleCreate = async (e: React.FormEvent) => {
     e.preventDefault();
     try {
-      if (USE_MOCK) return alert("Mock create!");
       await api.post('/api/admin/offers', form);
       setShowForm(false);
       load();
@@ -41,7 +33,6 @@ export const OffersPage: React.FC = () => {
   };
 
   const toggleStatus = async (id: string) => {
-    if (USE_MOCK) return alert("Mock toggle!");
     try {
       await api.patch(`/api/admin/offers/${id}/toggle`, {});
       load();

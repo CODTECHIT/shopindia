@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { api, MOCK, USE_MOCK } from '../../lib/api';
+import { api } from '../../lib/api';
 import { Building2, Plus, MapPin, User } from 'lucide-react';
 
 export const BranchesPage: React.FC = () => {
@@ -12,15 +12,10 @@ export const BranchesPage: React.FC = () => {
 
   const load = () => {
     setLoading(true);
-    if (USE_MOCK) {
-      setBranches(MOCK.branches);
-      setLoading(false);
-    } else {
-      api.get<any[]>('/api/admin/branches')
-        .then(d => setBranches(d))
-        .catch(console.error)
-        .finally(() => setLoading(false));
-    }
+    api.get<any[]>('/api/admin/branches')
+      .then(d => setBranches(d))
+      .catch(console.error)
+      .finally(() => setLoading(false));
   };
 
   useEffect(load, []);
@@ -28,12 +23,8 @@ export const BranchesPage: React.FC = () => {
   const createBranch = async (e: React.FormEvent) => {
     e.preventDefault();
     try {
-      if (USE_MOCK) {
-        setBranches(b => [...b, { _id: 'b' + Date.now(), name, code, city, managerId: { name: 'Unassigned' }, isActive: true }]);
-      } else {
-        await api.post('/api/admin/branches', { name, code, address: { city } });
-        load();
-      }
+      await api.post('/api/admin/branches', { name, code, address: { city } });
+      load();
       setModal(false); setName(''); setCode(''); setCity('');
     } catch (err: any) {
       alert(err.message);

@@ -1,5 +1,4 @@
 import { useState, useEffect } from 'react';
-import { CATEGORIES } from '../data/mockData';
 
 export interface ApiCategory {
   id: string;
@@ -34,20 +33,7 @@ export const useCategories = () => {
         setError(null);
       } catch (err: any) {
         if (!active) return;
-        console.error('Error fetching categories, using mock:', err.message);
-        setError(err.message);
-        setCategories(
-          CATEGORIES.map((c) => ({
-            id: c.id,
-            name: c.name,
-            slug: c.id,
-            vertical: c.vertical,
-            image: c.image,
-            sortOrder: 0,
-            isActive: true,
-            productCount: 0,
-          })),
-        );
+        setCategories([]);
       } finally {
         if (active) setLoading(false);
       }

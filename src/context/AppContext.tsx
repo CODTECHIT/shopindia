@@ -1,12 +1,13 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
-import type { Product } from '../data/mockData';
+import type { Product } from '../data/types';
 
 const RAW_API = import.meta.env.VITE_API_URL || 'http://localhost:5001';
 const API_BASE = RAW_API.replace(/\/api\/?$/, '').replace(/\/$/, '');
+import { api } from '../lib/api';
 import { getCustomerToken } from '../lib/customerAuth';
 
 export type VerticalType = 'shop' | 'quick' | 'services';
-export type PathType = 'home' | 'search' | 'detail' | 'cart' | 'orders' | 'profile';
+export type PathType = 'home' | 'search' | 'detail' | 'cart' | 'orders' | 'profile' | 'dashboard';
 
 export interface OrderItem {
   product: Product;
@@ -44,15 +45,25 @@ interface AppContextType {
   clearCart: () => void;
   getCartTotal: () => number;
   orders: Order[];
-  placeOrder: () => void;
+  placeOrder: (payload: { addressId: string; paymentMethodId: string; items: any[]; total: number }) => Promise<void>;
+  cancelOrder: (orderId: string) => Promise<void>;
+  updateOrderStatus: (orderId: string, status: string) => Promise<void>;
 }
 
 const AppContext = createContext<AppContextType | undefined>(undefined);
 
 export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   // Navigation states
-  const [currentPath, setCurrentPath] = useState<PathType>('home');
-  const [history, setHistory] = useState<PathType[]>(['home']);
+  const [currentPath, setCurrentPath] = useState<PathType>(() => {
+    const h = window.location.hash;
+    if (h.startsWith('#/dashboard') || h.startsWith('#/account')) return 'dashboard';
+    if (h.startsWith('#/profile')) return 'profile';
+    if (h.startsWith('#/orders')) return 'orders';
+    if (h.startsWith('#/cart')) return 'cart';
+    if (h.startsWith('#/search')) return 'search';
+    return 'home';
+  });
+  const [history, setHistory] = useState<PathType[]>([currentPath]);
   const [selectedProductId, setSelectedProductId] = useState<string | null>(null);
   const [searchQuery, setSearchQuery] = useState<string>('');
 
@@ -62,27 +73,43 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   // Location
   const [location, setLocation] = useState<string>('Home - Flat 302, MG Road, Bengaluru');
 
-  // Cart (Persist in LocalStorage)
-  const [cart, setCart] = useState<OrderItem[]>(() => {
-    const savedCart = localStorage.getItem('shopindia_cart');
-    return savedCart ? JSON.parse(savedCart) : [];
-  });
+  // Cart
+  const [cart, setCart] = useState<OrderItem[]>([]);
 
-  // Orders (Persist in LocalStorage)
-  const [orders, setOrders] = useState<Order[]>(() => {
-    const savedOrders = localStorage.getItem('shopindia_orders');
-    return savedOrders ? JSON.parse(savedOrders) : [];
-  });
+  // Orders
+  const [orders, setOrders] = useState<Order[]>([]);
 
-  // Save Cart to LocalStorage
+  // Fetch initial data from API
   useEffect(() => {
-    localStorage.setItem('shopindia_cart', JSON.stringify(cart));
-  }, [cart]);
+    const fetchAppData = async () => {
+      const token = getCustomerToken();
+      if (!token) return;
+      try {
+        const [cartRes, ordersRes] = await Promise.allSettled([
+          api.get<{ cart: OrderItem[] }>('/api/cart').catch(() => null),
+          api.get<{ orders: Order[] }>('/api/orders').catch(() => null)
+        ]);
 
-  // Save Orders to LocalStorage
-  useEffect(() => {
-    localStorage.setItem('shopindia_orders', JSON.stringify(orders));
-  }, [orders]);
+        if (cartRes.status === 'fulfilled' && cartRes.value?.cart) setCart(cartRes.value.cart);
+        if (ordersRes.status === 'fulfilled' && ordersRes.value?.orders) setOrders(ordersRes.value.orders);
+      } catch (err) {
+        console.error('Failed to fetch App data', err);
+      }
+    };
+    fetchAppData();
+    
+    const handleHash = () => {
+      const h = window.location.hash;
+      if (h.startsWith('#/dashboard') || h.startsWith('#/account')) setCurrentPath('dashboard');
+      else if (h.startsWith('#/profile')) setCurrentPath('profile');
+      else if (h.startsWith('#/orders')) setCurrentPath('orders');
+      else if (h.startsWith('#/cart')) setCurrentPath('cart');
+      else if (h.startsWith('#/search')) setCurrentPath('search');
+      else if (h === '' || h === '#/') setCurrentPath('home');
+    };
+    window.addEventListener('hashchange', handleHash);
+    return () => window.removeEventListener('hashchange', handleHash);
+  }, []);
 
   // Handle live order status simulation for 10-Min and Services
   useEffect(() => {
@@ -121,6 +148,11 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     }
     setHistory(prev => [...prev, path]);
     setCurrentPath(path);
+    if (path !== 'detail' && path !== 'home') {
+      window.location.hash = `#/${path}`;
+    } else if (path === 'home') {
+      window.location.hash = '';
+    }
   };
 
   const goBack = () => {
@@ -179,70 +211,53 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   };
 
   // Order placement (persists to the backend API)
-  const placeOrder = async () => {
-    if (cart.length === 0) return;
-
-    // Estimate delivery time depending on current vertical
-    let deliveryTimeEstimate = '';
-    if (currentVertical === 'quick') {
-      deliveryTimeEstimate = '10 Mins';
-    } else if (currentVertical === 'services') {
-      deliveryTimeEstimate = 'Tomorrow at 10 AM';
-    } else {
-      deliveryTimeEstimate = 'Tomorrow, by 12 PM';
+  const placeOrder = async (payload: { addressId: string; paymentMethodId: string; items: any[]; total: number }) => {
+    try {
+      await api.post('/api/orders', payload);
+      // Fetch orders again to get the new order
+      const res = await api.get<{ orders: Order[] }>('/api/customer/orders');
+      if (res.orders) setOrders(res.orders);
+      clearCart();
+      navigateTo('orders');
+    } catch (err) {
+      console.error('Failed to place order', err);
+      throw err;
     }
+  };
 
-    const payload = {
-      items: cart.map((item) => ({
-        productId: item.product.id,
-        name: item.product.title,
-        price: item.product.price,
-        quantity: item.quantity,
-      })),
-      vertical: currentVertical,
-      location,
-      paymentMethod: 'COD',
-    };
-
+  const cancelOrder = async (orderId: string) => {
     try {
       const token = getCustomerToken();
-      const res = await fetch(`${API_BASE}/api/orders`, {
+      const res = await fetch(`${API_BASE}/api/orders/${orderId}/cancel`, {
         method: 'POST',
+        headers: { ...(token ? { Authorization: `Bearer ${token}` } : {}) },
+      });
+      if (!res.ok) throw new Error('Cancel failed');
+      
+      setOrders(prev => prev.map(o => o.id === orderId ? { ...o, status: 'cancelled' } : o));
+    } catch (err) {
+      console.error(err);
+      throw err;
+    }
+  };
+
+  const updateOrderStatus = async (orderId: string, status: string) => {
+    try {
+      const token = getCustomerToken();
+      const res = await fetch(`${API_BASE}/api/orders/${orderId}/status`, {
+        method: 'PUT',
         headers: {
           'Content-Type': 'application/json',
           ...(token ? { Authorization: `Bearer ${token}` } : {}),
         },
-        body: JSON.stringify(payload),
+        body: JSON.stringify({ status })
       });
-      if (!res.ok) {
-        const body = await res.json().catch(() => ({}));
-        throw new Error(body.error || `HTTP ${res.status}`);
-      }
-      const data = await res.json();
-
-      const newOrder: Order = {
-        id: data.orderNumber,
-        date: new Date(data.createdAt).toLocaleDateString('en-IN', {
-          year: 'numeric',
-          month: 'short',
-          day: 'numeric',
-          hour: '2-digit',
-          minute: '2-digit'
-        }),
-        items: [...cart],
-        total: data.total,
-        vertical: currentVertical,
-        status: 'placed',
-        deliveryTimeEstimate,
-        location
-      };
-
-      setOrders(prev => [newOrder, ...prev]);
-      clearCart();
-      navigateTo('orders');
-    } catch (err: any) {
-      console.error('Order placement failed:', err.message);
-      alert('Could not place order. Please try again.');
+      if (!res.ok) throw new Error('Update failed');
+      
+      setOrders(prev => prev.map(o => o.id === orderId ? { ...o, status: status as any } : o));
+    } catch (err) {
+      console.error(err);
+      throw err;
     }
   };
 
@@ -268,7 +283,9 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         clearCart,
         getCartTotal,
         orders,
-        placeOrder
+        placeOrder,
+        cancelOrder,
+        updateOrderStatus
       }}
     >
       {children}
@@ -283,3 +300,4 @@ export const useApp = () => {
   }
   return context;
 };
+

@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { api, USE_MOCK } from '../../lib/api';
+import { api } from '../../lib/api';
 import { Search, Trash2 } from 'lucide-react';
 
 export const ProductsPage: React.FC = () => {
@@ -9,19 +9,10 @@ export const ProductsPage: React.FC = () => {
 
   const load = () => {
     setLoading(true);
-    if (USE_MOCK) {
-      setProducts([
-        { _id: 'p1', name: 'Samsung 1.5T Split AC', basePrice: 34999, stock: 12, isOutOfStock: false, status: 'active', fulfillmentType: 'traditional', vendorId: { businessName: 'Demo Electronics' } },
-        { _id: 'p2', name: 'LG Window AC 1T', basePrice: 28499, stock: 0, isOutOfStock: true, status: 'active', fulfillmentType: 'traditional', vendorId: { businessName: 'CoolAir HVAC' } },
-        { _id: 'p3', name: 'AC Service Kit', basePrice: 799, stock: 50, isOutOfStock: false, status: 'inactive', fulfillmentType: 'quick_commerce', vendorId: { businessName: 'FreshMart Groceries' } },
-      ]);
-      setLoading(false);
-    } else {
-      api.get<{ products: any[] }>(`/api/admin/products?q=${q}`)
-        .then(d => setProducts(d.products))
-        .catch(console.error)
-        .finally(() => setLoading(false));
-    }
+    api.get<{ products: any[] }>(`/api/admin/products?q=${q}`)
+      .then(d => setProducts(d.products))
+      .catch(console.error)
+      .finally(() => setLoading(false));
   };
 
   useEffect(load, []);
@@ -29,12 +20,8 @@ export const ProductsPage: React.FC = () => {
   const handleDelete = async (id: string) => {
     if (!confirm('Are you sure you want to delete this product?')) return;
     try {
-      if (USE_MOCK) {
-        setProducts(p => p.filter(x => x._id !== id));
-      } else {
-        await api.delete(`/api/admin/products/${id}`);
-        load();
-      }
+      await api.delete(`/api/admin/products/${id}`);
+      load();
     } catch (err: any) {
       alert(err.message);
     }
@@ -46,8 +33,8 @@ export const ProductsPage: React.FC = () => {
     <div className="space-y-5">
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div>
-          <h1 className="text-2xl font-bold text-gray-900">Product & Catalog Management</h1>
-          <p className="text-sm text-gray-500">Monitor and curate marketplace catalog products (FR-05.3)</p>
+          <h1 className="text-2xl font-bold text-gray-900">Product &amp; Catalog Management</h1>
+          <p className="text-sm text-gray-500">Monitor and curate marketplace catalog products</p>
         </div>
       </div>
 
@@ -61,6 +48,9 @@ export const ProductsPage: React.FC = () => {
             className="w-full pl-9 pr-4 py-2.5 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-[#0F2C59]/20"
           />
         </div>
+        <button onClick={load} className="px-4 py-2.5 bg-[#0F2C59] text-white rounded-xl text-sm font-medium hover:bg-[#1a3d73] transition-colors">
+          Search
+        </button>
       </div>
 
       <div className="bg-white rounded-2xl border border-gray-100 shadow-premium overflow-hidden">
@@ -87,7 +77,7 @@ export const ProductsPage: React.FC = () => {
               filtered.map(p => (
                 <tr key={p.id || p._id} className="hover:bg-gray-50/50">
                   <td className="px-5 py-4 font-semibold text-gray-900">{p.name}</td>
-                  <td className="px-5 py-4 text-gray-600">{p.vendor?.businessName || p.vendorId?.businessName || '—'}</td>
+                  <td className="px-5 py-4 text-gray-600">{p.vendor?.businessName || '—'}</td>
                   <td className="px-5 py-4 font-numbers font-medium text-gray-900">₹{p.basePrice}</td>
                   <td className="px-5 py-4">
                     <span className={`text-xs font-semibold px-2 py-0.5 rounded ${p.isOutOfStock ? 'bg-red-50 text-red-600' : 'bg-emerald-50 text-emerald-600'}`}>

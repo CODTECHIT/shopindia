@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { api, MOCK, USE_MOCK } from '../../lib/api';
+import { api } from '../../lib/api';
 import { Plus, Edit2, Trash2 } from 'lucide-react';
 
 export const VendorProducts: React.FC = () => {
@@ -20,21 +20,15 @@ export const VendorProducts: React.FC = () => {
 
   const load = () => {
     setLoading(true);
-    if (USE_MOCK) {
-      setProducts(MOCK.vendorProducts);
-      setLoading(false);
-    } else {
-      api.get<{ products: any[] }>('/api/vendor/products')
-        .then(d => setProducts(d.products))
-        .catch(console.error)
-        .finally(() => setLoading(false));
-    }
+    api.get<{ products: any[] }>('/api/vendor/products')
+      .then(d => setProducts(d.products))
+      .catch(console.error)
+      .finally(() => setLoading(false));
   };
 
   useEffect(() => { load(); }, []);
 
   useEffect(() => {
-    if (USE_MOCK) return;
     api.get<any[]>('/api/categories')
       .then(setCategories)
       .catch(console.error);
@@ -61,19 +55,15 @@ export const VendorProducts: React.FC = () => {
 
   const toggleStock = async (id: string, currentOut: boolean) => {
     try {
-      if (USE_MOCK) {
-        setProducts(prev => prev.map(p => p._id === id ? { ...p, isOutOfStock: !currentOut } : p));
-      } else {
-        await api.patch(`/api/vendor/products/${id}/stock`, { isOutOfStock: !currentOut });
-        load();
-      }
+      await api.patch(`/api/vendor/products/${id}/stock`, { isOutOfStock: !currentOut });
+      load();
     } catch (err: any) {
       alert(err.message);
     }
   };
 
   const handleImageUpload = async (): Promise<string> => {
-    if (!imageFile || USE_MOCK) return '';
+    if (!imageFile) return '';
     setUploading(true);
     const formData = new FormData();
     formData.append('image', imageFile);
@@ -96,16 +86,10 @@ export const VendorProducts: React.FC = () => {
       const payload: any = { name, basePrice: price, stock, fulfillmentType };
       if (categoryId) payload.categoryId = categoryId;
       let imageUrl = '';
-      if (imageFile && !USE_MOCK) imageUrl = await handleImageUpload();
+      if (imageFile) imageUrl = await handleImageUpload();
       if (imageUrl) payload.images = [imageUrl];
 
-      if (USE_MOCK) {
-        if (editingId) {
-          setProducts(prev => prev.map(p => (p.id || p._id) === editingId ? { ...p, ...payload } : p));
-        } else {
-          setProducts(prev => [...prev, { _id: 'vp' + Date.now(), ...payload, isOutOfStock: false, status: 'active' }]);
-        }
-      } else if (editingId) {
+      if (editingId) {
         await api.put(`/api/vendor/products/${editingId}`, payload);
       } else {
         await api.post('/api/vendor/products', payload);
@@ -123,12 +107,8 @@ export const VendorProducts: React.FC = () => {
   const deleteProduct = async (id: string) => {
     if (!confirm('Delete this product? It will be removed from the catalog.')) return;
     try {
-      if (USE_MOCK) {
-        setProducts(prev => prev.filter(p => (p.id || p._id) !== id));
-      } else {
-        await api.delete(`/api/vendor/products/${id}`);
-        load();
-      }
+      await api.delete(`/api/vendor/products/${id}`);
+      load();
     } catch (err: any) {
       alert(err.message);
     }

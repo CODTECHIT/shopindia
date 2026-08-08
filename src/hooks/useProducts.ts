@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import type { Product } from '../data/mockData';
+import type { Product } from '../data/types';
 
 const RAW_BASE = import.meta.env.VITE_API_URL || 'http://localhost:5001';
 const BASE = RAW_BASE.replace(/\/api\/?$/, '').replace(/\/$/, '');

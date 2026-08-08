@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { api, MOCK, USE_MOCK } from '../../lib/api';
+import { api } from '../../lib/api';
 import { Award, ArrowUpRight } from 'lucide-react';
 
 export const VendorAnalytics: React.FC = () => {
@@ -7,15 +7,10 @@ export const VendorAnalytics: React.FC = () => {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    if (USE_MOCK) {
-      setData(MOCK.vendorAnalytics);
-      setLoading(false);
-    } else {
-      api.get<any>('/api/vendor/analytics/summary')
-        .then(d => setData(d))
-        .catch(console.error)
-        .finally(() => setLoading(false));
-    }
+    api.get<any>('/api/vendor/analytics/summary')
+      .then(d => setData(d))
+      .catch(console.error)
+      .finally(() => setLoading(false));
   }, []);
 
   if (loading) return <div className="h-40 skeleton-shimmer rounded-2xl" />;

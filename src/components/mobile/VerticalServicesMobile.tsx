@@ -47,15 +47,15 @@ export const VerticalServicesMobile: React.FC = () => {
   };
 
   return (
-    <div className="w-full flex flex-col gap-4 py-4 px-3 bg-[#1C1C1E] text-zinc-350 min-h-screen pb-16 select-none text-left font-sans">
+    <div className="w-full flex flex-col gap-4 py-4 px-3 bg-[#FAF9F6] text-brand-slate min-h-screen pb-16 select-none text-left font-sans">
       {/* Top Banner Box */}
-      <div className="bg-zinc-900 border border-zinc-800 rounded-[20px] p-4.5 text-left shadow-soft">
-        <span className="text-[8px] bg-services-gold/10 border border-services-gold/20 text-services-gold px-2.5 py-1 rounded-full font-black uppercase tracking-widest font-heading">
+      <div className="bg-white border border-brand-border rounded-[20px] p-4.5 text-left shadow-soft">
+        <span className="text-[8px] bg-amber-50 border border-amber-200 text-amber-700 px-2.5 py-1 rounded-full font-black uppercase tracking-widest font-heading">
           Certified Experts Only
         </span>
-        <h2 className="text-sm font-extrabold text-white mt-2 leading-snug font-heading">Professional Home Services</h2>
-        <div className="flex items-center gap-1.5 mt-2 text-[9px] text-zinc-400 font-bold">
-          <ShieldCheck size={12} className="text-services-gold" />
+        <h2 className="text-sm font-extrabold text-brand-graphite mt-2 leading-snug font-heading">Professional Home Services</h2>
+        <div className="flex items-center gap-1.5 mt-2 text-[9px] text-brand-slate font-bold">
+          <ShieldCheck size={12} className="text-amber-500" />
           <span>Equipped with sanitization and safety gear</span>
         </div>
       </div>
@@ -70,12 +70,12 @@ export const VerticalServicesMobile: React.FC = () => {
               selectedCategory === cat.id ? 'scale-105 font-bold' : ''
             }`}
           >
-            <div className={`w-11 h-11 rounded-full border overflow-hidden mb-1 flex items-center justify-center bg-zinc-900 transition-all shadow-soft ${
-              selectedCategory === cat.id ? 'border-services-gold' : 'border-zinc-800'
+            <div className={`w-11 h-11 rounded-full border overflow-hidden mb-1 flex items-center justify-center bg-white transition-all shadow-soft ${
+              selectedCategory === cat.id ? 'border-amber-500 ring-2 ring-amber-100' : 'border-brand-border'
             }`}>
-              <img src={cat.image ?? ''} alt={cat.name} className="w-full h-full object-cover" />
+              <img src={cat.image || undefined} alt={cat.name} className="w-full h-full object-cover" />
             </div>
-            <span className={`text-[9px] font-black truncate w-full tracking-wide font-heading ${selectedCategory === cat.id ? 'text-services-gold' : 'text-zinc-550'}`}>
+            <span className={`text-[9px] font-black truncate w-full tracking-wide font-heading ${selectedCategory === cat.id ? 'text-amber-600' : 'text-brand-slate'}`}>
               {cat.name}
             </span>
           </div>
@@ -84,7 +84,7 @@ export const VerticalServicesMobile: React.FC = () => {
 
       {/* Services List Feed */}
       <div className="flex flex-col gap-3.5">
-        <span className="text-[9px] text-zinc-450 uppercase font-black tracking-widest mb-1 font-heading">Recommended Packages</span>
+        <span className="text-[9px] text-brand-slate uppercase font-black tracking-widest mb-1 font-heading">Recommended Packages</span>
 
         {activeServices.map(service => {
           const discount = Math.round(((service.originalPrice - service.price) / service.originalPrice) * 100);
@@ -93,14 +93,14 @@ export const VerticalServicesMobile: React.FC = () => {
           return (
             <div
               key={service.id}
-              className="bg-zinc-900 border border-zinc-850 rounded-[20px] p-4 flex gap-4 cursor-pointer relative"
+              className="bg-white border border-brand-border/80 rounded-[16px] p-3 flex gap-3 cursor-pointer relative shadow-sm"
               onClick={() => navigateTo('detail', service.id)}
             >
               {/* Wishlist Button */}
               <motion.button
                 whileTap={{ scale: 0.85 }}
                 onClick={(e) => toggleWishlist(service.id, e)}
-                className="absolute top-3.5 right-3.5 p-1.5 rounded-full bg-zinc-950/60 text-zinc-450 hover:text-brand-red border border-zinc-800 transition-colors z-10"
+                className="absolute top-3.5 right-3.5 p-1.5 rounded-full bg-white/95 text-brand-slate hover:text-brand-red border border-brand-border transition-colors z-10"
               >
                 <Heart size={11} className={isWishlisted ? "fill-brand-red text-brand-red" : ""} />
               </motion.button>
@@ -108,35 +108,35 @@ export const VerticalServicesMobile: React.FC = () => {
               {/* Left Column: Info details */}
               <div className="flex-1 flex flex-col justify-between">
                 <div>
-                  <h3 className="text-xs font-bold text-white line-clamp-1 mb-1 pr-6 font-heading">{service.title}</h3>
+                  <h3 className="text-xs font-bold text-brand-graphite line-clamp-1 mb-1 pr-6 font-heading">{service.title}</h3>
                   <div className="flex items-center gap-1.5 mb-2 leading-none">
-                    <div className="flex items-center gap-0.5 bg-services-gold text-[#1C1C1E] font-black text-[8px] px-1.5 py-0.5 rounded font-numbers">
+                    <div className="flex items-center gap-0.5 bg-amber-100 text-amber-800 font-black text-[8px] px-1.5 py-0.5 rounded font-numbers">
                       <span>{service.rating}</span>
-                      <Star size={7} className="fill-[#1C1C1E] text-[#1C1C1E]" />
+                      <Star size={7} className="fill-amber-800 text-amber-800" />
                     </div>
-                    <span className="text-[9px] text-zinc-400 font-bold font-numbers">({service.ratingCount.toLocaleString('en-IN')} orders)</span>
+                    <span className="text-[9px] text-brand-slate font-bold font-numbers">({service.ratingCount.toLocaleString('en-IN')} orders)</span>
                   </div>
-                  <p className="text-[10px] text-zinc-400 leading-normal line-clamp-2 font-medium">{service.description}</p>
+                  <p className="text-[10px] text-brand-slate leading-normal line-clamp-2 font-medium">{service.description}</p>
                 </div>
 
                 <div className="flex items-baseline gap-1.5 mt-3.5 leading-none font-numbers">
-                  <span className="text-xs font-extrabold text-white">₹{service.price}</span>
-                  <span className="text-[9px] text-zinc-550 line-through">₹{service.originalPrice}</span>
-                  <span className="text-[8px] text-services-gold font-black bg-services-gold/10 px-1 py-0.2 rounded border border-services-gold/10">
+                  <span className="text-xs font-extrabold text-brand-graphite">₹{service.price}</span>
+                  <span className="text-[9px] text-brand-slate line-through">₹{service.originalPrice}</span>
+                  <span className="text-[8px] text-amber-600 font-black bg-amber-50 px-1 py-0.2 rounded border border-amber-200">
                     {discount}% OFF
                   </span>
                 </div>
               </div>
 
               {/* Right Column: Image and Book button */}
-              <div className="w-20 flex flex-col items-center justify-between shrink-0" onClick={e => e.stopPropagation()}>
-                <div className="w-20 h-20 rounded-[20px] overflow-hidden bg-neutral-900 border border-zinc-800 mb-3 shadow-soft">
+              <div className="w-[90px] flex flex-col items-center justify-between shrink-0" onClick={e => e.stopPropagation()}>
+                <div className="w-[90px] aspect-[4/3] rounded-[16px] overflow-hidden bg-white border border-brand-border/60 mb-2 shadow-sm">
                   <img src={service.image} alt={service.title} className="w-full h-full object-cover" />
                 </div>
                 <motion.button
                   whileTap={{ scale: 0.95 }}
                   onClick={() => handleBookClick(service.id)}
-                  className="w-full py-2 bg-services-gold text-[#1C1C1E] font-extrabold text-[10px] rounded-button uppercase tracking-wider shadow-soft transition-colors active:scale-95 font-heading"
+                  className="w-full py-2 bg-amber-100 text-amber-800 font-extrabold text-[10px] rounded-button uppercase tracking-wider shadow-soft transition-colors active:scale-95 font-heading"
                 >
                   Book
                 </motion.button>
@@ -149,7 +149,7 @@ export const VerticalServicesMobile: React.FC = () => {
       {/* Booking Slot bottom drawer sheet for Mobile Services */}
       <AnimatePresence>
         {bookingServiceId && (
-          <div className="fixed inset-0 bg-black/80 z-50 flex items-end justify-center backdrop-blur-xs">
+          <div className="fixed inset-0 bg-black/40 z-50 flex items-end justify-center backdrop-blur-xs">
             <div className="absolute inset-0" onClick={() => setBookingServiceId(null)} />
 
             <motion.div
@@ -157,20 +157,20 @@ export const VerticalServicesMobile: React.FC = () => {
               animate={{ y: 0 }}
               exit={{ y: '100%' }}
               transition={{ type: 'spring', damping: 25, stiffness: 220 }}
-              className="w-full bg-zinc-900 border-t border-zinc-800 rounded-t-bottom-nav p-5 pb-8 text-left z-50 shadow-elevated text-zinc-300 font-sans"
+              className="w-full bg-white border-t border-brand-border rounded-t-bottom-nav p-5 pb-8 text-left z-50 shadow-elevated text-brand-graphite font-sans"
             >
-              <div className="flex justify-between items-center border-b border-zinc-800 pb-3 mb-4 leading-none">
-                <span className="font-extrabold text-sm text-white flex items-center gap-1.5 font-heading">
-                  <Calendar size={15} className="text-services-gold" />
+              <div className="flex justify-between items-center border-b border-brand-border pb-3 mb-4 leading-none">
+                <span className="font-extrabold text-sm text-brand-graphite flex items-center gap-1.5 font-heading">
+                  <Calendar size={15} className="text-amber-500" />
                   Select Booking Slot
                 </span>
-                <button onClick={() => setBookingServiceId(null)} className="text-zinc-400 hover:text-white font-bold p-1">
+                <button onClick={() => setBookingServiceId(null)} className="text-brand-slate hover:text-brand-graphite font-bold p-1">
                   ✕
                 </button>
               </div>
 
               {/* Choose Date */}
-              <span className="text-[9px] text-zinc-450 uppercase font-black tracking-wider block mb-2 font-heading">Choose Date</span>
+              <span className="text-[9px] text-brand-slate uppercase font-black tracking-wider block mb-2 font-heading">Choose Date</span>
               <div className="grid grid-cols-4 gap-2 mb-4">
                 {dates.map(date => (
                   <button
@@ -178,8 +178,8 @@ export const VerticalServicesMobile: React.FC = () => {
                     onClick={() => setSelectedDate(date)}
                     className={`py-2 text-center font-bold text-[10px] rounded-button border transition-all ${
                       selectedDate === date
-                        ? 'border-services-gold bg-services-gold/10 text-services-gold shadow-soft'
-                        : 'border-zinc-850 bg-zinc-950 text-zinc-400'
+                        ? 'border-amber-500 bg-amber-50 text-amber-600 shadow-soft'
+                        : 'border-brand-border bg-brand-elevated text-brand-slate'
                     }`}
                   >
                     {date}
@@ -188,7 +188,7 @@ export const VerticalServicesMobile: React.FC = () => {
               </div>
 
               {/* Choose Arrival Time */}
-              <span className="text-[9px] text-zinc-450 uppercase font-black tracking-wider block mb-2 font-heading">Choose Arrival Time</span>
+              <span className="text-[9px] text-brand-slate uppercase font-black tracking-wider block mb-2 font-heading">Choose Arrival Time</span>
               <div className="grid grid-cols-3 gap-2 mb-6">
                 {times.map(time => (
                   <button
@@ -196,8 +196,8 @@ export const VerticalServicesMobile: React.FC = () => {
                     onClick={() => setSelectedTime(time)}
                     className={`py-2 text-center font-bold text-[10px] rounded-button border transition-all ${
                       selectedTime === time
-                        ? 'border-services-gold bg-services-gold/10 text-services-gold shadow-soft'
-                        : 'border-zinc-850 bg-zinc-950 text-zinc-400'
+                        ? 'border-amber-500 bg-amber-50 text-amber-600 shadow-soft'
+                        : 'border-brand-border bg-brand-elevated text-brand-slate'
                     }`}
                   >
                     {time}

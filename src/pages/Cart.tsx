@@ -3,6 +3,7 @@ import { useApp } from '../context/AppContext';
 import { useIsMobile } from '../hooks/useMediaQuery';
 import { ShoppingCart, Trash2, Plus, Minus, ArrowRight, ShieldCheck, Ticket } from 'lucide-react';
 import { motion } from 'framer-motion';
+import { CheckoutDrawer } from '../components/common/CheckoutDrawer';
 
 export const CartPage: React.FC = () => {
   const { cart, updateQuantity, removeFromCart, getCartTotal, clearCart, navigateTo } = useApp();
@@ -10,6 +11,7 @@ export const CartPage: React.FC = () => {
   const [couponCode, setCouponCode] = useState('');
   const [couponApplied, setCouponApplied] = useState(false);
   const [couponMsg, setCouponMsg] = useState<string | null>(null);
+  const [isCheckoutOpen, setIsCheckoutOpen] = useState(false);
 
   const cartTotal = getCartTotal();
   const discountVal = couponApplied ? Math.round(cartTotal * 0.1) : 0;
@@ -27,9 +29,7 @@ export const CartPage: React.FC = () => {
   };
 
   const handleCheckout = () => {
-    // Proceed to checkout
-    clearCart();
-    navigateTo('orders');
+    setIsCheckoutOpen(true);
   };
 
   const renderDesktop = () => {
@@ -344,5 +344,17 @@ export const CartPage: React.FC = () => {
     );
   };
 
-  return isMobile ? renderMobile() : renderDesktop();
+  return (
+    <>
+      {isMobile ? renderMobile() : renderDesktop()}
+      <CheckoutDrawer 
+        isOpen={isCheckoutOpen}
+        onClose={() => setIsCheckoutOpen(false)}
+        subtotal={cartTotal}
+        discount={discountVal}
+        delivery={deliveryCharges}
+        total={finalTotal}
+      />
+    </>
+  );
 };

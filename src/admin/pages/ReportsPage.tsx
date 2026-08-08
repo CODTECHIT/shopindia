@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { api, USE_MOCK } from '../../lib/api';
+import { api } from '../../lib/api';
 import { Download, Calendar, Filter, BarChart3, TrendingUp } from 'lucide-react';
 
 export const ReportsPage: React.FC = () => {
@@ -8,27 +8,16 @@ export const ReportsPage: React.FC = () => {
 
   const loadReports = () => {
     setLoading(true);
-    if (USE_MOCK) {
-      setReports([
-        { id: '1', orderNumber: 'ORD-1234', total: 1500, status: 'delivered', createdAt: new Date().toISOString(), branch: { name: 'Main Branch' }, vendor: { businessName: 'Tech Store' } }
-      ]);
-      setLoading(false);
-    } else {
-      api.get<{ orders: any[] }>('/api/admin/reports/sales')
-        .then(d => setReports(d.orders))
-        .catch(console.error)
-        .finally(() => setLoading(false));
-    }
+    api.get<{ orders: any[] }>('/api/admin/reports/sales')
+      .then(d => setReports(d.orders))
+      .catch(console.error)
+      .finally(() => setLoading(false));
   };
 
   useEffect(loadReports, []);
 
   const handleExportCSV = async () => {
     try {
-      if (USE_MOCK) {
-        alert("Mock CSV Export Triggered");
-        return;
-      }
       const res = await api.get<{ data: any[] }>('/api/admin/reports/export');
       const csvData = res.data;
       if (!csvData.length) return alert('No data to export');

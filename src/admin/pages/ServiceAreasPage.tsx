@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { api, MOCK, USE_MOCK } from '../../lib/api';
+import { api } from '../../lib/api';
 import { Plus } from 'lucide-react';
 
 export const ServiceAreasPage: React.FC = () => {
@@ -13,27 +13,18 @@ export const ServiceAreasPage: React.FC = () => {
 
   const load = () => {
     setLoading(true);
-    if (USE_MOCK) {
-      setAreas(MOCK.serviceAreas);
-      setLoading(false);
-    } else {
-      api.get<any[]>('/api/admin/service-areas')
-        .then(d => setAreas(d))
-        .catch(console.error)
-        .finally(() => setLoading(false));
-    }
+    api.get<any[]>('/api/admin/service-areas')
+      .then(d => setAreas(d))
+      .catch(console.error)
+      .finally(() => setLoading(false));
   };
 
   useEffect(load, []);
 
   const toggleStatus = async (id: string) => {
     try {
-      if (USE_MOCK) {
-        setAreas(prev => prev.map(a => a._id === id ? { ...a, isActive: !a.isActive } : a));
-      } else {
-        await api.patch(`/api/admin/service-areas/${id}/toggle`, {});
-        load();
-      }
+      await api.patch(`/api/admin/service-areas/${id}/toggle`, {});
+      load();
     } catch (err: any) {
       alert(err.message);
     }
@@ -43,12 +34,8 @@ export const ServiceAreasPage: React.FC = () => {
     e.preventDefault();
     const pinArr = pincodes.split(',').map(s => s.trim()).filter(Boolean);
     try {
-      if (USE_MOCK) {
-        setAreas(prev => [...prev, { _id: 'sa' + Date.now(), name, city, pincodes: pinArr, deliveryType, isActive: true }]);
-      } else {
-        await api.post('/api/admin/service-areas', { name, city, pincodes: pinArr, deliveryType });
-        load();
-      }
+      await api.post('/api/admin/service-areas', { name, city, pincodes: pinArr, deliveryType });
+      load();
       setModal(false); setName(''); setCity(''); setPincodes('');
     } catch (err: any) {
       alert(err.message);

@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { api, USE_MOCK } from '../../lib/api';
+import { api } from '../../lib/api';
 import { Search, CheckCircle, Ban, Truck } from 'lucide-react';
 
 export const RidersPage: React.FC = () => {
@@ -9,37 +9,26 @@ export const RidersPage: React.FC = () => {
 
   const load = () => {
     setLoading(true);
-    if (USE_MOCK) {
-      setRiders([
-        { id: 'r1', name: 'Suresh Delivery', phone: '9876543210', status: 'active', riderProfile: { vehicleType: 'Bike', licenseNumber: 'AP09AB1234', walletBalance: 1250, isActive: true, deliveries: [{ status: 'delivered' }, { status: 'assigned' }] } }
-      ]);
-      setLoading(false);
-    } else {
-      api.get<{ riders: any[] }>('/api/admin/riders')
-        .then(d => setRiders(d.riders))
-        .catch(console.error)
-        .finally(() => setLoading(false));
-    }
+    api.get<{ riders: any[] }>('/api/admin/riders')
+      .then(d => setRiders(d.riders))
+      .catch(console.error)
+      .finally(() => setLoading(false));
   };
 
   useEffect(load, []);
 
   const updateStatus = async (id: string, newStatus: string) => {
     try {
-      if (!USE_MOCK) {
-        await api.patch(`/api/admin/riders/${id}`, { status: newStatus });
-        load();
-      }
+      await api.patch(`/api/admin/riders/${id}`, { status: newStatus });
+      load();
     } catch (err: any) { alert(err.message); }
   };
 
   const processPayout = async (id: string, amount: number) => {
     if (!amount || amount <= 0) return;
     try {
-      if (!USE_MOCK) {
-        await api.patch(`/api/admin/riders/${id}`, { payoutAmount: amount });
-        load();
-      }
+      await api.patch(`/api/admin/riders/${id}`, { payoutAmount: amount });
+      load();
     } catch (err: any) { alert(err.message); }
   };
 

@@ -1,6 +1,6 @@
 # ShopIndia
 
-A responsive e-commerce UI built with React + TypeScript + Vite. The app is structured with desktop/mobile shells and uses Supabase for data persistence.
+A responsive e-commerce UI built with React + TypeScript + Vite. The app is structured with desktop/mobile shells and talks to the ShopIndia REST API (`server/`).
 
 ## Features
 
@@ -9,14 +9,12 @@ A responsive e-commerce UI built with React + TypeScript + Vite. The app is stru
 - Search page
 - Cart experience (drawer + cart page)
 - Orders page
-- Supabase integration for products/orders
-- Optional Cloudinary upload utility
+- Customer/Admin/Vendor portals
 
 ## Tech Stack
 
 - React 19, TypeScript, Vite
 - Tailwind CSS
-- Supabase (`@supabase/supabase-js`)
 - Animations/UI: framer-motion, embla-carousel-react, lucide-react
 - Linting: Oxlint
 
@@ -32,7 +30,6 @@ The app expects environment variables in `.env` at the project root.
 See:
 - [Setup](docs/SETUP.md)
 - [Environment variables](docs/ENV.md)
-- [Supabase](docs/SUPABASE.md)
 
 ## Commands
 
@@ -49,9 +46,8 @@ npm run lint
 - `src/pages/`: route-level pages (Cart, Orders, ProductDetail, Profile, Search)
 - `src/context/`: global app context and shared state
 - `src/hooks/`: custom hooks (`useProducts`, `useMediaQuery`)
-- `src/lib/`: integrations (Supabase, Cloudinary)
-- `supabase/`: schema + seed SQL
-- `scripts/`: seeding utilities
+- `src/lib/`: API wrappers
+- `server/`: ShopIndia REST API (Node/Express/PostgreSQL)
 
 ## Docs
 
@@ -63,4 +59,3 @@ npm run lint
 ## Security Notes
 
 - Do not commit real secrets in `.env`.
-- `src/lib/cloudinary.ts` references `VITE_CLOUDINARY_API_SECRET` in browser code. Treat this as unsafe for production and prefer signed uploads via a backend.

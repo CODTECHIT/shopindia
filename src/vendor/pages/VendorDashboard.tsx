@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { api, MOCK, USE_MOCK } from '../../lib/api';
+import { api } from '../../lib/api';
 import { ShoppingBag, DollarSign, Wallet, Clock } from 'lucide-react';
 
 export const VendorDashboard: React.FC = () => {
@@ -8,19 +8,13 @@ export const VendorDashboard: React.FC = () => {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    if (USE_MOCK) {
-      setData(MOCK.vendorDashboard);
-      setWallet({ walletBalance: 22400 });
-      setLoading(false);
-    } else {
-      Promise.all([
-        api.get<any>('/api/vendor/analytics/summary').catch(() => null),
-        api.get<any>('/api/vendor/wallet').catch(() => null),
-      ]).then(([analyticsRes, walletRes]) => {
-        setData(analyticsRes);
-        setWallet(walletRes);
-      }).finally(() => setLoading(false));
-    }
+    Promise.all([
+      api.get<any>('/api/vendor/analytics/summary').catch(() => null),
+      api.get<any>('/api/vendor/wallet').catch(() => null),
+    ]).then(([analyticsRes, walletRes]) => {
+      setData(analyticsRes);
+      setWallet(walletRes);
+    }).finally(() => setLoading(false));
   }, []);
 
   if (loading) {

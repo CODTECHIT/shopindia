@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { api, MOCK, USE_MOCK } from '../../lib/api';
+import { api } from '../../lib/api';
 import { Search, RefreshCw } from 'lucide-react';
 
 export const OrdersPage: React.FC = () => {
@@ -12,15 +12,10 @@ export const OrdersPage: React.FC = () => {
 
   const load = () => {
     setLoading(true);
-    if (USE_MOCK) {
-      setOrders(MOCK.orders);
-      setLoading(false);
-    } else {
-      api.get<{ orders: any[] }>('/api/admin/orders')
-        .then(d => setOrders(d.orders))
-        .catch(console.error)
-        .finally(() => setLoading(false));
-    }
+    api.get<{ orders: any[] }>('/api/admin/orders')
+      .then(d => setOrders(d.orders))
+      .catch(console.error)
+      .finally(() => setLoading(false));
   };
 
   useEffect(load, []);
@@ -28,25 +23,25 @@ export const OrdersPage: React.FC = () => {
   const processRefund = async () => {
     if (!refundModal) return;
     try {
-      if (USE_MOCK) {
-        setOrders(prev => prev.map(o => o._id === refundModal._id ? { ...o, status: 'refunded', paymentStatus: 'refunded', refundAmount } : o));
-      } else {
-        await api.post(`/api/admin/orders/${refundModal._id}/refund`, { refundAmount, refundReason });
-        load();
-      }
+      await api.post(`/api/admin/orders/${refundModal._id || refundModal.id}/refund`, { refundAmount, refundReason });
+      load();
       setRefundModal(null);
     } catch (err: any) {
       alert(err.message);
     }
   };
 
-  const filtered = orders.filter(o => !q || o.orderNumber.toLowerCase().includes(q.toLowerCase()) || o.customerId?.name?.toLowerCase().includes(q.toLowerCase()));
+  const filtered = orders.filter(o => !q ||
+    o.orderNumber?.toLowerCase().includes(q.toLowerCase()) ||
+    o.customer?.name?.toLowerCase().includes(q.toLowerCase()) ||
+    o.customerId?.name?.toLowerCase().includes(q.toLowerCase())
+  );
 
   return (
     <div className="space-y-5">
       <div>
-        <h1 className="text-2xl font-bold text-gray-900">Order Management & Monitoring</h1>
-        <p className="text-sm text-gray-500">Track marketplace orders, manage status, and process refunds (FR-05.3)</p>
+        <h1 className="text-2xl font-bold text-gray-900">Order Management &amp; Monitoring</h1>
+        <p className="text-sm text-gray-500">Track marketplace orders, manage status, and process refunds</p>
       </div>
 
       <div className="flex items-center gap-3">
@@ -82,41 +77,44 @@ export const OrdersPage: React.FC = () => {
             ) : filtered.length === 0 ? (
               <tr><td colSpan={7} className="text-center py-12 text-gray-400">No orders found.</td></tr>
             ) : (
-              filtered.map(o => (
-                <tr key={o._id} className="hover:bg-gray-50/50">
-                  <td className="px-5 py-4 font-mono font-bold text-gray-900">{o.orderNumber}</td>
-                  <td className="px-5 py-4">
-                    <p className="font-semibold text-gray-900">{o.customerId?.name}</p>
-                    <p className="text-xs text-gray-400">{o.customerId?.email}</p>
-                  </td>
-                  <td className="px-5 py-4">
-                    <span className="capitalize text-xs font-semibold px-2 py-0.5 rounded bg-blue-50 text-blue-700">
-                      {o.type?.replace('_', ' ')}
-                    </span>
-                  </td>
-                  <td className="px-5 py-4 font-numbers font-medium text-gray-900">₹{o.total}</td>
-                  <td className="px-5 py-4">
-                    <span className={`text-xs font-semibold px-2.5 py-0.5 rounded-full border ${
-                      o.status === 'delivered' ? 'bg-emerald-50 border-emerald-200 text-emerald-700' :
-                      o.status === 'cancelled' || o.status === 'refunded' ? 'bg-red-50 border-red-200 text-red-700' :
-                      'bg-amber-50 border-amber-200 text-amber-700'
-                    }`}>
-                      {o.status}
-                    </span>
-                  </td>
-                  <td className="px-5 py-4 text-xs text-gray-400">{o.createdAt?.slice(0, 10)}</td>
-                  <td className="px-5 py-4">
-                    {o.status !== 'refunded' && o.status !== 'cancelled' && (
-                      <button
-                        onClick={() => { setRefundModal(o); setRefundAmount(o.total); }}
-                        className="px-2.5 py-1 rounded-lg bg-red-50 text-red-600 hover:bg-red-100 text-xs font-semibold flex items-center gap-1"
-                      >
-                        <RefreshCw className="w-3.5 h-3.5" /> Refund
-                      </button>
-                    )}
-                  </td>
-                </tr>
-              ))
+              filtered.map(o => {
+                const customer = o.customer || o.customerId;
+                return (
+                  <tr key={o._id || o.id} className="hover:bg-gray-50/50">
+                    <td className="px-5 py-4 font-mono font-bold text-gray-900">{o.orderNumber}</td>
+                    <td className="px-5 py-4">
+                      <p className="font-semibold text-gray-900">{customer?.name}</p>
+                      <p className="text-xs text-gray-400">{customer?.email}</p>
+                    </td>
+                    <td className="px-5 py-4">
+                      <span className="capitalize text-xs font-semibold px-2 py-0.5 rounded bg-blue-50 text-blue-700">
+                        {o.type?.replace('_', ' ')}
+                      </span>
+                    </td>
+                    <td className="px-5 py-4 font-numbers font-medium text-gray-900">₹{o.total}</td>
+                    <td className="px-5 py-4">
+                      <span className={`text-xs font-semibold px-2.5 py-0.5 rounded-full border ${
+                        o.status === 'delivered' ? 'bg-emerald-50 border-emerald-200 text-emerald-700' :
+                        o.status === 'cancelled' || o.status === 'refunded' ? 'bg-red-50 border-red-200 text-red-700' :
+                        'bg-amber-50 border-amber-200 text-amber-700'
+                      }`}>
+                        {o.status}
+                      </span>
+                    </td>
+                    <td className="px-5 py-4 text-xs text-gray-400">{o.createdAt?.slice(0, 10)}</td>
+                    <td className="px-5 py-4">
+                      {o.status !== 'refunded' && o.status !== 'cancelled' && (
+                        <button
+                          onClick={() => { setRefundModal(o); setRefundAmount(o.total); }}
+                          className="px-2.5 py-1 rounded-lg bg-red-50 text-red-600 hover:bg-red-100 text-xs font-semibold flex items-center gap-1"
+                        >
+                          <RefreshCw className="w-3.5 h-3.5" /> Refund
+                        </button>
+                      )}
+                    </td>
+                  </tr>
+                );
+              })
             )}
           </tbody>
         </table>

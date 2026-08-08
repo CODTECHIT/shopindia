@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { api, MOCK, USE_MOCK } from '../../lib/api';
+import { api } from '../../lib/api';
 
 export const SupportPage: React.FC = () => {
   const [tickets, setTickets] = useState<any[]>([]);
@@ -7,27 +7,18 @@ export const SupportPage: React.FC = () => {
 
   const load = () => {
     setLoading(true);
-    if (USE_MOCK) {
-      setTickets(MOCK.tickets);
-      setLoading(false);
-    } else {
-      api.get<{ tickets: any[] }>('/api/admin/support/tickets')
-        .then(d => setTickets(d.tickets))
-        .catch(console.error)
-        .finally(() => setLoading(false));
-    }
+    api.get<{ tickets: any[] }>('/api/admin/support/tickets')
+      .then(d => setTickets(d.tickets))
+      .catch(console.error)
+      .finally(() => setLoading(false));
   };
 
   useEffect(load, []);
 
   const updateStatus = async (id: string, newStatus: string) => {
     try {
-      if (USE_MOCK) {
-        setTickets(t => t.map(x => x._id === id ? { ...x, status: newStatus } : x));
-      } else {
-        await api.patch(`/api/admin/support/tickets/${id}/status`, { status: newStatus });
-        load();
-      }
+      await api.patch(`/api/admin/support/tickets/${id}/status`, { status: newStatus });
+      load();
     } catch (err: any) {
       alert(err.message);
     }

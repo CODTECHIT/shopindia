@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { api, MOCK, USE_MOCK } from '../../lib/api';
+import { api } from '../../lib/api';
 import {
   Users, Store, Bike, ShoppingBag, TrendingUp,
   AlertCircle, Clock, DollarSign, ArrowUpRight,
@@ -29,21 +29,28 @@ export const Dashboard: React.FC = () => {
   const [stats, setStats]   = useState<Stats | null>(null);
   const [chart, setChart]   = useState<DailyOrder[]>([]);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    (USE_MOCK
-      ? Promise.resolve(MOCK.adminDashboard)
-      : api.get<{ stats: Stats; dailyOrders: DailyOrder[] }>('/api/admin/dashboard')
-    ).then(d => { setStats(d.stats); setChart(d.dailyOrders); })
-     .catch(console.error)
-     .finally(() => setLoading(false));
+    api.get<{ stats: Stats; dailyOrders: DailyOrder[] }>('/api/admin/dashboard')
+      .then(d => { setStats(d.stats); setChart(d.dailyOrders); })
+      .catch(err => setError(err.message))
+      .finally(() => setLoading(false));
   }, []);
 
   if (loading) return (
     <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-      {Array.from({ length: 7 }).map((_, i) => (
+      {Array.from({ length: 8 }).map((_, i) => (
         <div key={i} className="bg-white rounded-2xl p-6 h-28 skeleton-shimmer" />
       ))}
+    </div>
+  );
+
+  if (error) return (
+    <div className="bg-red-50 border border-red-200 rounded-2xl p-6 text-red-700">
+      <p className="font-semibold">Failed to load dashboard</p>
+      <p className="text-sm mt-1">{error}</p>
+      <p className="text-xs mt-2 text-red-500">Make sure the backend server is running on port 5001.</p>
     </div>
   );
 
@@ -77,21 +84,24 @@ export const Dashboard: React.FC = () => {
           </div>
           <div className="flex items-center gap-1 text-emerald-600 text-sm font-semibold">
             <ArrowUpRight className="w-4 h-4" />
-            <span>+12.4%</span>
           </div>
         </div>
-        <div className="flex items-end gap-2 h-40">
-          {chart.map(d => (
-            <div key={d._id} className="flex-1 flex flex-col items-center gap-1">
-              <div
-                className="w-full bg-gradient-to-t from-[#0F2C59] to-[#2563eb] rounded-t-lg transition-all hover:opacity-80"
-                style={{ height: `${(d.revenue / maxRev) * 120}px` }}
-                title={fmtRs(d.revenue)}
-              />
-              <span className="text-xs text-gray-400">{d._id.slice(5)}</span>
-            </div>
-          ))}
-        </div>
+        {chart.length === 0 ? (
+          <p className="text-sm text-gray-400 text-center py-8">No orders in the last 7 days.</p>
+        ) : (
+          <div className="flex items-end gap-2 h-40">
+            {chart.map(d => (
+              <div key={d._id} className="flex-1 flex flex-col items-center gap-1">
+                <div
+                  className="w-full bg-gradient-to-t from-[#0F2C59] to-[#2563eb] rounded-t-lg transition-all hover:opacity-80"
+                  style={{ height: `${(d.revenue / maxRev) * 120}px` }}
+                  title={fmtRs(d.revenue)}
+                />
+                <span className="text-xs text-gray-400">{d._id.slice(5)}</span>
+              </div>
+            ))}
+          </div>
+        )}
       </div>
     </div>
   );

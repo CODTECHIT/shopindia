@@ -1,10 +1,12 @@
 import React, { useState, useEffect } from 'react';
 import { AppProvider } from './context/AppContext';
+import { CustomerProvider } from './context/CustomerContext';
 import { useIsMobile } from './hooks/useMediaQuery';
 import { DesktopApp } from './components/desktop/DesktopApp';
 import { MobileApp } from './components/mobile/MobileApp';
 import { AdminPortal } from './admin/AdminPortal';
 import { VendorPortal } from './vendor/VendorPortal';
+import { DashboardPortal } from './pages/dashboard/DashboardPortal';
 
 const MainLayout: React.FC = () => {
   const isMobile = useIsMobile();
@@ -30,9 +32,11 @@ function App() {
   }
 
   return (
-    <AppProvider>
-      <MainLayout />
-    </AppProvider>
+    <CustomerProvider>
+      <AppProvider>
+        <MainLayout />
+      </AppProvider>
+    </CustomerProvider>
   );
 }
 

@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { api, USE_MOCK } from '../../lib/api';
+import { api } from '../../lib/api';
 import { ShieldCheck, Lock, CheckCircle } from 'lucide-react';
 
 export const RBACPage: React.FC = () => {
@@ -8,32 +8,13 @@ export const RBACPage: React.FC = () => {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    if (USE_MOCK) {
-      setRoles([
-        { _id: 'r1', name: 'super_admin', displayName: 'Super Admin', isSystem: true, permissions: ['ALL'] },
-        { _id: 'r2', name: 'branch_manager', displayName: 'Branch Manager', isSystem: true, permissions: ['manage_orders', 'view_orders', 'manage_support', 'view_support', 'view_dashboard', 'view_vendors', 'view_users'] },
-        { _id: 'r3', name: 'support_exec', displayName: 'Support Executive', isSystem: true, permissions: ['manage_support', 'view_support', 'view_orders'] },
-      ]);
-      setPermissions([
-        'manage_dashboard', 'view_dashboard',
-        'manage_users', 'view_users',
-        'manage_vendors', 'view_vendors',
-        'manage_products', 'view_products',
-        'manage_orders', 'view_orders',
-        'manage_branches', 'view_branches',
-        'manage_support', 'view_support',
-        'manage_commissions', 'manage_service_areas',
-      ]);
-      setLoading(false);
-    } else {
-      Promise.all([
-        api.get<any[]>('/api/admin/rbac/roles'),
-        api.get<string[]>('/api/admin/rbac/permissions')
-      ]).then(([r, p]) => {
-        setRoles(r);
-        setPermissions(p);
-      }).catch(console.error).finally(() => setLoading(false));
-    }
+    Promise.all([
+      api.get<any[]>('/api/admin/rbac/roles'),
+      api.get<string[]>('/api/admin/rbac/permissions')
+    ]).then(([r, p]) => {
+      setRoles(r);
+      setPermissions(p);
+    }).catch(console.error).finally(() => setLoading(false));
   }, []);
 
   if (loading) return <div className="h-40 skeleton-shimmer rounded-2xl" />;

@@ -15,10 +15,10 @@ app.use(cors({
 }));
 app.use(express.json({ limit: '10mb' }));
 
-// Rate limiter — 200 req/15 min per IP
+// Rate limiter — 2000 req/15 min per IP
 app.use(rateLimit({
   windowMs: 15 * 60 * 1000,
-  max: 200,
+  max: 2000,
   standardHeaders: true,
   legacyHeaders: false,
   message: { error: 'Too many requests, please try again later.' },
@@ -32,7 +32,20 @@ app.use('/api/auth', require('./routes/auth'));
 // Public storefront + customer auth
 app.use('/api/customer', require('./routes/customer-auth'));
 app.use('/api/products', require('./routes/products'));
+app.use('/api/categories', require('./routes/categories'));
 app.use('/api/orders', require('./routes/orders'));
+
+// Customer account dashboard (all guarded by customerAuth inside each route file)
+app.use('/api/customer/profile', require('./routes/customer/profile'));
+app.use('/api/customer/wishlist', require('./routes/customer/wishlist'));
+app.use('/api/customer/cart', require('./routes/customer/cart'));
+app.use('/api/customer/addresses', require('./routes/customer/addresses'));
+app.use('/api/customer/payments', require('./routes/customer/payments'));
+app.use('/api/customer/notifications', require('./routes/customer/notifications'));
+app.use('/api/customer/reviews', require('./routes/customer/reviews'));
+app.use('/api/customer/coupons', require('./routes/customer/coupons'));
+app.use('/api/customer/analytics', require('./routes/customer/analytics'));
+app.use('/api/customer/orders', require('./routes/customer/order-actions'));
 
 // Admin routes (all guarded by verifyToken + requireRole in each route file)
 app.use('/api/admin/dashboard',    require('./routes/admin/dashboard'));
@@ -45,6 +58,11 @@ app.use('/api/admin/rbac',         require('./routes/admin/rbac'));
 app.use('/api/admin/service-areas',require('./routes/admin/serviceAreas'));
 app.use('/api/admin/support',      require('./routes/admin/support'));
 app.use('/api/admin/commissions',  require('./routes/admin/commissions'));
+app.use('/api/admin/riders',       require('./routes/admin/riders'));
+app.use('/api/admin/reports',      require('./routes/admin/reports'));
+app.use('/api/admin/offers',       require('./routes/admin/offers'));
+app.use('/api/admin/notifications',require('./routes/admin/notifications'));
+app.use('/api/admin/categories',   require('./routes/admin/categories'));
 
 // Vendor routes (guarded by verifyToken + requireRole('vendor') in each file)
 app.use('/api/vendor/auth',       require('./routes/vendor/auth'));

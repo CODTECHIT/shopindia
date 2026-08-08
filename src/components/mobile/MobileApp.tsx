@@ -112,19 +112,7 @@ export const MobileApp: React.FC = () => {
         style={{ transform: showHeader ? 'translateY(0)' : 'translateY(-126px)' }}
         className={`w-full px-4 fixed top-0 left-0 right-0 z-40 transition-all duration-220 ease-in-out flex flex-col py-3.5 gap-2.5 ${
           showHeader ? 'shadow-none' : 'shadow-soft'
-        } ${
-          isServices
-            ? showHeader
-              ? 'bg-gradient-to-b from-black/60 via-black/20 to-transparent border-b border-transparent'
-              : 'bg-zinc-900 border-b border-zinc-800 text-white'
-            : currentVertical === 'quick'
-              ? showHeader
-                ? 'bg-gradient-to-b from-[#82B1FF] to-[#E5EFFF] border-b-0 text-[#0A1022]'
-                : 'bg-[#82B1FF] border-b border-white/20 text-[#0A1022]'
-              : showHeader
-                ? 'bg-gradient-to-b from-[#82B1FF] to-[#E5EFFF] border-b-0 text-[#0A1022]'
-                : 'bg-[#82B1FF] border-b border-white/20 text-[#0A1022]'
-        }`}
+        } bg-white border-b border-brand-border/60 text-brand-graphite`}
       >
         
         {/* Row 1: Switcher Cards (Static height, transition opacity only) */}
@@ -138,8 +126,8 @@ export const MobileApp: React.FC = () => {
                 shop: { 
                   title: 'ShopIndia', 
                   icon: ShoppingBag,
-                  activeClass: isServices ? 'bg-[#C5A880] text-zinc-950 shadow-elevated' : 'bg-black text-white shadow-soft',
-                  inactiveClass: isServices ? 'bg-zinc-900 text-zinc-400' : 'bg-white text-slate-800 shadow-sm border border-black/5',
+                  activeClass: 'bg-black text-white shadow-soft',
+                  inactiveClass: 'bg-white text-slate-800 shadow-sm border border-black/5',
                   iconActive: 'text-white',
                   iconInactive: 'text-brand-blue'
                 },
@@ -147,7 +135,7 @@ export const MobileApp: React.FC = () => {
                   title: '10 Min', 
                   icon: Zap,
                   activeClass: 'bg-[#FFDF00] text-black shadow-soft',
-                  inactiveClass: isServices ? 'bg-zinc-900 text-zinc-400' : 'bg-white text-slate-800 shadow-sm border border-black/5',
+                  inactiveClass: 'bg-white text-slate-800 shadow-sm border border-black/5',
                   iconActive: 'text-black',
                   iconInactive: 'text-brand-orange'
                 },
@@ -155,7 +143,7 @@ export const MobileApp: React.FC = () => {
                   title: 'Services', 
                   icon: Wrench,
                   activeClass: 'bg-[#C5A880] text-zinc-950 shadow-elevated',
-                  inactiveClass: isServices ? 'bg-zinc-900 text-zinc-400' : 'bg-white text-slate-800 shadow-sm border border-black/5',
+                  inactiveClass: 'bg-white text-slate-800 shadow-sm border border-black/5',
                   iconActive: 'text-zinc-950',
                   iconInactive: 'text-teal-655'
                 }
@@ -172,11 +160,11 @@ export const MobileApp: React.FC = () => {
                   }`}
                 >
                   {v === 'shop' ? (
-                    <div className="w-full h-full absolute inset-0 flex items-center justify-center rounded-[14px] overflow-hidden">
+                    <div className="absolute inset-0 flex items-center justify-center overflow-hidden">
                       <img 
                         src="/logo.png" 
                         alt="ShopIndia" 
-                        className={`w-[85%] h-auto object-contain select-none pointer-events-none transition-all ${isActive ? '' : 'invert opacity-80'}`}
+                        className={`w-[85%] scale-[1.15] h-auto object-contain select-none pointer-events-none transition-all ${isActive ? 'mix-blend-screen' : 'invert mix-blend-multiply opacity-90'}`}
                       />
                     </div>
                   ) : (
@@ -202,12 +190,12 @@ export const MobileApp: React.FC = () => {
             className={`flex items-center py-1.5 px-1 text-left select-none cursor-pointer transition-colors`}
           >
             <div className="flex gap-2.5 items-center">
-              <MapPin size={12} className={isServices ? 'text-services-gold' : 'text-slate-800'} />
-              <span className={`text-[9.5px] font-bold max-w-[210px] truncate ${isServices ? 'text-white' : 'text-slate-800'}`}>
+              <MapPin size={12} className="text-slate-800" />
+              <span className="text-[9.5px] font-bold max-w-[210px] truncate text-slate-800">
                 {location}
               </span>
             </div>
-            <ChevronDown size={11} className={isServices ? 'text-services-gold' : 'text-slate-800'} />
+            <ChevronDown size={11} className="text-slate-800" />
           </div>
         </div>
 

@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { api, USE_MOCK } from '../../lib/api';
+import { api } from '../../lib/api';
 import { Wrench, Plus, UserCircle2, Calendar, CheckCircle, Ban, UserPlus } from 'lucide-react';
 
 export const VendorTechnicians: React.FC = () => {
@@ -18,11 +18,6 @@ export const VendorTechnicians: React.FC = () => {
 
   const loadAll = async () => {
     try {
-      if (USE_MOCK) {
-        setTechnicians([{ id: '1', name: 'John Doe', phone: '9876543210', skills: ['HVAC', 'Plumbing'], currentStatus: 'available', isActive: true }]);
-        setJobs([{ id: 'j1', order: { orderNumber: 'ORD-123', status: 'confirmed' }, technician: null, status: 'pending', scheduledDate: null }]);
-        return;
-      }
       const [techRes, jobRes] = await Promise.all([
         api.get<{ technicians: any[] }>('/api/vendor/technicians'),
         api.get<{ serviceJobs: any[] }>('/api/vendor/service-jobs'),
@@ -39,7 +34,6 @@ export const VendorTechnicians: React.FC = () => {
   const handleCreateTech = async (e: React.FormEvent) => {
     e.preventDefault();
     try {
-      if (USE_MOCK) return alert("Mock create!");
       await api.post('/api/vendor/technicians', techForm);
       setShowTechForm(false);
       setTechForm({ name: '', phone: '', email: '', skills: '' });
@@ -48,7 +42,6 @@ export const VendorTechnicians: React.FC = () => {
   };
 
   const toggleTechStatus = async (id: string, currentIsActive: boolean) => {
-    if (USE_MOCK) return;
     try {
       await api.patch(`/api/vendor/technicians/${id}/status`, { isActive: !currentIsActive });
       loadAll();
@@ -56,7 +49,6 @@ export const VendorTechnicians: React.FC = () => {
   };
 
   const updateJobStatus = async (id: string, status: string) => {
-    if (USE_MOCK) return;
     try {
       await api.patch(`/api/vendor/service-jobs/${id}`, { status });
       loadAll();
