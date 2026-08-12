@@ -1,5 +1,5 @@
 import React, { createContext, useContext, useEffect, useState, useCallback } from 'react';
-import { PRODUCTS } from '../data/types';
+
 import type {
   Address, PaymentMethod, Transaction, Reward, DashboardNotification,
   Review, Coupon, ActivityRecord, CustomerProfile,
@@ -11,7 +11,7 @@ const now = (daysAgo = 0) => new Date(Date.now() - daysAgo * 86400000).toISOStri
 
 // We'll keep usePersistent for now for things that don't have a backend endpoint yet,
 // but we will gradually replace these with API calls.
-function usePersistent<T>(key: string, fallback: T): [T, React.Dispatch<React.SetStateAction<T>>] {
+function usePersistent<T>(_key: string, fallback: T): [T, React.Dispatch<React.SetStateAction<T>>] {
   const [state, setState] = useState<T>(fallback); // Removed localStorage store/load to prevent UI flicker before API loads
   return [state, setState];
 }
@@ -30,10 +30,6 @@ const seedNotifications = (): DashboardNotification[] => [];
 const seedReviews = (): Review[] => [];
 
 const seedCoupons = (): Coupon[] => [];
-
-function getProduct(id: string) {
-  return PRODUCTS.find((p) => p.id === id) as typeof PRODUCTS[number] || {} as any;
-}
 
 export interface CustomerValue {
   addresses: Address[];
@@ -163,7 +159,6 @@ export const CustomerProvider: React.FC<{ children: React.ReactNode }> = ({ chil
   // ── Addresses ──
   const addAddress = useCallback(async (a: Omit<Address, 'id'>) => {
     try {
-      const token = getCustomerToken();
       const res = await api.post<{ address: Address }>('/api/customer/addresses', a);
       const newAddress = res.address || { ...a, id: 'a' + Date.now(), isDefault: a.isDefault || addresses.length === 0 };
       

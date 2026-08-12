@@ -3,7 +3,7 @@ import { useApp } from '../../context/AppContext';
 import { useProducts } from '../../hooks/useProducts';
 import { useCategories } from '../../hooks/useCategories';
 import { 
-  Heart, Search, ShieldCheck, MapPin, Search as SearchIcon, ArrowRight,
+  Heart, ShieldCheck,
   Clock, ChevronRight, Truck, Award, RotateCcw, Apple, Star
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -66,7 +66,7 @@ export const VerticalShopMobile: React.FC = () => {
       
       {/* 2. Circular Categories Grid (2x5 structure layout matching user reference) */}
       <div className="w-full bg-white border border-brand-border rounded-card p-4 shadow-soft grid grid-cols-5 gap-y-4.5 gap-x-2 select-none justify-items-center">
-        {shopCategories.map((cat, idx) => {
+        {shopCategories.map((cat) => {
           return (
             <div
               key={cat.id}

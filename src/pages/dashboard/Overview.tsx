@@ -1,24 +1,22 @@
 import React from 'react';
 import { useCustomer } from '../../context/CustomerContext';
 import { useApp } from '../../context/AppContext';
-import { PageHeader, SectionCard, Badge, statusTone } from '../../components/dashboard/DashboardUI';
+import { SectionCard, Badge, statusTone } from '../../components/dashboard/DashboardUI';
 import type { DashboardTab } from '../../components/dashboard/DashboardLayout';
 import {
-  Package, Heart, ShoppingCart, BadgeIndianRupee, Star, Ticket,
-  ArrowRight, ChevronRight, TrendingUp,
+  Package, Heart, ShoppingCart, BadgeIndianRupee, Ticket,
+  ArrowRight, ChevronRight,
 } from 'lucide-react';
 import { motion } from 'framer-motion';
 
 export const OverviewPage: React.FC<{ onNavigate: (t: DashboardTab) => void }> = ({ onNavigate }) => {
-  const { profile, points, notifications, events, activityByDay, coupons, unread, wishlist } = useCustomer();
+  const { profile, points, notifications, coupons, unread, wishlist } = useCustomer();
   const { cart, orders } = useApp();
 
-  const pendingOrders = orders.filter((o) => o.status !== 'delivered').length;
   const cartCount = cart.reduce((s, i) => s + i.quantity, 0);
   const recentOrders = [...orders].slice(0, 3);
   const activeCoupons = coupons.filter((c) => c.state === 'available').slice(0, 3);
   const recentNotifs = notifications.slice(0, 3);
-  const maxCount = Math.max(...activityByDay.map((d) => d.count), 1);
 
   const stats = [
     { icon: <Package className="w-5 h-5 text-brand-blue" />, label: 'Orders', value: String(orders.length), onClick: () => onNavigate('orders') },

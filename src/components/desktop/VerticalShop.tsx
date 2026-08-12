@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useApp } from '../../context/AppContext';
-import { BANNERS } from '../../data/types';
+
 import { useProducts } from '../../hooks/useProducts';
 import { useCategories } from '../../hooks/useCategories';
 import { Star, Award, Heart, ChevronLeft, ChevronRight, Clock, ShoppingCart } from 'lucide-react';

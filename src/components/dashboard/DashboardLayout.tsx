@@ -34,7 +34,7 @@ export const DashboardLayout: React.FC<{ activeTab: DashboardTab; onTabChange: (
   const { unread, wishlist, profile, isLoading } = useCustomer();
   const { cart } = useApp();
   const [drawer, setDrawer] = useState(false);
-  const activeItem = NAV.find((n) => n.id === activeTab);
+
 
   const counts: Partial<Record<DashboardTab, number>> = {
     cart: cart.length,

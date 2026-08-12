@@ -20,7 +20,7 @@ export interface Order {
   items: OrderItem[];
   total: number;
   vertical: VerticalType;
-  status: 'placed' | 'confirmed' | 'packing' | 'shipping' | 'delivered';
+  status: 'placed' | 'confirmed' | 'packing' | 'shipping' | 'delivered' | 'cancelled';
   deliveryTimeEstimate: string;
   location: string;
 }

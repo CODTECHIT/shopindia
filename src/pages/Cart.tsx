@@ -6,7 +6,7 @@ import { motion } from 'framer-motion';
 import { CheckoutDrawer } from '../components/common/CheckoutDrawer';
 
 export const CartPage: React.FC = () => {
-  const { cart, updateQuantity, removeFromCart, getCartTotal, clearCart, navigateTo } = useApp();
+  const { cart, updateQuantity, removeFromCart, getCartTotal, navigateTo } = useApp();
   const isMobile = useIsMobile();
   const [couponCode, setCouponCode] = useState('');
   const [couponApplied, setCouponApplied] = useState(false);

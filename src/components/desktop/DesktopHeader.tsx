@@ -95,7 +95,7 @@ export const DesktopHeader: React.FC = () => {
   };
 
   const theme = verticalThemes[currentVertical];
-  const isDark = currentVertical === 'services';
+
 
   return (
     <header className="w-full flex flex-col sticky top-0 z-50 shadow-soft select-none theme-transition transition-all duration-300 bg-white text-brand-graphite border-b border-brand-border/60">

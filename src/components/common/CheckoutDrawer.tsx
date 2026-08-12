@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useCustomer } from '../../context/CustomerContext';
 import { useApp } from '../../context/AppContext';
-import { X, MapPin, CreditCard, ChevronRight, CheckCircle2, ShieldCheck, Loader2 } from 'lucide-react';
+import { X, CreditCard, ChevronRight, ShieldCheck, Loader2 } from 'lucide-react';
 
 interface CheckoutDrawerProps {
   isOpen: boolean;
@@ -108,9 +108,9 @@ export const CheckoutDrawer: React.FC<CheckoutDrawerProps> = ({ isOpen, onClose,
                         <div>
                           <div className="flex items-center gap-2">
                             <span className="font-bold text-brand-graphite text-xs">{addr.label || 'Home'}</span>
-                            <span className="text-[10px] text-brand-slate font-bold font-numbers">{addr.phone}</span>
+                            <span className="text-[10px] text-brand-slate font-bold font-numbers">{addr.mobile}</span>
                           </div>
-                          <p className="text-[11px] text-brand-slate mt-0.5 leading-relaxed">{addr.street}, {addr.city}, {addr.state} - {addr.zipCode}</p>
+                          <p className="text-[11px] text-brand-slate mt-0.5 leading-relaxed">{addr.line1}, {addr.city}, {addr.state} - {addr.pincode}</p>
                         </div>
                       </label>
                     ))}

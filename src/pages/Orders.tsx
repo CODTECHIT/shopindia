@@ -1,9 +1,9 @@
-import React, { useEffect, useState } from 'react';
+import React, { useState } from 'react';
 import { useApp } from '../context/AppContext';
 import { useIsMobile } from '../hooks/useMediaQuery';
-import { Package, LogIn, Loader2 } from 'lucide-react';
+import { LogIn } from 'lucide-react';
 import type { CustomerUser } from '../lib/customerAuth';
-import { getCustomerToken, getCustomerUser, fetchCustomerOrders } from '../lib/customerAuth';
+import { getCustomerToken, getCustomerUser } from '../lib/customerAuth';
 import { DashboardInner } from './dashboard/DashboardPortal';
 
 export const OrdersPage: React.FC = () => {

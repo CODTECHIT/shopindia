@@ -224,7 +224,7 @@ export const VerticalServices: React.FC = () => {
 
           <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
             {activeServices.map(service => {
-              const discount = Math.round(((service.originalPrice - service.price) / service.originalPrice) * 100);
+
               const isWishlisted = wishlist[service.id];
 
               return (
