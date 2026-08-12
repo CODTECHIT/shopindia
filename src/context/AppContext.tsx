@@ -16,6 +16,7 @@ export interface OrderItem {
 
 export interface Order {
   id: string;
+  orderNumber?: string;
   date: string;
   items: OrderItem[];
   total: number;
@@ -86,11 +87,11 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       if (!token) return;
       try {
         const [cartRes, ordersRes] = await Promise.allSettled([
-          api.get<{ cart: OrderItem[] }>('/api/cart').catch(() => null),
+          api.get<{ items: any[] }>('/api/customer/cart').catch(() => null),
           api.get<{ orders: Order[] }>('/api/orders').catch(() => null)
         ]);
 
-        if (cartRes.status === 'fulfilled' && cartRes.value?.cart) setCart(cartRes.value.cart);
+        if (cartRes.status === 'fulfilled' && cartRes.value?.items) setCart(cartRes.value.items);
         if (ordersRes.status === 'fulfilled' && ordersRes.value?.orders) setOrders(ordersRes.value.orders);
       } catch (err) {
         console.error('Failed to fetch App data', err);
@@ -111,35 +112,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     return () => window.removeEventListener('hashchange', handleHash);
   }, []);
 
-  // Handle live order status simulation for 10-Min and Services
-  useEffect(() => {
-    const activeOrders = orders.filter(o => o.status !== 'delivered');
-    if (activeOrders.length === 0) return;
 
-    const interval = setInterval(() => {
-      setOrders(prevOrders => {
-        let changed = false;
-        const newOrders = prevOrders.map(order => {
-          if (order.status === 'delivered') return order;
-
-          changed = true;
-          let nextStatus: Order['status'] = order.status;
-
-          // Transition states sequentially
-          if (order.status === 'placed') nextStatus = 'confirmed';
-          else if (order.status === 'confirmed') nextStatus = 'packing';
-          else if (order.status === 'packing') nextStatus = 'shipping';
-          else if (order.status === 'shipping') nextStatus = 'delivered';
-
-          return { ...order, status: nextStatus };
-        });
-
-        return changed ? newOrders : prevOrders;
-      });
-    }, 15000); // Progress order state every 15 seconds
-
-    return () => clearInterval(interval);
-  }, [orders]);
 
   // Custom Navigation function
   const navigateTo = (path: PathType, productId?: string) => {
@@ -175,6 +148,10 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
 
   // Cart operations
   const addToCart = (product: Product) => {
+    if (product.isOutOfStock || (product.stock !== undefined && product.stock <= 0)) {
+      alert('This product is out of stock.');
+      return;
+    }
     setCart(prevCart => {
       const existingItem = prevCart.find(item => item.product.id === product.id);
       if (existingItem) {
@@ -215,7 +192,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     try {
       await api.post('/api/orders', payload);
       // Fetch orders again to get the new order
-      const res = await api.get<{ orders: Order[] }>('/api/customer/orders');
+      const res = await api.get<{ orders: Order[] }>('/api/orders');
       if (res.orders) setOrders(res.orders);
       clearCart();
       navigateTo('orders');

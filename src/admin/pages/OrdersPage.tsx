@@ -33,8 +33,10 @@ export const OrdersPage: React.FC = () => {
 
   const filtered = orders.filter(o => !q ||
     o.orderNumber?.toLowerCase().includes(q.toLowerCase()) ||
+    o.id?.toLowerCase().includes(q.toLowerCase()) ||
     o.customer?.name?.toLowerCase().includes(q.toLowerCase()) ||
-    o.customerId?.name?.toLowerCase().includes(q.toLowerCase())
+    o.customerId?.name?.toLowerCase().includes(q.toLowerCase()) ||
+    o.items?.some((item: any) => item.name?.toLowerCase().includes(q.toLowerCase()))
   );
 
   return (
@@ -81,7 +83,7 @@ export const OrdersPage: React.FC = () => {
                 const customer = o.customer || o.customerId;
                 return (
                   <tr key={o._id || o.id} className="hover:bg-gray-50/50">
-                    <td className="px-5 py-4 font-mono font-bold text-gray-900">{o.orderNumber}</td>
+                    <td className="px-5 py-4 font-mono font-bold text-gray-900">{o.orderNumber} ({o.items?.map((item: any) => item.name).join(', ')})</td>
                     <td className="px-5 py-4">
                       <p className="font-semibold text-gray-900">{customer?.name}</p>
                       <p className="text-xs text-gray-400">{customer?.email}</p>

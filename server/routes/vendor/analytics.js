@@ -10,20 +10,39 @@ router.use(verifyToken, requireRole('vendor'));
 router.get('/summary', async (req, res) => {
   try {
     const vendorId = req.user.vendorId;
-    const { period = '7d' } = req.query;
+    const { period = '30d', startDate, endDate } = req.query;
 
-    const msMap = { '7d': 7, '30d': 30, '90d': 90 };
-    const days  = msMap[period] || 7;
-    const since = new Date(Date.now() - days * 24 * 60 * 60 * 1000);
+    let since;
+    let until = new Date();
+
+    if (startDate || endDate) {
+      since = startDate ? new Date(startDate) : new Date(0);
+      if (endDate) {
+        until = new Date(endDate);
+        until.setHours(23, 59, 59, 999);
+      }
+    } else {
+      const msMap = {
+        '7d': 7,
+        'monthly': 30,
+        '30d': 30,
+        '90d': 90,
+        '6months': 180,
+        '12months': 365,
+        'yearly': 365
+      };
+      const days = msMap[period] || 30;
+      since = new Date(Date.now() - days * 24 * 60 * 60 * 1000);
+    }
 
     const [allTimeAgg, periodAgg, ordersByStatusGroup, paidOrdersSince] = await Promise.all([
       prisma.order.aggregate({
-        where: { vendorId, paymentStatus: 'paid' },
+        where: { vendorId, status: { not: 'cancelled' } },
         _sum: { total: true },
         _count: { id: true },
       }),
       prisma.order.aggregate({
-        where: { vendorId, paymentStatus: 'paid', createdAt: { gte: since } },
+        where: { vendorId, status: { not: 'cancelled' }, createdAt: { gte: since, lte: until } },
         _sum: { total: true },
         _count: { id: true },
       }),
@@ -33,8 +52,11 @@ router.get('/summary', async (req, res) => {
         _count: { id: true },
       }),
       prisma.order.findMany({
-        where: { vendorId, paymentStatus: 'paid', createdAt: { gte: since } },
-        include: { items: true },
+        where: { vendorId, status: { not: 'cancelled' }, createdAt: { gte: since, lte: until } },
+        include: {
+          items: true,
+          customer: { select: { name: true, email: true } }
+        },
         orderBy: { createdAt: 'asc' },
       }),
     ]);
@@ -66,12 +88,25 @@ router.get('/summary', async (req, res) => {
     const dailyRevenue = Object.values(dailyMap)
       .sort((a, b) => a._id.localeCompare(b._id));
 
+    const rawOrders = paidOrdersSince.map(o => ({
+      orderNumber: o.orderNumber,
+      date: o.createdAt.toISOString().slice(0, 10),
+      customerName: o.customer?.name || 'Walk-in Customer',
+      customerEmail: o.customer?.email || '—',
+      items: o.items.map(it => `${it.name} x${it.quantity}`).join('; '),
+      totalAmount: o.total,
+      status: o.status,
+      paymentMethod: o.paymentMethod || 'cod',
+      paymentStatus: o.paymentStatus || 'pending'
+    }));
+
     res.json({
       allTime: { total: allTimeAgg._sum.total || 0, count: allTimeAgg._count.id || 0 },
       period:  { total: periodAgg._sum.total || 0, count: periodAgg._count.id || 0 },
       ordersByStatus,
       topProducts,
       dailyRevenue,
+      rawOrders,
     });
   } catch (err) { res.status(500).json({ error: err.message }); }
 });

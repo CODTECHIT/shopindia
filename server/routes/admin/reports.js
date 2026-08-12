@@ -11,16 +11,34 @@ router.use(requireRole('super_admin', 'branch_manager'));
 
 router.get('/sales', async (req, res) => {
   try {
-    const { branchId, startDate, endDate } = req.query;
+    const { branchId, startDate, endDate, period = '30d' } = req.query;
     
+    let since;
+    let until = new Date();
+
+    if (startDate || endDate) {
+      since = startDate ? new Date(startDate) : new Date(0);
+      if (endDate) {
+        until = new Date(endDate);
+        until.setHours(23, 59, 59, 999);
+      }
+    } else {
+      const msMap = {
+        '7d': 7,
+        'monthly': 30,
+        '30d': 30,
+        '90d': 90,
+        '6months': 180,
+        '12months': 365,
+        'yearly': 365
+      };
+      const days = msMap[period] || 30;
+      since = new Date(Date.now() - days * 24 * 60 * 60 * 1000);
+    }
+
     const where = {};
     if (branchId) where.branchId = branchId;
-    if (startDate && endDate) {
-      where.createdAt = {
-        gte: new Date(startDate),
-        lte: new Date(endDate)
-      };
-    }
+    where.createdAt = { gte: since, lte: until };
 
     const orders = await prisma.order.findMany({
       where,
@@ -34,7 +52,7 @@ router.get('/sales', async (req, res) => {
         vendor: { select: { businessName: true } }
       },
       orderBy: { createdAt: 'desc' },
-      take: 500 // Limit for standard view
+      take: 500
     });
 
     res.json({ orders });
@@ -44,17 +62,49 @@ router.get('/sales', async (req, res) => {
   }
 });
 
-// CSV Export (simplified logic to return JSON that UI converts to CSV)
+// CSV Export
 router.get('/export', async (req, res) => {
   try {
+    const { branchId, startDate, endDate, period } = req.query;
+    const where = {};
+    if (branchId) where.branchId = branchId;
+
+    let since;
+    let until = new Date();
+
+    if (startDate || endDate) {
+      since = startDate ? new Date(startDate) : new Date(0);
+      if (endDate) {
+        until = new Date(endDate);
+        until.setHours(23, 59, 59, 999);
+      }
+    } else if (period) {
+      const msMap = {
+        '7d': 7,
+        'monthly': 30,
+        '30d': 30,
+        '90d': 90,
+        '6months': 180,
+        '12months': 365,
+        'yearly': 365
+      };
+      const days = msMap[period] || 30;
+      since = new Date(Date.now() - days * 24 * 60 * 60 * 1000);
+    }
+
+    if (since) {
+      where.createdAt = { gte: since, lte: until };
+    }
+
     const orders = await prisma.order.findMany({
-      where: { status: 'delivered' },
+      where,
       select: {
         orderNumber: true,
         total: true,
         discount: true,
         commission: true,
         createdAt: true,
+        status: true,
         customer: { select: { name: true, email: true } },
         branch: { select: { name: true } },
         vendor: { select: { businessName: true } }
@@ -69,7 +119,8 @@ router.get('/export', async (req, res) => {
       Vendor: o.vendor?.businessName || 'N/A',
       Branch: o.branch?.name || 'Online',
       Amount: o.total || 0,
-      Platform_Commission: o.commission || 0
+      Platform_Commission: o.commission || 0,
+      Status: o.status
     }));
 
     res.json({ data: csvData });

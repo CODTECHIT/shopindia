@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { api } from '../../lib/api';
-import { CheckCircle, XCircle, Ban, Search } from 'lucide-react';
+import { CheckCircle, XCircle, Ban, Search, LayoutDashboard } from 'lucide-react';
+import type { ManagedVendor } from '../AdminPortal';
 
 const STATUSES = ['all', 'pending', 'approved', 'rejected', 'suspended'];
 
@@ -18,7 +19,11 @@ const StatusBadge: React.FC<{ status: string }> = ({ status }) => {
   );
 };
 
-export const VendorsPage: React.FC = () => {
+interface Props {
+  onManage?: (vendor: ManagedVendor) => void;
+}
+
+export const VendorsPage: React.FC<Props> = ({ onManage }) => {
   const [vendors, setVendors]   = useState<any[]>([]);
   const [filter, setFilter]     = useState('all');
   const [q, setQ]               = useState('');
@@ -87,13 +92,14 @@ export const VendorsPage: React.FC = () => {
                 <th className="text-left px-5 py-3.5 font-semibold text-gray-600">Status</th>
                 <th className="text-left px-5 py-3.5 font-semibold text-gray-600">Joined</th>
                 <th className="text-left px-5 py-3.5 font-semibold text-gray-600">Actions</th>
+                <th className="text-left px-5 py-3.5 font-semibold text-gray-600">Manage</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-gray-50">
               {loading ? Array.from({ length: 5 }).map((_, i) => (
-                <tr key={i}><td colSpan={6} className="px-5 py-4"><div className="h-4 skeleton-shimmer rounded" /></td></tr>
+                <tr key={i}><td colSpan={7} className="px-5 py-4"><div className="h-4 skeleton-shimmer rounded" /></td></tr>
               )) : filtered.length === 0 ? (
-                <tr><td colSpan={6} className="text-center py-12 text-gray-400">No vendors found.</td></tr>
+                <tr><td colSpan={7} className="text-center py-12 text-gray-400">No vendors found.</td></tr>
               ) : filtered.map(v => (
                 <tr key={v.id || v._id} className="hover:bg-gray-50/50 transition-colors">
                   <td className="px-5 py-4">
@@ -104,6 +110,8 @@ export const VendorsPage: React.FC = () => {
                   <td className="px-5 py-4 text-gray-600">{v.commissionRate}%</td>
                   <td className="px-5 py-4"><StatusBadge status={v.approvalStatus} /></td>
                   <td className="px-5 py-4 text-gray-400 text-xs">{v.createdAt?.slice(0, 10)}</td>
+
+                  {/* Approve / Reject / Suspend */}
                   <td className="px-5 py-4">
                     <div className="flex items-center gap-1">
                       {v.approvalStatus === 'pending' && (
@@ -131,6 +139,20 @@ export const VendorsPage: React.FC = () => {
                         </button>
                       )}
                     </div>
+                  </td>
+
+                  {/* Manage Panel */}
+                  <td className="px-5 py-4">
+                    {onManage && (
+                      <button
+                        onClick={() => onManage({ id: v.id || v._id, name: v.businessName })}
+                        className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-[#0F2C59] text-white text-xs font-semibold hover:bg-[#0F2C59]/90 transition-colors shadow-sm"
+                        title={`Manage ${v.businessName}'s panel`}
+                      >
+                        <LayoutDashboard className="w-3.5 h-3.5" />
+                        Manage Panel
+                      </button>
+                    )}
                   </td>
                 </tr>
               ))}

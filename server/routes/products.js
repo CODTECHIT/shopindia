@@ -27,6 +27,8 @@ router.get('/', async (_req, res) => {
       category: p.categoryId || (p.tags && p.tags.length ? p.tags[0] : (p.vendor && p.vendor.category ? p.vendor.category : '')),
       brand: p.brand || '',
       vertical: mapVertical(p.fulfillmentType),
+      stock: p.stock,
+      isOutOfStock: p.isOutOfStock || p.stock <= 0,
       isAssured: false,
     })));
   } catch (err) {

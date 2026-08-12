@@ -53,10 +53,38 @@ router.get('/', customerAuth, async (req, res) => {
     }
     const orders = await prisma.order.findMany({
       where: { customerId: req.user.userId },
-      include: { items: true },
+      include: {
+        items: {
+          include: {
+            product: {
+              include: {
+                images: true
+              }
+            }
+          }
+        }
+      },
       orderBy: { createdAt: 'desc' },
     });
-    res.json({ orders });
+
+    const mappedOrders = orders.map((o) => ({
+      id: o.id,
+      orderNumber: o.orderNumber,
+      total: o.total,
+      status: o.status,
+      date: new Date(o.createdAt).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' }),
+      items: o.items.map((it) => ({
+        product: {
+          id: it.productId,
+          title: it.name,
+          price: it.price,
+          image: it.product && it.product.images && it.product.images.length ? it.product.images[0].url : '',
+        },
+        quantity: it.quantity,
+      })),
+    }));
+
+    res.json({ orders: mappedOrders });
   } catch (err) {
     res.status(500).json({ error: err.message });
   }
@@ -71,16 +99,16 @@ router.post('/', async (req, res) => {
       return res.status(400).json({ error: 'Cart is empty.' });
     }
     for (const it of items) {
-      if (!it.productId || !it.name || !Number.isInteger(it.quantity) || it.quantity < 1) {
+      if (!it.productId || !Number.isInteger(it.quantity) || it.quantity < 1) {
         return res.status(400).json({ error: 'Invalid item in order.' });
       }
     }
 
-    // Resolve prices from the database (never trust client-sent prices)
+    // Resolve prices and names from the database (never trust client-sent details)
     const productIds = items.map((it) => it.productId);
     const products = await prisma.product.findMany({
       where: { id: { in: productIds }, status: 'active' },
-      select: { id: true, basePrice: true, vendorId: true },
+      select: { id: true, name: true, basePrice: true, vendorId: true, stock: true, isOutOfStock: true },
     });
     const productMap = new Map(products.map((p) => [p.id, p]));
 
@@ -88,12 +116,15 @@ router.post('/', async (req, res) => {
     for (const it of items) {
       const product = productMap.get(it.productId);
       if (!product) {
-        return res.status(400).json({ error: `Unknown product: ${it.name}` });
+        return res.status(400).json({ error: `Unknown product ID: ${it.productId}` });
+      }
+      if (product.isOutOfStock || product.stock < it.quantity) {
+        return res.status(400).json({ error: `Product "${product.name}" is out of stock.` });
       }
       resolved.push({
         productId: product.id,
         vendorId: product.vendorId,
-        name: it.name,
+        name: product.name,
         price: product.basePrice,
         quantity: it.quantity,
       });
@@ -130,16 +161,33 @@ router.post('/', async (req, res) => {
           })),
         },
       },
-      include: { items: true },
+      include: {
+        items: {
+          include: {
+            product: {
+              include: {
+                images: true
+              }
+            }
+          }
+        }
+      },
     });
 
     await Promise.all(
-      resolved.map((it) =>
-        prisma.product.updateMany({
-          where: { id: it.productId, stock: { gte: it.quantity } },
-          data: { stock: { decrement: it.quantity } },
-        })
-      )
+      resolved.map(async (it) => {
+        const prod = await prisma.product.findUnique({ where: { id: it.productId } });
+        if (prod) {
+          const newStock = Math.max(0, prod.stock - it.quantity);
+          await prisma.product.update({
+            where: { id: it.productId },
+            data: {
+              stock: newStock,
+              isOutOfStock: newStock <= 0 ? true : prod.isOutOfStock
+            }
+          });
+        }
+      })
     );
 
     res.status(201).json({
@@ -147,9 +195,53 @@ router.post('/', async (req, res) => {
       orderNumber: order.orderNumber,
       total: order.total,
       status: order.status,
-      createdAt: order.createdAt,
-      items: order.items,
+      date: new Date(order.createdAt).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' }),
+      items: order.items.map((it) => ({
+        product: {
+          id: it.productId,
+          title: it.name,
+          price: it.price,
+          image: it.product && it.product.images && it.product.images.length ? it.product.images[0].url : '',
+        },
+        quantity: it.quantity,
+      })),
     });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+/** POST /api/orders/:id/cancel — cancel order */
+router.post('/:id/cancel', customerAuth, async (req, res) => {
+  try {
+    const order = await prisma.order.findFirst({
+      where: { id: req.params.id, customerId: req.user.userId },
+      include: { items: true },
+    });
+    if (!order) return res.status(404).json({ error: 'Order not found.' });
+    if (!['placed', 'pending', 'confirmed', 'processing', 'packing'].includes(order.status)) {
+      return res.status(400).json({ error: 'Order can no longer be cancelled.' });
+    }
+    await prisma.order.update({ where: { id: order.id }, data: { status: 'cancelled' } });
+    await Promise.all(order.items.map((it) =>
+      prisma.product.updateMany({ where: { id: it.productId }, data: { stock: { increment: it.quantity } } })
+    ));
+    res.json({ ok: true, status: 'cancelled' });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+/** PUT /api/orders/:id/status — update order status (e.g. for returns/exchanges) */
+router.put('/:id/status', customerAuth, async (req, res) => {
+  try {
+    const { status } = req.body;
+    const order = await prisma.order.findFirst({
+      where: { id: req.params.id, customerId: req.user.userId },
+    });
+    if (!order) return res.status(404).json({ error: 'Order not found.' });
+    await prisma.order.update({ where: { id: order.id }, data: { status } });
+    res.json({ ok: true, status });
   } catch (err) {
     res.status(500).json({ error: err.message });
   }

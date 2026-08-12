@@ -1,6 +1,6 @@
 const express = require('express');
 const prisma = require('../../lib/prisma');
-const { verifyToken }      = require('../../middleware/auth');
+const { verifyToken }       = require('../../middleware/auth');
 const { requirePermission } = require('../../middleware/rbac');
 
 const router = express.Router();
@@ -14,7 +14,7 @@ router.get('/', async (req, res) => {
     if (status) where.approvalStatus = status;
     if (q)      where.businessName   = { contains: q, mode: 'insensitive' };
 
-    const pageNum = Number(page);
+    const pageNum  = Number(page);
     const limitNum = Number(limit);
 
     const [vendors, total] = await Promise.all([
@@ -81,6 +81,216 @@ router.patch('/:id/commission', async (req, res) => {
       data: { commissionRate },
     });
     res.json(vendor);
+  } catch (err) { res.status(500).json({ error: err.message }); }
+});
+
+// ─── Admin-scoped Vendor Panel Routes ────────────────────────────────────────
+// All routes below let admin manage any vendor's panel using the vendor's ID.
+
+/** GET /api/admin/vendors/:id/overview — vendor dashboard stats */
+router.get('/:id/overview', async (req, res) => {
+  try {
+    const vendorId = req.params.id;
+    const [orders, vendor] = await Promise.all([
+      prisma.order.findMany({
+        where: { vendorId },
+        select: { total: true, status: true, paymentStatus: true, createdAt: true },
+      }),
+      prisma.vendor.findUnique({
+        where: { id: vendorId },
+        select: { walletBalance: true },
+      }),
+    ]);
+
+    const activeOrders = orders.filter(o => o.status !== 'cancelled');
+    const allTime = activeOrders.reduce(
+      (acc, o) => ({ total: acc.total + (o.total || 0), count: acc.count + 1 }),
+      { total: 0, count: 0 }
+    );
+
+    const ordersByStatus = Object.entries(
+      orders.reduce((acc, o) => {
+        acc[o.status] = (acc[o.status] || 0) + 1;
+        return acc;
+      }, {})
+    ).map(([_id, count]) => ({ _id, count }));
+
+    res.json({ allTime, ordersByStatus, walletBalance: vendor?.walletBalance || 0 });
+  } catch (err) { res.status(500).json({ error: err.message }); }
+});
+
+/** GET /api/admin/vendors/:id/products — list vendor's products */
+router.get('/:id/products', async (req, res) => {
+  try {
+    const products = await prisma.product.findMany({
+      where: { vendorId: req.params.id },
+      include: { category: { select: { name: true } } },
+      orderBy: { createdAt: 'desc' },
+    });
+    res.json({ products });
+  } catch (err) { res.status(500).json({ error: err.message }); }
+});
+
+/** POST /api/admin/vendors/:id/products — add product for vendor */
+router.post('/:id/products', async (req, res) => {
+  try {
+    const product = await prisma.product.create({
+      data: { ...req.body, vendorId: req.params.id },
+    });
+    res.status(201).json(product);
+  } catch (err) { res.status(500).json({ error: err.message }); }
+});
+
+/** PUT /api/admin/vendors/:id/products/:pid — edit vendor's product */
+router.put('/:id/products/:pid', async (req, res) => {
+  try {
+    const product = await prisma.product.update({
+      where: { id: req.params.pid },
+      data: req.body,
+    });
+    res.json(product);
+  } catch (err) { res.status(500).json({ error: err.message }); }
+});
+
+/** DELETE /api/admin/vendors/:id/products/:pid — delete vendor's product */
+router.delete('/:id/products/:pid', async (req, res) => {
+  try {
+    await prisma.product.delete({ where: { id: req.params.pid } });
+    res.json({ ok: true });
+  } catch (err) { res.status(500).json({ error: err.message }); }
+});
+
+/** GET /api/admin/vendors/:id/orders — vendor's orders */
+router.get('/:id/orders', async (req, res) => {
+  try {
+    const orders = await prisma.order.findMany({
+      where: { vendorId: req.params.id },
+      include: {
+        customer: { select: { name: true, email: true } },
+        branch:   { select: { name: true } },
+        items:    true,
+      },
+      orderBy: { createdAt: 'desc' },
+      take: 100,
+    });
+    res.json({ orders });
+  } catch (err) { res.status(500).json({ error: err.message }); }
+});
+
+/** PATCH /api/admin/vendors/:id/orders/:oid/status — update order status */
+router.patch('/:id/orders/:oid/status', async (req, res) => {
+  try {
+    const { status } = req.body;
+    const order = await prisma.order.update({
+      where: { id: req.params.oid },
+      data: { status },
+    });
+    res.json(order);
+  } catch (err) { res.status(500).json({ error: err.message }); }
+});
+
+/** GET /api/admin/vendors/:id/wallet — wallet balance + transactions */
+router.get('/:id/wallet', async (req, res) => {
+  try {
+    const vendorId = req.params.id;
+    const vendor = await prisma.vendor.findUnique({
+      where: { id: vendorId },
+    });
+    if (!vendor) return res.status(404).json({ error: 'Vendor not found.' });
+
+    const paidOrders = await prisma.order.findMany({
+      where: { vendorId, paymentStatus: 'paid' },
+      select: {
+        id: true,
+        orderNumber: true,
+        total: true,
+        commission: true,
+        createdAt: true,
+      }
+    });
+
+    const withdrawals = await prisma.transaction.findMany({
+      where: { userId: vendor.userId, type: 'withdrawal' },
+      orderBy: { createdAt: 'desc' }
+    });
+
+    const transactions = [
+      ...paidOrders.map(o => ({
+        id: o.id,
+        createdAt: o.createdAt,
+        type: 'sale',
+        amount: o.total - o.commission,
+        status: 'paid',
+        note: `Order ${o.orderNumber}`
+      })),
+      ...withdrawals.map(w => ({
+        id: w.id,
+        createdAt: w.createdAt,
+        type: 'withdrawal',
+        amount: -w.amount,
+        status: w.status,
+        note: `Withdrawal Request`
+      }))
+    ].sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
+
+    res.json({ walletBalance: vendor.walletBalance, transactions });
+  } catch (err) { res.status(500).json({ error: err.message }); }
+});
+
+/** POST /api/admin/vendors/:id/wallet/transactions/:tid/approve — approve withdrawal request */
+router.post('/:id/wallet/transactions/:tid/approve', async (req, res) => {
+  try {
+    const tx = await prisma.transaction.findUnique({ where: { id: req.params.tid } });
+    if (!tx || tx.type !== 'withdrawal') {
+      return res.status(404).json({ error: 'Withdrawal request not found.' });
+    }
+    if (tx.status !== 'pending') {
+      return res.status(400).json({ error: 'Withdrawal is already processed.' });
+    }
+
+    const [updatedTx] = await prisma.$transaction([
+      prisma.transaction.update({
+        where: { id: req.params.tid },
+        data: { status: 'paid' }
+      }),
+      prisma.vendor.update({
+        where: { id: req.params.id },
+        data: { walletBalance: { decrement: tx.amount } }
+      })
+    ]);
+
+    res.json({ message: 'Withdrawal request approved.', transaction: updatedTx });
+  } catch (err) { res.status(500).json({ error: err.message }); }
+});
+
+/** POST /api/admin/vendors/:id/wallet/transactions/:tid/reject — reject withdrawal request */
+router.post('/:id/wallet/transactions/:tid/reject', async (req, res) => {
+  try {
+    const tx = await prisma.transaction.findUnique({ where: { id: req.params.tid } });
+    if (!tx || tx.type !== 'withdrawal') {
+      return res.status(404).json({ error: 'Withdrawal request not found.' });
+    }
+    if (tx.status !== 'pending') {
+      return res.status(400).json({ error: 'Withdrawal is already processed.' });
+    }
+
+    const updatedTx = await prisma.transaction.update({
+      where: { id: req.params.tid },
+      data: { status: 'failed' }
+    });
+
+    res.json({ message: 'Withdrawal request rejected.', transaction: updatedTx });
+  } catch (err) { res.status(500).json({ error: err.message }); }
+});
+
+/** GET /api/admin/vendors/:id/technicians — vendor's technicians */
+router.get('/:id/technicians', async (req, res) => {
+  try {
+    const technicians = await prisma.technician.findMany({
+      where: { vendorId: req.params.id },
+      orderBy: { createdAt: 'desc' },
+    }).catch(() => []);
+    res.json({ technicians });
   } catch (err) { res.status(500).json({ error: err.message }); }
 });
 

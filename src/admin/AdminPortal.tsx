@@ -18,19 +18,33 @@ import { NotificationsPage } from './pages/NotificationsPage';
 import { OffersPage } from './pages/OffersPage';
 import { PromotionsPage } from './pages/PromotionsPage';
 import { CategoriesPage } from './pages/CategoriesPage';
+import { AdminVendorView } from './pages/AdminVendorView';
+
+export interface ManagedVendor { id: string; name: string; }
 
 const AdminContent: React.FC = () => {
   const { isAuthenticated } = useAuth();
   const [tab, setTab] = useState('dashboard');
+  const [managedVendor, setManagedVendor] = useState<ManagedVendor | null>(null);
 
-  if (!isAuthenticated) {
-    return <AdminLogin />;
+  if (!isAuthenticated) return <AdminLogin />;
+
+  // When a vendor is being managed, render the vendor panel overlay
+  if (managedVendor) {
+    return (
+      <div className="flex min-h-screen bg-[#FAF9F6]">
+        <AdminSidebar currentTab={tab} onTabChange={(t) => { setTab(t); setManagedVendor(null); }} />
+        <main className="flex-1 p-8 overflow-y-auto max-w-7xl mx-auto">
+          <AdminVendorView vendor={managedVendor} onBack={() => setManagedVendor(null)} />
+        </main>
+      </div>
+    );
   }
 
   const renderTab = () => {
     switch (tab) {
       case 'dashboard':     return <Dashboard />;
-      case 'vendors':       return <VendorsPage />;
+      case 'vendors':       return <VendorsPage onManage={setManagedVendor} />;
       case 'users':         return <UsersPage />;
       case 'products':      return <ProductsPage />;
       case 'orders':        return <OrdersPage />;
@@ -60,7 +74,7 @@ const AdminContent: React.FC = () => {
 };
 
 export const AdminPortal: React.FC = () => (
-  <AuthProvider>
+  <AuthProvider storagePrefix="admin">
     <AdminContent />
   </AuthProvider>
 );

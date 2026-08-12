@@ -109,24 +109,30 @@ export const ProductDetailPage: React.FC = () => {
             </div>
 
             {/* CTA action buttons (16px curved) */}
-            <div className="grid grid-cols-2 gap-3 text-xs font-extrabold select-none font-heading">
-              <motion.button
-                whileTap={{ scale: 0.96 }}
-                onClick={handleAddToCart}
-                className="w-full py-3.5 rounded-button bg-brand-orange hover:bg-orange-655 text-white flex items-center justify-center gap-2 shadow-premium transition-all uppercase tracking-wider font-black"
-              >
-                <ShoppingCart size={16} />
-                <span>Add to Cart</span>
-              </motion.button>
-              <motion.button
-                whileTap={{ scale: 0.96 }}
-                onClick={handleBuyNow}
-                className="w-full py-3.5 rounded-button bg-brand-blue hover:bg-blue-600 text-white flex items-center justify-center gap-2 shadow-premium transition-all uppercase tracking-wider font-black"
-              >
-                <Zap size={16} />
-                <span>Buy Now</span>
-              </motion.button>
-            </div>
+            {product.isOutOfStock || (product.stock !== undefined && product.stock <= 0) ? (
+              <div className="w-full py-3.5 rounded-button bg-gray-100 text-gray-400 flex items-center justify-center gap-2 text-sm font-black uppercase tracking-wider select-none font-heading border border-gray-200 cursor-not-allowed">
+                <span>Out of Stock</span>
+              </div>
+            ) : (
+              <div className="grid grid-cols-2 gap-3 text-xs font-extrabold select-none font-heading">
+                <motion.button
+                  whileTap={{ scale: 0.96 }}
+                  onClick={handleAddToCart}
+                  className="w-full py-3.5 rounded-button bg-brand-orange hover:bg-orange-655 text-white flex items-center justify-center gap-2 shadow-premium transition-all uppercase tracking-wider font-black"
+                >
+                  <ShoppingCart size={16} />
+                  <span>Add to Cart</span>
+                </motion.button>
+                <motion.button
+                  whileTap={{ scale: 0.96 }}
+                  onClick={handleBuyNow}
+                  className="w-full py-3.5 rounded-button bg-brand-blue hover:bg-blue-600 text-white flex items-center justify-center gap-2 shadow-premium transition-all uppercase tracking-wider font-black"
+                >
+                  <Zap size={16} />
+                  <span>Buy Now</span>
+                </motion.button>
+              </div>
+            )}
           </div>
 
           {/* Right Column: Info details (Span 3) */}
@@ -426,21 +432,29 @@ export const ProductDetailPage: React.FC = () => {
         </div>
 
         {/* Floating Mobile Bottom CTA Buttons (Pill shaped) */}
-        <div className="fixed bottom-0 left-0 right-0 bg-white/95 backdrop-blur-xl border-t border-slate-200/60 grid grid-cols-2 items-center z-45 text-center text-xs font-extrabold select-none shadow-[0_-8px_20px_-8px_rgba(0,0,0,0.1)] px-4 py-3 pb-safe gap-3">
-          <button
-            onClick={handleAddToCart}
-            className="w-full h-[52px] text-zinc-800 bg-white border-2 border-slate-200/80 flex items-center justify-center gap-2 uppercase hover:bg-slate-50 active:scale-[0.98] transition-all font-heading rounded-full tracking-wide shadow-sm"
-          >
-            <ShoppingCart size={17} strokeWidth={2.5} />
-            <span>Add to Cart</span>
-          </button>
-          <button
-            onClick={handleBuyNow}
-            className="w-full h-[52px] bg-[#0A1022] text-white flex items-center justify-center gap-2 uppercase hover:bg-black active:scale-[0.98] transition-all font-heading rounded-full tracking-wide shadow-[0_4px_14px_rgba(10,16,34,0.3)]"
-          >
-            <Zap size={17} fill="white" strokeWidth={2} />
-            <span>Buy Now</span>
-          </button>
+        <div className="fixed bottom-0 left-0 right-0 bg-white/95 backdrop-blur-xl border-t border-slate-200/60 z-45 text-center select-none shadow-[0_-8px_20px_-8px_rgba(0,0,0,0.1)] px-4 py-3 pb-safe">
+          {product.isOutOfStock || (product.stock !== undefined && product.stock <= 0) ? (
+            <div className="w-full h-[52px] bg-gray-100 text-gray-400 border border-gray-200 flex items-center justify-center gap-2 uppercase text-xs font-black rounded-full tracking-wide cursor-not-allowed">
+              <span>Out of Stock</span>
+            </div>
+          ) : (
+            <div className="grid grid-cols-2 gap-3 text-xs font-extrabold font-heading">
+              <button
+                onClick={handleAddToCart}
+                className="w-full h-[52px] text-zinc-800 bg-white border-2 border-slate-200/80 flex items-center justify-center gap-2 uppercase hover:bg-slate-50 active:scale-[0.98] transition-all rounded-full tracking-wide shadow-sm font-black"
+              >
+                <ShoppingCart size={17} strokeWidth={2.5} />
+                <span>Add to Cart</span>
+              </button>
+              <button
+                onClick={handleBuyNow}
+                className="w-full h-[52px] bg-[#0A1022] text-white flex items-center justify-center gap-2 uppercase hover:bg-black active:scale-[0.98] transition-all rounded-full tracking-wide shadow-[0_4px_14px_rgba(10,16,34,0.3)] font-black"
+              >
+                <Zap size={17} fill="white" strokeWidth={2} />
+                <span>Buy Now</span>
+              </button>
+            </div>
+          )}
         </div>
       </div>
     );

@@ -62,11 +62,39 @@ router.patch('/:id/status', async (req, res) => {
     });
     if (!existing) return res.status(404).json({ error: 'Order not found.' });
 
-    const order = await prisma.order.update({
-      where: { id: req.params.id },
-      data: { status },
-      include: { items: true },
-    });
+    let order;
+    if (status === 'delivered' && existing.status !== 'delivered') {
+      const vendor = await prisma.vendor.findUnique({ where: { id: req.user.vendorId } });
+      const commRateRaw = Number(vendor?.commissionRate) || 10;
+      const commRate = commRateRaw > 1 ? commRateRaw / 100 : commRateRaw;
+      const commission = existing.total * commRate;
+      const netEarnings = existing.total - commission;
+
+      const [updatedOrder] = await prisma.$transaction([
+        prisma.order.update({
+          where: { id: req.params.id },
+          data: {
+            status: 'delivered',
+            paymentStatus: 'paid',
+            commission,
+          },
+          include: { items: true },
+        }),
+        prisma.vendor.update({
+          where: { id: req.user.vendorId },
+          data: {
+            walletBalance: { increment: netEarnings }
+          }
+        })
+      ]);
+      order = updatedOrder;
+    } else {
+      order = await prisma.order.update({
+        where: { id: req.params.id },
+        data: { status },
+        include: { items: true },
+      });
+    }
     res.json(order);
   } catch (err) { res.status(500).json({ error: err.message }); }
 });

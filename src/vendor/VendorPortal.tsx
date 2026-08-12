@@ -41,7 +41,7 @@ const VendorContent: React.FC = () => {
 };
 
 export const VendorPortal: React.FC = () => (
-  <AuthProvider>
+  <AuthProvider storagePrefix="vendor">
     <VendorContent />
   </AuthProvider>
 );

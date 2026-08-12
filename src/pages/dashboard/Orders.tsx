@@ -45,10 +45,14 @@ export const OrdersPage: React.FC = () => {
                   </div>
                   <div className="min-w-0">
                     <div className="flex items-center gap-2 flex-wrap">
-                      <span className="font-bold text-sm font-numbers text-brand-graphite">{o.id}</span>
+                      <span className="font-bold text-sm text-brand-graphite">
+                        {o.items.map(it => it.product?.title || 'Product').join(', ') || 'Order'}
+                      </span>
                       <Badge tone={statusTone(o.status)}>{o.status}</Badge>
                     </div>
-                    <p className="text-[11px] text-brand-slate mt-0.5">{o.date}</p>
+                    <p className="text-[11px] text-brand-slate mt-0.5">
+                      Order {o.orderNumber || o.id} • {o.date || '—'}
+                    </p>
                   </div>
                 </div>
                 <div className="flex items-center gap-3 flex-shrink-0">

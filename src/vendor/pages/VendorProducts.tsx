@@ -1,11 +1,11 @@
 import React, { useEffect, useState } from 'react';
 import { api } from '../../lib/api';
-import { Plus, Edit2, Trash2 } from 'lucide-react';
+import { Plus, Edit2, Trash2, Search } from 'lucide-react';
 
 export const VendorProducts: React.FC = () => {
   const [products, setProducts] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
-  const [q] = useState('');
+  const [q, setQ] = useState('');
 
   const [modal, setModal] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
@@ -67,7 +67,7 @@ export const VendorProducts: React.FC = () => {
     setUploading(true);
     const formData = new FormData();
     formData.append('image', imageFile);
-    const token = localStorage.getItem('shopindia_admin_token');
+    const token = localStorage.getItem('shopindia_vendor_token') || localStorage.getItem('shopindia_admin_token');
     const API_BASE = import.meta.env.VITE_API_URL || 'http://localhost:5001';
     const uploadRes = await fetch(`${API_BASE}/api/vendor/products/upload-image`, {
       method: 'POST',
@@ -131,6 +131,18 @@ export const VendorProducts: React.FC = () => {
         </button>
       </div>
 
+      <div className="flex items-center gap-3">
+        <div className="relative flex-1 max-w-xs">
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+          <input
+            value={q}
+            onChange={e => setQ(e.target.value)}
+            placeholder="Search products..."
+            className="w-full pl-9 pr-4 py-2.5 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-[#0F2C59]/20 bg-white"
+          />
+        </div>
+      </div>
+
       <div className="bg-white rounded-2xl border border-gray-100 shadow-premium overflow-hidden">
         <table className="w-full text-sm text-left">
           <thead className="bg-gray-50 border-b border-gray-100 text-gray-600">
@@ -148,6 +160,8 @@ export const VendorProducts: React.FC = () => {
               Array.from({ length: 3 }).map((_, i) => (
                 <tr key={i}><td colSpan={6} className="px-5 py-4"><div className="h-4 skeleton-shimmer rounded" /></td></tr>
               ))
+            ) : filtered.length === 0 ? (
+              <tr><td colSpan={6} className="text-center py-10 text-gray-400">No matching products found.</td></tr>
             ) : filtered.map(p => (
               <tr key={p.id || p._id} className="hover:bg-gray-50/50">
                 <td className="px-5 py-4">
@@ -161,12 +175,12 @@ export const VendorProducts: React.FC = () => {
                 <td className="px-5 py-4 capitalize text-xs font-medium text-gray-500">{p.fulfillmentType?.replace('_', ' ')}</td>
                 <td className="px-5 py-4">
                   <button
-                    onClick={() => toggleStock(p.id || p._id, p.isOutOfStock)}
+                    onClick={() => toggleStock(p.id || p._id, p.isOutOfStock || p.stock <= 0)}
                     className={`text-xs font-semibold px-3 py-1 rounded-full border transition-all ${
-                      p.isOutOfStock ? 'bg-red-50 text-red-700 border-red-200' : 'bg-emerald-50 text-emerald-700 border-emerald-200'
+                      (p.isOutOfStock || p.stock <= 0) ? 'bg-red-50 text-red-700 border-red-200' : 'bg-emerald-50 text-emerald-700 border-emerald-200'
                     }`}
                   >
-                    {p.isOutOfStock ? 'Mark In-Stock' : 'In Stock (Click to Mark Out)'}
+                    {(p.isOutOfStock || p.stock <= 0) ? 'Mark In-Stock' : 'In Stock (Click to Mark Out)'}
                   </button>
                 </td>
                 <td className="px-5 py-4">

@@ -5,12 +5,18 @@
 const RAW_BASE = import.meta.env.VITE_API_URL || 'http://localhost:5001';
 const BASE = RAW_BASE.replace(/\/api\/?$/, '').replace(/\/$/, '');
 
-function getToken(): string | null {
+function getToken(path: string): string | null {
+  if (path.startsWith('/api/vendor')) {
+    return localStorage.getItem('shopindia_vendor_token');
+  }
+  if (path.startsWith('/api/admin')) {
+    return localStorage.getItem('shopindia_admin_token');
+  }
   return localStorage.getItem('shopindia_customer_token') || localStorage.getItem('shopindia_admin_token');
 }
 
 async function request<T>(path: string, options: RequestInit = {}): Promise<T> {
-  const token = getToken();
+  const token = getToken(path);
   const isFormData = options.body instanceof FormData;
   const headers: Record<string, string> = {
     ...(options.headers as Record<string, string>),
@@ -29,6 +35,8 @@ async function request<T>(path: string, options: RequestInit = {}): Promise<T> {
       localStorage.removeItem('shopindia_customer_user');
       localStorage.removeItem('shopindia_admin_token');
       localStorage.removeItem('shopindia_admin_user');
+      localStorage.removeItem('shopindia_vendor_token');
+      localStorage.removeItem('shopindia_vendor_user');
       window.location.reload();
       return Promise.reject(new Error('Session expired'));
     }

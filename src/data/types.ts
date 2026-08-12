@@ -14,6 +14,8 @@ export interface Product {
   deliveryTime?: string;
   isAssured?: boolean;
   quantity?: number;
+  stock?: number;
+  isOutOfStock?: boolean;
 }
 
 export interface Category {

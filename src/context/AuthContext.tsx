@@ -24,29 +24,29 @@ interface AuthContextType {
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
-const TOKEN_KEY = 'shopindia_admin_token';
-const USER_KEY  = 'shopindia_admin_user';
+export const AuthProvider: React.FC<{ children: React.ReactNode; storagePrefix?: 'admin' | 'vendor' }> = ({ children, storagePrefix = 'admin' }) => {
+  const tokenKey = storagePrefix === 'vendor' ? 'shopindia_vendor_token' : 'shopindia_admin_token';
+  const userKey  = storagePrefix === 'vendor' ? 'shopindia_vendor_user' : 'shopindia_admin_user';
 
-export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-  const [token, setToken] = useState<string | null>(() => localStorage.getItem(TOKEN_KEY));
+  const [token, setToken] = useState<string | null>(() => localStorage.getItem(tokenKey));
   const [user,  setUser]  = useState<AuthUser | null>(() => {
-    const raw = localStorage.getItem(USER_KEY);
+    const raw = localStorage.getItem(userKey);
     return raw ? JSON.parse(raw) : null;
   });
 
   const login = useCallback((newToken: string, newUser: AuthUser) => {
-    localStorage.setItem(TOKEN_KEY, newToken);
-    localStorage.setItem(USER_KEY, JSON.stringify(newUser));
+    localStorage.setItem(tokenKey, newToken);
+    localStorage.setItem(userKey, JSON.stringify(newUser));
     setToken(newToken);
     setUser(newUser);
-  }, []);
+  }, [tokenKey, userKey]);
 
   const logout = useCallback(() => {
-    localStorage.removeItem(TOKEN_KEY);
-    localStorage.removeItem(USER_KEY);
+    localStorage.removeItem(tokenKey);
+    localStorage.removeItem(userKey);
     setToken(null);
     setUser(null);
-  }, []);
+  }, [tokenKey, userKey]);
 
   // super_admin always passes role checks
   const hasRole = useCallback((...roles: UserRole[]) => {

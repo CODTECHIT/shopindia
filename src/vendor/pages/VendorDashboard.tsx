@@ -21,7 +21,9 @@ export const VendorDashboard: React.FC = () => {
     return <div className="h-40 skeleton-shimmer rounded-2xl" />;
   }
 
-  const pendingCount = data?.ordersByStatus?.find((s: any) => s._id === 'placed' || s._id === 'packing')?.count || 0;
+  const pendingCount = data?.ordersByStatus
+    ?.filter((s: any) => !['delivered', 'cancelled'].includes(s._id))
+    ?.reduce((sum: number, s: any) => sum + s.count, 0) || 0;
 
   return (
     <div className="space-y-6">

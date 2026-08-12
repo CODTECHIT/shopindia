@@ -23,6 +23,41 @@ router.get('/', async (req, res) => {
     const grossRevenue = earnings._sum.total || 0;
     const totalCommission = earnings._sum.commission || 0;
 
+    const paidOrders = await prisma.order.findMany({
+      where: { vendorId: req.user.vendorId, paymentStatus: 'paid' },
+      select: {
+        id: true,
+        orderNumber: true,
+        total: true,
+        commission: true,
+        createdAt: true,
+      }
+    });
+
+    const withdrawals = await prisma.transaction.findMany({
+      where: { userId: vendor.userId, type: 'withdrawal' },
+      orderBy: { createdAt: 'desc' }
+    });
+
+    const transactions = [
+      ...paidOrders.map(o => ({
+        id: o.id,
+        createdAt: o.createdAt,
+        type: 'sale',
+        amount: o.total - o.commission,
+        status: 'paid',
+        note: `Order ${o.orderNumber}`
+      })),
+      ...withdrawals.map(w => ({
+        id: w.id,
+        createdAt: w.createdAt,
+        type: 'withdrawal',
+        amount: -w.amount,
+        status: w.status,
+        note: `Withdrawal Request`
+      }))
+    ].sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
+
     res.json({
       walletBalance:   vendor.walletBalance,
       commissionRate:  vendor.commissionRate,
@@ -30,6 +65,7 @@ router.get('/', async (req, res) => {
       totalCommission,
       netEarnings:     grossRevenue - totalCommission,
       orderCount:      earnings._count.id || 0,
+      transactions,
       bankDetails: {
         accountHolder: vendor.accountHolder,
         accountNumber: vendor.accountNumber,
@@ -75,14 +111,29 @@ router.post('/withdraw', async (req, res) => {
     const { amount } = req.body;
     const vendor = await prisma.vendor.findUnique({ where: { id: req.user.vendorId } });
     if (!vendor) return res.status(404).json({ error: 'Vendor not found.' });
-    if (amount <= 0 || amount > vendor.walletBalance) {
-      return res.status(400).json({ error: 'Invalid withdrawal amount.' });
-    }
-    const updated = await prisma.vendor.update({
-      where: { id: req.user.vendorId },
-      data: { walletBalance: vendor.walletBalance - amount },
+
+    const pendingWithdrawals = await prisma.transaction.aggregate({
+      where: { userId: vendor.userId, type: 'withdrawal', status: 'pending' },
+      _sum: { amount: true }
     });
-    res.json({ message: 'Withdrawal request submitted.', walletBalance: updated.walletBalance });
+    const pendingSum = pendingWithdrawals._sum.amount || 0;
+    const available = vendor.walletBalance - pendingSum;
+
+    if (amount <= 0 || amount > available) {
+      return res.status(400).json({ error: 'Invalid withdrawal amount or insufficient available balance.' });
+    }
+
+    const tx = await prisma.transaction.create({
+      data: {
+        userId: vendor.userId,
+        type: 'withdrawal',
+        amount: amount,
+        status: 'pending',
+        gatewayRef: 'withdrawal_request'
+      }
+    });
+
+    res.json({ message: 'Withdrawal request submitted for approval.', walletBalance: vendor.walletBalance });
   } catch (err) { res.status(500).json({ error: err.message }); }
 });
 
