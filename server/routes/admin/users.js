@@ -5,10 +5,15 @@ const { verifyToken }      = require('../../middleware/auth');
 const { requirePermission } = require('../../middleware/rbac');
 
 const router = express.Router();
-router.use(verifyToken, requirePermission('manage_users'));
+router.use(verifyToken);
+
+// Middleware for routes that require manage_users specifically
+const restrictManage = requirePermission('manage_users');
+// Middleware for routes that only require view_users (manage_users is also fine)
+const restrictView = requirePermission('view_users', 'manage_users');
 
 /** GET /api/admin/users?role=&status=&page=&limit= — FR-05.2 */
-router.get('/', async (req, res) => {
+router.get('/', restrictView, async (req, res) => {
   try {
     const { role, status, page = 1, limit = 20, q } = req.query;
     const where = {};
@@ -36,7 +41,7 @@ router.get('/', async (req, res) => {
 });
 
 /** GET /api/admin/users/:id */
-router.get('/:id', async (req, res) => {
+router.get('/:id', restrictView, async (req, res) => {
   try {
     const user = await prisma.user.findUnique({
       where: { id: req.params.id },
@@ -49,7 +54,7 @@ router.get('/:id', async (req, res) => {
 });
 
 /** POST /api/admin/users — create team member */
-router.post('/', async (req, res) => {
+router.post('/', restrictManage, async (req, res) => {
   try {
     const { password, ...data } = req.body;
     const hashedPassword = await bcrypt.hash(password || 'Password@123', 10);
@@ -65,7 +70,7 @@ router.post('/', async (req, res) => {
 });
 
 /** PATCH /api/admin/users/:id/status — suspend / block / activate — FR-05.2 */
-router.patch('/:id/status', async (req, res) => {
+router.patch('/:id/status', restrictManage, async (req, res) => {
   try {
     const { status } = req.body;
     if (!['active', 'suspended', 'blocked'].includes(status)) {
@@ -81,7 +86,7 @@ router.patch('/:id/status', async (req, res) => {
 });
 
 /** PATCH /api/admin/users/:id/permissions — update custom permissions */
-router.patch('/:id/permissions', async (req, res) => {
+router.patch('/:id/permissions', restrictManage, async (req, res) => {
   try {
     const { permissions } = req.body;
     const user = await prisma.user.update({

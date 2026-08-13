@@ -48,6 +48,7 @@ export const Dashboard: React.FC = () => {
   const [range,      setRange]      = useState<Range>('7d');
   const [singleDate, setSingleDate] = useState('');
   const [year,       setYear]       = useState('');
+  const [hoveredIdx, setHoveredIdx] = useState<number | null>(null);
 
   // Load main stats once
   useEffect(() => {
@@ -69,6 +70,7 @@ export const Dashboard: React.FC = () => {
     }
 
     setChartLoading(true);
+    setHoveredIdx(null);
     api.get<{ chartData: DailyOrder[] }>(`/api/admin/dashboard/revenue-chart?${params}`)
       .then(d => setChart(d.chartData))
       .catch(console.error)
@@ -114,9 +116,9 @@ export const Dashboard: React.FC = () => {
   };
 
   // Helpers to switch filter and clear the others
-  const selectRange = (r: Range) => { setRange(r); setSingleDate(''); setYear(''); };
-  const selectDate  = (d: string) => { setSingleDate(d); setYear(''); };
-  const selectYear  = (y: string) => { setYear(y); setSingleDate(''); };
+  const selectRange = (r: Range) => { setRange(r); setSingleDate(''); setYear(''); setHoveredIdx(null); };
+  const selectDate  = (d: string) => { setSingleDate(d); setYear(''); setHoveredIdx(null); };
+  const selectYear  = (y: string) => { setYear(y); setSingleDate(''); setHoveredIdx(null); };
 
   const activeLabel = singleDate
     ? `${singleDate} (Hourly)`
@@ -141,6 +143,66 @@ export const Dashboard: React.FC = () => {
   );
 
   const maxRev = Math.max(...chart.map(d => d.revenue), 1);
+
+  // SVG dimensions and padding
+  const svgWidth = 600;
+  const svgHeight = 200;
+  const paddingLeft = 55; // space for Y-axis labels
+  const paddingRight = 15;
+  const paddingTop = 15;
+  const paddingBottom = 25;
+
+  const plotWidth = svgWidth - paddingLeft - paddingRight;
+  const plotHeight = svgHeight - paddingTop - paddingBottom;
+
+  // Compute points
+  const points = chart.map((d, idx) => {
+    let x = paddingLeft;
+    if (chart.length > 1) {
+      x = paddingLeft + (idx / (chart.length - 1)) * plotWidth;
+    } else {
+      x = paddingLeft + plotWidth / 2;
+    }
+    const y = paddingTop + plotHeight - (d.revenue / maxRev) * plotHeight;
+    return { x, y, data: d };
+  });
+
+  // Calculate paths
+  let linePath = '';
+  let areaPath = '';
+
+  if (chart.length === 1 && points.length === 1) {
+    const yVal = points[0].y;
+    linePath = `M ${paddingLeft} ${yVal} L ${paddingLeft + plotWidth} ${yVal}`;
+    areaPath = `M ${paddingLeft} ${svgHeight - paddingBottom} L ${paddingLeft} ${yVal} L ${paddingLeft + plotWidth} ${yVal} L ${paddingLeft + plotWidth} ${svgHeight - paddingBottom} Z`;
+  } else if (points.length > 1) {
+    linePath = points.map((p, idx) => (idx === 0 ? `M ${p.x} ${p.y}` : `L ${p.x} ${p.y}`)).join(' ');
+    areaPath = `M ${points[0].x} ${svgHeight - paddingBottom} ${points.map(p => `L ${p.x} ${p.y}`).join(' ')} L ${points[points.length - 1].x} ${svgHeight - paddingBottom} Z`;
+  }
+
+  const handleMouseMove = (e: React.MouseEvent<SVGSVGElement, MouseEvent>) => {
+    if (!chart.length) return;
+    const rect = e.currentTarget.getBoundingClientRect();
+    const mouseX = e.clientX - rect.left;
+    const svgX = (mouseX / rect.width) * svgWidth;
+
+    let closestIdx = 0;
+    let minDiff = Infinity;
+
+    points.forEach((p, idx) => {
+      const diff = Math.abs(svgX - p.x);
+      if (diff < minDiff) {
+        minDiff = diff;
+        closestIdx = idx;
+      }
+    });
+
+    setHoveredIdx(closestIdx);
+  };
+
+  const handleMouseLeave = () => {
+    setHoveredIdx(null);
+  };
 
   return (
     <div className="space-y-6">
@@ -235,25 +297,169 @@ export const Dashboard: React.FC = () => {
         ) : chart.length === 0 ? (
           <p className="text-sm text-gray-400 text-center py-8">No revenue data for this period.</p>
         ) : (
-          <div className="flex items-end gap-2 h-40">
-            {chart.map(d => (
-              <div key={d._id} className="flex-1 flex flex-col items-center gap-1 min-w-0">
-                <div
-                  className="w-full bg-gradient-to-t from-[#0F2C59] to-[#2563eb] rounded-t-lg transition-all hover:opacity-80 cursor-default"
-                  style={{ height: `${(d.revenue / maxRev) * 120}px` }}
-                  title={`${d._id}\n${fmtRs(d.revenue)} • ${d.count} orders`}
+          <div className="relative">
+            <svg
+              viewBox={`0 0 ${svgWidth} ${svgHeight}`}
+              className="w-full h-auto overflow-visible select-none"
+              onMouseMove={handleMouseMove}
+              onMouseLeave={handleMouseLeave}
+            >
+              <defs>
+                {/* Area Gradient */}
+                <linearGradient id="chartGradient" x1="0" y1="0" x2="0" y2="1">
+                  <stop offset="0%" stopColor="#2563eb" stopOpacity={0.25} />
+                  <stop offset="100%" stopColor="#0F2C59" stopOpacity={0.0} />
+                </linearGradient>
+                {/* Line Gradient */}
+                <linearGradient id="lineGradient" x1="0" y1="0" x2="1" y2="0">
+                  <stop offset="0%" stopColor="#2563eb" />
+                  <stop offset="100%" stopColor="#0F2C59" />
+                </linearGradient>
+              </defs>
+
+              {/* Grid Lines */}
+              <line x1={paddingLeft} y1={paddingTop} x2={svgWidth - paddingRight} y2={paddingTop} stroke="#f1f5f9" strokeWidth={1} />
+              <line x1={paddingLeft} y1={paddingTop + plotHeight * 0.33} x2={svgWidth - paddingRight} y2={paddingTop + plotHeight * 0.33} stroke="#f1f5f9" strokeWidth={1} />
+              <line x1={paddingLeft} y1={paddingTop + plotHeight * 0.66} x2={svgWidth - paddingRight} y2={paddingTop + plotHeight * 0.66} stroke="#f1f5f9" strokeWidth={1} />
+              <line x1={paddingLeft} y1={paddingTop + plotHeight} x2={svgWidth - paddingRight} y2={paddingTop + plotHeight} stroke="#e2e8f0" strokeWidth={1.5} />
+
+              {/* Y Axis Labels */}
+              <text x={paddingLeft - 8} y={paddingTop + 4} textAnchor="end" className="text-[10px] fill-gray-400 font-medium font-numbers">
+                {fmtRs(maxRev)}
+              </text>
+              <text x={paddingLeft - 8} y={paddingTop + plotHeight * 0.33 + 4} textAnchor="end" className="text-[10px] fill-gray-400 font-medium font-numbers">
+                {fmtRs(Math.round(maxRev * 0.66))}
+              </text>
+              <text x={paddingLeft - 8} y={paddingTop + plotHeight * 0.66 + 4} textAnchor="end" className="text-[10px] fill-gray-400 font-medium font-numbers">
+                {fmtRs(Math.round(maxRev * 0.33))}
+              </text>
+              <text x={paddingLeft - 8} y={paddingTop + plotHeight + 4} textAnchor="end" className="text-[10px] fill-gray-400 font-medium font-numbers">
+                ₹0
+              </text>
+
+              {/* Area path */}
+              {areaPath && (
+                <path d={areaPath} fill="url(#chartGradient)" className="transition-all duration-300" />
+              )}
+
+              {/* Trend Line path */}
+              {linePath && (
+                <path
+                  d={linePath}
+                  fill="none"
+                  stroke="url(#lineGradient)"
+                  strokeWidth={2.5}
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  className="transition-all duration-300"
                 />
-                <span className="text-[10px] text-gray-400 truncate w-full text-center">
-                  {/* For month keys (YYYY-MM), show short month name; for hour keys (HH:00), show as-is; else show MM-DD */}
-                  {d._id.length === 7
-                    ? new Date(`${d._id}-01`).toLocaleString('default', { month: 'short' })
-                    : d._id.length === 5
-                      ? d._id          // HH:00
-                      : d._id.slice(5) // MM-DD
-                  }
-                </span>
-              </div>
-            ))}
+              )}
+
+              {/* Hover Crosshair line */}
+              {hoveredIdx !== null && points[hoveredIdx] && (
+                <line
+                  x1={points[hoveredIdx].x}
+                  y1={paddingTop}
+                  x2={points[hoveredIdx].x}
+                  y2={paddingTop + plotHeight}
+                  stroke="#cbd5e1"
+                  strokeWidth={1}
+                  strokeDasharray="4 4"
+                />
+              )}
+
+              {/* Data points (dots) */}
+              {points.map((p, idx) => {
+                const isHovered = idx === hoveredIdx;
+                return (
+                  <g key={p.data._id}>
+                    {/* Pulsing dot shadow on hover */}
+                    {isHovered && (
+                      <circle
+                        cx={p.x}
+                        cy={p.y}
+                        r={8}
+                        fill="#2563eb"
+                        fillOpacity={0.25}
+                      />
+                    )}
+                    {/* Actual data dot */}
+                    <circle
+                      cx={p.x}
+                      cy={p.y}
+                      r={isHovered ? 5.5 : 3.5}
+                      fill={isHovered ? '#0F2C59' : '#2563eb'}
+                      stroke="#ffffff"
+                      strokeWidth={isHovered ? 2 : 1.5}
+                      className="transition-all duration-150 cursor-pointer"
+                    />
+                  </g>
+                );
+              })}
+
+              {/* X Axis Labels */}
+              {chart.map((d, idx) => {
+                let x = paddingLeft;
+                if (chart.length > 1) {
+                  x = paddingLeft + (idx / (chart.length - 1)) * plotWidth;
+                } else {
+                  x = paddingLeft + plotWidth / 2;
+                }
+
+                const label = d._id.length === 7
+                  ? new Date(`${d._id}-01`).toLocaleString('default', { month: 'short' })
+                  : d._id.length === 5
+                    ? d._id
+                    : d._id.slice(5);
+
+                // Reduce amount of labels shown if they are too many
+                let showLabel = true;
+                if (chart.length > 12) {
+                  const step = Math.ceil(chart.length / 7);
+                  showLabel = idx % step === 0 || idx === chart.length - 1;
+                }
+
+                if (!showLabel) return null;
+
+                return (
+                  <text
+                    key={d._id}
+                    x={x}
+                    y={paddingTop + plotHeight + 16}
+                    textAnchor="middle"
+                    className="text-[10px] fill-gray-400 font-medium"
+                  >
+                    {label}
+                  </text>
+                );
+              })}
+            </svg>
+
+            {/* Custom Tooltip */}
+            {hoveredIdx !== null && points[hoveredIdx] && (() => {
+              const p = points[hoveredIdx];
+              const isRightHalf = hoveredIdx > chart.length / 2;
+              return (
+                <div
+                  className="absolute z-10 bg-white/95 backdrop-blur-sm rounded-xl shadow-lg border border-gray-100 p-3 pointer-events-none transition-all duration-75"
+                  style={{
+                    left: `${(p.x / svgWidth) * 100}%`,
+                    top: `${(p.y / svgHeight) * 100}%`,
+                    transform: `translate(${isRightHalf ? '-110%' : '10%'}, -110%)`,
+                  }}
+                >
+                  <p className="text-[10px] font-semibold text-gray-400 uppercase tracking-wider">
+                    {p.data._id}
+                  </p>
+                  <p className="text-sm font-bold text-gray-900 mt-0.5">
+                    {fmtRs(p.data.revenue)}
+                  </p>
+                  <p className="text-[10px] text-gray-500 mt-0.5">
+                    {p.data.count} {p.data.count === 1 ? 'order' : 'orders'}
+                  </p>
+                </div>
+              );
+            })()}
           </div>
         )}
       </div>

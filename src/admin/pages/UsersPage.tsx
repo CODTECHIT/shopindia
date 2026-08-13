@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { api } from '../../lib/api';
-import { Search, UserX, Ban, CheckCircle } from 'lucide-react';
+import { Search, UserX, Ban, CheckCircle, Plus } from 'lucide-react';
 
 const ROLES = ['all', 'customer', 'vendor', 'rider', 'branch_manager', 'support_exec', 'super_admin'];
 
@@ -9,6 +9,11 @@ export const UsersPage: React.FC = () => {
   const [role, setRole] = useState('all');
   const [q, setQ] = useState('');
   const [loading, setLoading] = useState(true);
+  const [modal, setModal] = useState(false);
+  const [name, setName] = useState('');
+  const [email, setEmail] = useState('');
+  const [phone, setPhone] = useState('');
+  const [newUserRole, setNewUserRole] = useState('branch_manager');
 
   const load = () => {
     setLoading(true);
@@ -30,6 +35,21 @@ export const UsersPage: React.FC = () => {
     }
   };
 
+  const handleCreateUser = async (e: React.FormEvent) => {
+    e.preventDefault();
+    try {
+      await api.post('/api/admin/users', { name, email, phone, role: newUserRole, password: 'Password@123' });
+      load();
+      setModal(false);
+      setName('');
+      setEmail('');
+      setPhone('');
+      setNewUserRole('branch_manager');
+    } catch (err: any) {
+      alert(err.message);
+    }
+  };
+
   const filtered = users.filter(u =>
     (role === 'all' || u.role === role) &&
     (!q || u.name.toLowerCase().includes(q.toLowerCase()) || u.email.toLowerCase().includes(q.toLowerCase()))
@@ -37,9 +57,17 @@ export const UsersPage: React.FC = () => {
 
   return (
     <div className="space-y-5">
-      <div>
-        <h1 className="text-2xl font-bold text-gray-900">User Management</h1>
-        <p className="text-sm text-gray-500">View and manage customers, staff, riders, and vendors</p>
+      <div className="flex items-center justify-between">
+        <div>
+          <h1 className="text-2xl font-bold text-gray-900">User Management</h1>
+          <p className="text-sm text-gray-500">View and manage customers, staff, riders, and vendors</p>
+        </div>
+        <button
+          onClick={() => setModal(true)}
+          className="px-4 py-2 bg-[#0F2C59] text-white rounded-xl text-sm font-semibold flex items-center gap-2 hover:bg-[#1a3d73] shadow-md transition-all"
+        >
+          <Plus className="w-4 h-4" /> Add User
+        </button>
       </div>
 
       <div className="flex flex-wrap gap-3 items-center justify-between">
@@ -140,6 +168,43 @@ export const UsersPage: React.FC = () => {
           </table>
         </div>
       </div>
+
+      {modal && (
+        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+          <form onSubmit={handleCreateUser} className="bg-white rounded-2xl p-6 w-full max-w-sm shadow-2xl space-y-4">
+            <h3 className="font-bold text-gray-900 text-lg">Add New User</h3>
+            
+            <div>
+              <label className="block text-xs font-semibold text-gray-600 mb-1">Name</label>
+              <input required value={name} onChange={e => setName(e.target.value)} placeholder="Full Name" className="w-full px-3 py-2 border rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-[#0F2C59]/20" />
+            </div>
+            
+            <div>
+              <label className="block text-xs font-semibold text-gray-600 mb-1">Email</label>
+              <input required type="email" value={email} onChange={e => setEmail(e.target.value)} placeholder="email@example.com" className="w-full px-3 py-2 border rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-[#0F2C59]/20" />
+            </div>
+
+            <div>
+              <label className="block text-xs font-semibold text-gray-600 mb-1">Phone</label>
+              <input required value={phone} onChange={e => setPhone(e.target.value)} placeholder="Phone Number" className="w-full px-3 py-2 border rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-[#0F2C59]/20" />
+            </div>
+            
+            <div>
+              <label className="block text-xs font-semibold text-gray-600 mb-1">Role</label>
+              <select value={newUserRole} onChange={e => setNewUserRole(e.target.value)} className="w-full px-3 py-2 border rounded-xl text-sm bg-white focus:outline-none focus:ring-2 focus:ring-[#0F2C59]/20 text-gray-700 cursor-pointer">
+                {ROLES.filter(r => r !== 'all').map(r => (
+                  <option key={r} value={r}>{r.replace('_', ' ').toUpperCase()}</option>
+                ))}
+              </select>
+            </div>
+
+            <div className="flex gap-2 pt-2">
+              <button type="button" onClick={() => setModal(false)} className="flex-1 py-2 border rounded-xl text-sm hover:bg-gray-50 transition-colors">Cancel</button>
+              <button type="submit" className="flex-1 py-2 bg-[#0F2C59] text-white rounded-xl text-sm font-semibold hover:bg-[#1a3d73] shadow-md transition-colors">Create User</button>
+            </div>
+          </form>
+        </div>
+      )}
     </div>
   );
 };

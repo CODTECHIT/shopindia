@@ -4,10 +4,15 @@ const { verifyToken }       = require('../../middleware/auth');
 const { requirePermission } = require('../../middleware/rbac');
 
 const router = express.Router();
-router.use(verifyToken, requirePermission('manage_vendors'));
+router.use(verifyToken);
+
+// Middleware for routes that require manage_vendors specifically
+const restrictManage = requirePermission('manage_vendors');
+// Middleware for routes that only require view_vendors (manage_vendors is also fine)
+const restrictView = requirePermission('view_vendors', 'manage_vendors');
 
 /** GET /api/admin/vendors?status=&page= — FR-05.2 */
-router.get('/', async (req, res) => {
+router.get('/', restrictView, async (req, res) => {
   try {
     const { status, page = 1, limit = 20, q } = req.query;
     const where = {};
@@ -35,7 +40,7 @@ router.get('/', async (req, res) => {
 });
 
 /** GET /api/admin/vendors/:id */
-router.get('/:id', async (req, res) => {
+router.get('/:id', restrictView, async (req, res) => {
   try {
     const vendor = await prisma.vendor.findUnique({
       where: { id: req.params.id },
@@ -50,7 +55,7 @@ router.get('/:id', async (req, res) => {
 });
 
 /** PATCH /api/admin/vendors/:id/approval — approve/reject/suspend — FR-05.2 */
-router.patch('/:id/approval', async (req, res) => {
+router.patch('/:id/approval', restrictManage, async (req, res) => {
   try {
     const { approvalStatus, approvalNote } = req.body;
     if (!['approved', 'rejected', 'suspended'].includes(approvalStatus)) {
@@ -70,7 +75,7 @@ router.patch('/:id/approval', async (req, res) => {
 });
 
 /** PATCH /api/admin/vendors/:id/commission — FR-05.10 */
-router.patch('/:id/commission', async (req, res) => {
+router.patch('/:id/commission', restrictManage, async (req, res) => {
   try {
     const { commissionRate } = req.body;
     if (commissionRate < 0 || commissionRate > 100) {
@@ -88,7 +93,7 @@ router.patch('/:id/commission', async (req, res) => {
 // All routes below let admin manage any vendor's panel using the vendor's ID.
 
 /** GET /api/admin/vendors/:id/overview — vendor dashboard stats */
-router.get('/:id/overview', async (req, res) => {
+router.get('/:id/overview', restrictView, async (req, res) => {
   try {
     const vendorId = req.params.id;
     const [orders, vendor] = await Promise.all([
@@ -120,7 +125,7 @@ router.get('/:id/overview', async (req, res) => {
 });
 
 /** GET /api/admin/vendors/:id/products — list vendor's products */
-router.get('/:id/products', async (req, res) => {
+router.get('/:id/products', restrictView, async (req, res) => {
   try {
     const products = await prisma.product.findMany({
       where: { vendorId: req.params.id },
@@ -132,7 +137,7 @@ router.get('/:id/products', async (req, res) => {
 });
 
 /** POST /api/admin/vendors/:id/products — add product for vendor */
-router.post('/:id/products', async (req, res) => {
+router.post('/:id/products', restrictManage, async (req, res) => {
   try {
     const product = await prisma.product.create({
       data: { ...req.body, vendorId: req.params.id },
@@ -142,7 +147,7 @@ router.post('/:id/products', async (req, res) => {
 });
 
 /** PUT /api/admin/vendors/:id/products/:pid — edit vendor's product */
-router.put('/:id/products/:pid', async (req, res) => {
+router.put('/:id/products/:pid', restrictManage, async (req, res) => {
   try {
     const product = await prisma.product.update({
       where: { id: req.params.pid },
@@ -153,7 +158,7 @@ router.put('/:id/products/:pid', async (req, res) => {
 });
 
 /** DELETE /api/admin/vendors/:id/products/:pid — delete vendor's product */
-router.delete('/:id/products/:pid', async (req, res) => {
+router.delete('/:id/products/:pid', restrictManage, async (req, res) => {
   try {
     await prisma.product.delete({ where: { id: req.params.pid } });
     res.json({ ok: true });
@@ -161,7 +166,7 @@ router.delete('/:id/products/:pid', async (req, res) => {
 });
 
 /** GET /api/admin/vendors/:id/orders — vendor's orders */
-router.get('/:id/orders', async (req, res) => {
+router.get('/:id/orders', restrictView, async (req, res) => {
   try {
     const orders = await prisma.order.findMany({
       where: { vendorId: req.params.id },
@@ -178,7 +183,7 @@ router.get('/:id/orders', async (req, res) => {
 });
 
 /** PATCH /api/admin/vendors/:id/orders/:oid/status — update order status */
-router.patch('/:id/orders/:oid/status', async (req, res) => {
+router.patch('/:id/orders/:oid/status', restrictManage, async (req, res) => {
   try {
     const { status } = req.body;
     const order = await prisma.order.update({
@@ -190,7 +195,7 @@ router.patch('/:id/orders/:oid/status', async (req, res) => {
 });
 
 /** GET /api/admin/vendors/:id/wallet — wallet balance + transactions */
-router.get('/:id/wallet', async (req, res) => {
+router.get('/:id/wallet', restrictView, async (req, res) => {
   try {
     const vendorId = req.params.id;
     const vendor = await prisma.vendor.findUnique({
@@ -238,7 +243,7 @@ router.get('/:id/wallet', async (req, res) => {
 });
 
 /** POST /api/admin/vendors/:id/wallet/transactions/:tid/approve — approve withdrawal request */
-router.post('/:id/wallet/transactions/:tid/approve', async (req, res) => {
+router.post('/:id/wallet/transactions/:tid/approve', restrictManage, async (req, res) => {
   try {
     const tx = await prisma.transaction.findUnique({ where: { id: req.params.tid } });
     if (!tx || tx.type !== 'withdrawal') {
@@ -264,7 +269,7 @@ router.post('/:id/wallet/transactions/:tid/approve', async (req, res) => {
 });
 
 /** POST /api/admin/vendors/:id/wallet/transactions/:tid/reject — reject withdrawal request */
-router.post('/:id/wallet/transactions/:tid/reject', async (req, res) => {
+router.post('/:id/wallet/transactions/:tid/reject', restrictManage, async (req, res) => {
   try {
     const tx = await prisma.transaction.findUnique({ where: { id: req.params.tid } });
     if (!tx || tx.type !== 'withdrawal') {
@@ -284,7 +289,7 @@ router.post('/:id/wallet/transactions/:tid/reject', async (req, res) => {
 });
 
 /** GET /api/admin/vendors/:id/technicians — vendor's technicians */
-router.get('/:id/technicians', async (req, res) => {
+router.get('/:id/technicians', restrictView, async (req, res) => {
   try {
     const technicians = await prisma.technician.findMany({
       where: { vendorId: req.params.id },

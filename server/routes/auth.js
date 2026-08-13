@@ -27,11 +27,28 @@ router.post('/login', async (req, res) => {
     const match = await bcrypt.compare(password, user.password);
     if (!match) return res.status(401).json({ error: 'Invalid credentials.' });
 
+    let userPermissions = user.permissions || [];
+    
+    // Fallback: If user has no specific permissions set, fetch the default permissions for their role
+    if (userPermissions.length === 0 && user.role && user.role !== 'customer') {
+      try {
+        const dbRole = await prisma.role.findUnique({
+          where: { name: user.role },
+          include: { permissions: true }
+        });
+        if (dbRole && dbRole.permissions) {
+          userPermissions = dbRole.permissions.map(p => p.permission);
+        }
+      } catch (err) {
+        console.error('Failed to fetch role permissions:', err);
+      }
+    }
+
     // Build token payload — include vendorId if vendor role
     const payload = {
       userId:      user.id,
       role:        user.role,
-      permissions: user.permissions || [],
+      permissions: userPermissions,
       name:        user.name,
       email:       user.email,
     };
@@ -46,7 +63,7 @@ router.post('/login', async (req, res) => {
         name:        user.name,
         email:       user.email,
         role:        user.role,
-        permissions: user.permissions || [],
+        permissions: userPermissions,
         vendorId:    user.vendorId,
         avatar:      user.avatar,
       },
