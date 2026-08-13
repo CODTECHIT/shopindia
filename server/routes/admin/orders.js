@@ -15,6 +15,11 @@ router.get('/', async (req, res) => {
     if (type)     where.type     = type;
     if (vendorId) where.vendorId = vendorId;
 
+    // Data isolation for Branch Managers
+    if (req.user.role === 'branch_manager' && req.user.branchId) {
+      where.branchId = req.user.branchId;
+    }
+
     const pageNum = Number(page);
     const limitNum = Number(limit);
 

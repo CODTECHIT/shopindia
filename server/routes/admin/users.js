@@ -21,6 +21,11 @@ router.get('/', restrictView, async (req, res) => {
     if (status) where.status = status;
     if (q)      where.name   = { contains: q, mode: 'insensitive' };
 
+    // Data isolation for Branch Managers
+    if (req.user.role === 'branch_manager' && req.user.branchId) {
+      where.branchId = req.user.branchId;
+    }
+
     const pageNum = Number(page);
     const limitNum = Number(limit);
 

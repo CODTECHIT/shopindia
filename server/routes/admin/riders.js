@@ -11,8 +11,15 @@ router.use(requirePermission('view_users', 'manage_users'));
 // Get all riders with profiles
 router.get('/', async (req, res) => {
   try {
+    const where = { role: 'rider' };
+    
+    // Data isolation for Branch Managers
+    if (req.user.role === 'branch_manager' && req.user.branchId) {
+      where.branchId = req.user.branchId;
+    }
+
     const riders = await prisma.user.findMany({
-      where: { role: 'rider' },
+      where,
       include: {
         riderProfile: {
           include: { deliveries: true }

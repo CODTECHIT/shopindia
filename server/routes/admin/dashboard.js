@@ -9,27 +9,31 @@ const router = express.Router();
 router.use(verifyToken, requirePermission('manage_dashboard', 'view_dashboard'));
 
 /** GET /api/admin/dashboard — FR-05.1 — main stats + chart */
-router.get('/', async (_req, res) => {
+router.get('/', async (req, res) => {
   try {
+    const branchFilter = (req.user.role === 'branch_manager' && req.user.branchId)
+      ? { branchId: req.user.branchId }
+      : {};
+
     const [
       totalUsers, totalVendors, totalRiders, totalOrders,
       pendingVendors, openTickets, revenueAgg,
     ] = await Promise.all([
-      prisma.user.count({ where: { role: 'customer' } }),
+      prisma.user.count({ where: { role: 'customer', ...branchFilter } }),
       prisma.user.count({ where: { role: 'vendor' } }),
-      prisma.user.count({ where: { role: 'rider' } }),
-      prisma.order.count(),
+      prisma.user.count({ where: { role: 'rider', ...branchFilter } }),
+      prisma.order.count({ where: branchFilter }),
       prisma.vendor.count({ where: { approvalStatus: 'pending' } }),
-      prisma.ticket.count({ where: { status: { in: ['open', 'in_progress'] } } }),
+      prisma.ticket.count({ where: { status: { in: ['open', 'in_progress'] } } }), // Not filtered by branch yet for simplicity
       prisma.order.aggregate({
         _sum: { total: true },
-        where: { paymentStatus: 'paid' },
+        where: { paymentStatus: 'paid', ...branchFilter },
       }),
     ]);
 
     const sevenDaysAgo = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000);
     const recentOrders = await prisma.order.findMany({
-      where: { createdAt: { gte: sevenDaysAgo } },
+      where: { createdAt: { gte: sevenDaysAgo }, ...branchFilter },
       select: { createdAt: true, total: true },
     });
 
@@ -98,8 +102,12 @@ router.get('/revenue-chart', async (req, res) => {
   try {
     const { startDate, endDate, groupBy } = buildFilter(req.query);
 
+    const branchFilter = (req.user.role === 'branch_manager' && req.user.branchId)
+      ? { branchId: req.user.branchId }
+      : {};
+
     const orders = await prisma.order.findMany({
-      where: { createdAt: { gte: startDate, lte: endDate } },
+      where: { createdAt: { gte: startDate, lte: endDate }, ...branchFilter },
       select: { createdAt: true, total: true },
     });
 
@@ -135,8 +143,12 @@ router.get('/revenue-export', async (req, res) => {
   try {
     const { startDate, endDate } = buildFilter(req.query);
 
+    const branchFilter = (req.user.role === 'branch_manager' && req.user.branchId)
+      ? { branchId: req.user.branchId }
+      : {};
+
     const orders = await prisma.order.findMany({
-      where: { createdAt: { gte: startDate, lte: endDate } },
+      where: { createdAt: { gte: startDate, lte: endDate }, ...branchFilter },
       select: {
         orderNumber:   true,
         total:         true,

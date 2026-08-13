@@ -12,6 +12,7 @@ export const BranchesPage: React.FC = () => {
   const [name, setName] = useState('');
   const [code, setCode] = useState('');
   const [city, setCity] = useState('');
+  const [pincode, setPincode] = useState('');
   const [managerId, setManagerId] = useState('');
 
   const load = () => {
@@ -38,6 +39,7 @@ export const BranchesPage: React.FC = () => {
     setName('');
     setCode('');
     setCity('');
+    setPincode('');
     setManagerId('');
     setModal(true);
   };
@@ -47,6 +49,7 @@ export const BranchesPage: React.FC = () => {
     setName(b.name || '');
     setCode(b.code || '');
     setCity(b.city || '');
+    setPincode(b.pincode || '');
     setManagerId(b.managerId || b.manager?.id || '');
     setModal(true);
   };
@@ -58,6 +61,7 @@ export const BranchesPage: React.FC = () => {
         name, 
         code, 
         city, 
+        pincode,
         managerId: managerId || null 
       };
 
@@ -72,6 +76,7 @@ export const BranchesPage: React.FC = () => {
       setName('');
       setCode('');
       setCity('');
+      setPincode('');
       setManagerId('');
     } catch (err: any) {
       alert(err.message);
@@ -129,7 +134,7 @@ export const BranchesPage: React.FC = () => {
               <div className="text-sm text-gray-600 space-y-1 pt-2 border-t border-gray-50">
                 <div className="flex items-center gap-2">
                   <MapPin className="w-4 h-4 text-gray-400" />
-                  <span>City: <strong className="text-gray-800">{b.city || 'Bengaluru'}</strong></span>
+                  <span>City: <strong className="text-gray-800">{b.city || 'Bengaluru'} {b.pincode && `(${b.pincode})`}</strong></span>
                 </div>
                 <div className="flex items-center gap-2">
                   <User className="w-4 h-4 text-gray-400" />
@@ -177,6 +182,17 @@ export const BranchesPage: React.FC = () => {
                 value={city} 
                 onChange={e => setCity(e.target.value)} 
                 placeholder="e.g. New Delhi" 
+                className="w-full px-3 py-2 border rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-[#0F2C59]/20" 
+              />
+            </div>
+
+            <div>
+              <label className="block text-xs font-semibold text-gray-600 mb-1">Primary Pincode</label>
+              <input 
+                value={pincode} 
+                onChange={e => setPincode(e.target.value)} 
+                placeholder="e.g. 110001" 
+                maxLength={6}
                 className="w-full px-3 py-2 border rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-[#0F2C59]/20" 
               />
             </div>

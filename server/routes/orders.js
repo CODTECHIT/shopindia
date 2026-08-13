@@ -137,11 +137,40 @@ router.post('/', async (req, res) => {
     const total = subtotal - discount;
     const orderNumber = 'OD-' + Date.now().toString(36).toUpperCase() + Math.floor(1000 + Math.random() * 9000);
 
+    // Geographic Routing based on Pincode
+    let branchId = null;
+    let deliveryPincode = null;
+    if (location) {
+      const match = location.match(/\b\d{6}\b/);
+      if (match) {
+        deliveryPincode = match[0];
+        
+        // 1. Try checking ServiceArea mapping
+        const sap = await prisma.serviceAreaPincode.findFirst({
+          where: { pincode: deliveryPincode },
+          include: { serviceArea: true },
+        });
+        
+        if (sap && sap.serviceArea && sap.serviceArea.branchId) {
+          branchId = sap.serviceArea.branchId;
+        } else {
+          // 2. Fallback: Check if it's the primary pincode of any branch
+          const directBranch = await prisma.branch.findFirst({
+            where: { pincode: deliveryPincode, isActive: true }
+          });
+          if (directBranch) {
+            branchId = directBranch.id;
+          }
+        }
+      }
+    }
+
     const order = await prisma.order.create({
       data: {
         orderNumber,
         customerId,
         vendorId: resolved.length ? resolved[0].vendorId : null,
+        branchId,
         type: mapType(vertical),
         status: 'placed',
         subtotal,
@@ -151,6 +180,7 @@ router.post('/', async (req, res) => {
         paymentMethod: paymentMethod || 'COD',
         paymentStatus: 'pending',
         deliveryLine1: location || '',
+        deliveryPincode,
         items: {
           create: resolved.map((it) => ({
             productId: it.productId,

@@ -53,6 +53,7 @@ router.post('/login', async (req, res) => {
       email:       user.email,
     };
     if (user.vendorId) payload.vendorId = user.vendorId;
+    if (user.branchId) payload.branchId = user.branchId;
 
     const token = jwt.sign(payload, JWT_SECRET, { expiresIn: JWT_EXPIRES });
 
