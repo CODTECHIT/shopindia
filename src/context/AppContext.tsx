@@ -91,7 +91,14 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   const [currentVertical, setCurrentVerticalState] = useState<VerticalType>('shop');
 
   // Location
-  const [location, setLocation] = useState<string>('Home - Flat 302, MG Road, Bengaluru');
+  const [location, setLocationState] = useState<string>(() => {
+    return localStorage.getItem('shopindia_user_location') || 'Bengaluru, Karnataka';
+  });
+
+  const setLocation = (loc: string) => {
+    setLocationState(loc);
+    localStorage.setItem('shopindia_user_location', loc);
+  };
 
   // Cart
   const [cart, setCart] = useState<OrderItem[]>([]);

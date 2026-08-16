@@ -35,6 +35,7 @@ app.use('/api/products', require('./routes/products'));
 app.use('/api/categories', require('./routes/categories'));
 app.use('/api/banners', require('./routes/banners'));
 app.use('/api/orders', require('./routes/orders'));
+app.use('/api/support', require('./routes/support'));
 
 // Customer account dashboard (all guarded by customerAuth inside each route file)
 app.use('/api/customer/profile', require('./routes/customer/profile'));

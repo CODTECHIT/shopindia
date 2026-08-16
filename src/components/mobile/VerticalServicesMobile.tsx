@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useApp } from '../../context/AppContext';
 import { useProducts } from '../../hooks/useProducts';
 import { useCategories } from '../../hooks/useCategories';
-import { Star, Calendar, Heart, LayoutGrid } from 'lucide-react';
+import { Star, Heart, Calendar, LayoutGrid } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { api } from '../../lib/api';
 
@@ -31,9 +31,10 @@ export const VerticalServicesMobile: React.FC = () => {
     }, 5000);
     return () => clearInterval(timer);
   }, [banners.length]);
+
   const services = products.filter(p => p.vertical === 'services');
   const serviceCategories = categories.filter(c => c.vertical === 'services');
-  const activeServices = !selectedCategory 
+  const activeServices = selectedCategory === '' 
     ? services 
     : services.filter(p => p.category === selectedCategory);
 
@@ -127,40 +128,48 @@ export const VerticalServicesMobile: React.FC = () => {
       </div>
 
       {/* Category circular select scrollbar list */}
-      <div className="w-full flex gap-4 overflow-x-auto py-2.5 px-1 no-scrollbar">
+      <div className="w-full flex gap-3 overflow-x-auto py-2.5 px-1 no-scrollbar select-none">
         {/* 'All' Option */}
         <div
           onClick={() => setSelectedCategory('')}
-          className={`flex flex-col items-center shrink-0 w-16 text-center cursor-pointer transition-all ${
-            selectedCategory === '' ? 'scale-105 font-bold' : ''
+          className={`flex flex-col items-center shrink-0 w-[70px] text-center cursor-pointer transition-all ${
+            selectedCategory === '' ? 'scale-105' : 'opacity-85 hover:opacity-100'
           }`}
         >
-          <div className={`w-11 h-11 rounded-full border overflow-hidden mb-1 flex items-center justify-center bg-white transition-all shadow-soft ${
-            selectedCategory === '' ? 'border-amber-500 ring-2 ring-amber-100' : 'border-brand-border'
+          <div className={`w-12 h-12 rounded-full border overflow-hidden mb-1.5 flex items-center justify-center bg-white transition-all shadow-sm ${
+            selectedCategory === '' ? 'border-amber-500 ring-2 ring-amber-200 shadow-md' : 'border-brand-border/80'
           }`}>
-            <LayoutGrid size={20} className={selectedCategory === '' ? "text-amber-600" : "text-brand-slate/60"} />
+            <LayoutGrid size={22} className={selectedCategory === '' ? "text-amber-600" : "text-slate-600"} />
           </div>
-          <span className={`text-xs font-black truncate w-full tracking-wide font-heading ${selectedCategory === '' ? 'text-amber-600' : 'text-brand-slate'}`}>
-            All
-          </span>
+          <div className="min-h-[28px] flex items-start justify-center w-full">
+            <span className={`text-[11px] font-bold leading-tight line-clamp-2 w-full ${
+              selectedCategory === '' ? 'text-amber-600 font-extrabold' : 'text-slate-700'
+            }`}>
+              All
+            </span>
+          </div>
         </div>
 
         {serviceCategories.map(cat => (
           <div
             key={cat.id}
             onClick={() => setSelectedCategory(cat.id)}
-            className={`flex flex-col items-center shrink-0 w-16 text-center cursor-pointer transition-all ${
-              selectedCategory === cat.id ? 'scale-105 font-bold' : ''
+            className={`flex flex-col items-center shrink-0 w-[70px] text-center cursor-pointer transition-all ${
+              selectedCategory === cat.id ? 'scale-105' : 'opacity-85 hover:opacity-100'
             }`}
           >
-            <div className={`w-11 h-11 rounded-full border overflow-hidden mb-1 flex items-center justify-center bg-white transition-all shadow-soft ${
-              selectedCategory === cat.id ? 'border-amber-500 ring-2 ring-amber-100' : 'border-brand-border'
+            <div className={`w-12 h-12 rounded-full border overflow-hidden mb-1.5 flex items-center justify-center bg-white transition-all shadow-sm ${
+              selectedCategory === cat.id ? 'border-amber-500 ring-2 ring-amber-200 shadow-md' : 'border-brand-border/80'
             }`}>
               <img src={cat.image || undefined} alt={cat.name} className="w-full h-full object-cover" />
             </div>
-            <span className={`text-xs font-black truncate w-full tracking-wide font-heading ${selectedCategory === cat.id ? 'text-amber-600' : 'text-brand-slate'}`}>
-              {cat.name}
-            </span>
+            <div className="min-h-[28px] flex items-start justify-center w-full">
+              <span className={`text-[11px] font-bold leading-tight line-clamp-2 w-full ${
+                selectedCategory === cat.id ? 'text-amber-600 font-extrabold' : 'text-slate-700'
+              }`}>
+                {cat.name}
+              </span>
+            </div>
           </div>
         ))}
       </div>

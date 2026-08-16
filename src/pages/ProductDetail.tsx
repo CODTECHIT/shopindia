@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { useApp } from '../context/AppContext';
 import { useProducts } from '../hooks/useProducts';
 import { useIsMobile } from '../hooks/useMediaQuery';
-import { Star, ShoppingCart, Zap, ArrowLeft, Heart, Share2, MapPin, BadgePercent, ChevronRight, ShieldCheck, Truck, RefreshCcw, Mic, Battery, Bluetooth, Cpu, Smartphone } from 'lucide-react';
+import { Star, ShoppingCart, Zap, ArrowLeft, Heart, Share2, MapPin, BadgePercent, ChevronRight, ShieldCheck, Truck, RefreshCcw, Mic, Battery, Bluetooth, Cpu, Smartphone, Calendar, Wrench } from 'lucide-react';
 import { motion } from 'framer-motion';
 
 export const ProductDetailPage: React.FC = () => {
@@ -16,11 +16,16 @@ export const ProductDetailPage: React.FC = () => {
   // Retrieve the selected product
   const product = products.find(p => p.id === selectedProductId);
   const discount = product ? Math.round(((product.originalPrice - product.price) / product.originalPrice) * 100) : 0;
+  const isServices = currentVertical === 'services' || product?.vertical === 'services';
 
   const handlePincodeCheck = (e: React.FormEvent) => {
     e.preventDefault();
     if (pincode.length === 6 && /^\d+$/.test(pincode)) {
-      setPincodeCheckResult(`Standard delivery by tomorrow, 11:00 AM. Free shipping.`);
+      if (isServices) {
+        setPincodeCheckResult(`Certified professional available at pincode ${pincode} tomorrow.`);
+      } else {
+        setPincodeCheckResult(`Standard delivery by tomorrow, 11:00 AM. Free shipping.`);
+      }
     } else {
       setPincodeCheckResult('Invalid pincode. Please enter a 6-digit postal code.');
     }
@@ -37,11 +42,25 @@ export const ProductDetailPage: React.FC = () => {
     }
   };
 
-  const isServices = currentVertical === 'services';
+  const handleBookNow = () => {
+    if (product) {
+      const bookingDetails = {
+        ...product,
+        deliveryTime: 'Tomorrow at 10:00 AM',
+        specs: {
+          ...product.specs,
+          'Scheduled Slot': 'Tomorrow, 10:00 AM',
+          'Technician': 'Certified Professional Assigned'
+        }
+      };
+      addToCart(bookingDetails);
+      navigateTo('cart');
+    }
+  };
 
   const mockReviews = [
-    { name: 'Aman Sharma', rating: 5, date: '12 days ago', comment: 'Absolutely outstanding product. Reached in perfect condition, and delivery was exceptionally fast.' },
-    { name: 'Priya Patel', rating: 4, date: '1 month ago', comment: 'Highly recommended! Value for money and great customer support.' }
+    { name: 'Aman Sharma', rating: 5, date: '12 days ago', comment: isServices ? 'Certified technician arrived on time and did a fantastic job. High quality service!' : 'Absolutely outstanding product. Reached in perfect condition, and delivery was exceptionally fast.' },
+    { name: 'Priya Patel', rating: 4, date: '1 month ago', comment: isServices ? 'Prompt doorstep service, clean execution, and transparent upfront pricing.' : 'Highly recommended! Value for money and great customer support.' }
   ];
 
   const similarProducts = product ? products.filter(p => p.id !== product.id && p.vertical === product.vertical).slice(0, 5) : [];
@@ -81,7 +100,7 @@ export const ProductDetailPage: React.FC = () => {
         <div className="flex items-center gap-1.5 text-xs text-brand-slate font-bold mb-6 font-heading uppercase tracking-wider">
           <button onClick={() => navigateTo('home')} className="hover:underline">Home</button>
           <ChevronRight size={12} />
-          <button onClick={() => navigateTo('search')} className="hover:underline capitalize">{product.vertical} Catalog</button>
+          <button onClick={() => navigateTo('search')} className="hover:underline capitalize">{isServices ? 'Services' : product.vertical} Catalog</button>
           <ChevronRight size={12} />
           <span className="text-brand-graphite font-black truncate max-w-sm dark:text-white">{product.title}</span>
         </div>
@@ -113,7 +132,18 @@ export const ProductDetailPage: React.FC = () => {
             {/* CTA action buttons (16px curved) */}
             {product.isOutOfStock || (product.stock !== undefined && product.stock <= 0) ? (
               <div className="w-full py-3.5 rounded-button bg-gray-100 text-gray-400 flex items-center justify-center gap-2 text-sm font-black uppercase tracking-wider select-none font-heading border border-gray-200 cursor-not-allowed">
-                <span>Out of Stock</span>
+                <span>{isServices ? 'Currently Unavailable' : 'Out of Stock'}</span>
+              </div>
+            ) : isServices ? (
+              <div className="w-full">
+                <motion.button
+                  whileTap={{ scale: 0.96 }}
+                  onClick={handleBookNow}
+                  className="w-full py-4 rounded-button bg-amber-600 hover:bg-amber-700 text-white flex items-center justify-center gap-2.5 shadow-premium transition-all uppercase tracking-wider font-black text-sm font-heading"
+                >
+                  <Calendar size={18} />
+                  <span>Book Service Now</span>
+                </motion.button>
               </div>
             ) : (
               <div className="grid grid-cols-2 gap-3 text-xs font-extrabold select-none font-heading">
@@ -148,7 +178,9 @@ export const ProductDetailPage: React.FC = () => {
                   <span>{product.rating}</span>
                   <Star size={10} className="fill-white text-white" />
                 </div>
-                <span className="text-xs text-brand-slate font-bold font-numbers">({product.ratingCount.toLocaleString('en-IN')} Customer Reviews)</span>
+                <span className="text-xs text-brand-slate font-bold font-numbers">
+                  ({product.ratingCount.toLocaleString('en-IN')} {isServices ? 'Verified Service Reviews' : 'Customer Reviews'})
+                </span>
               </div>
             </div>
 
@@ -180,14 +212,16 @@ export const ProductDetailPage: React.FC = () => {
 
             {/* Pincode checker (16px curves) */}
             <div className="py-5 border-t border-b border-brand-border/10 flex flex-col gap-3">
-              <span className={`font-black text-xs uppercase tracking-widest font-heading ${isServices ? 'text-zinc-300' : 'text-brand-graphite'}`}>Delivery & Slot Estimates</span>
+              <span className={`font-black text-xs uppercase tracking-widest font-heading ${isServices ? 'text-zinc-300' : 'text-brand-graphite'}`}>
+                {isServices ? 'Service Availability & Slot Estimates' : 'Delivery & Slot Estimates'}
+              </span>
               <form onSubmit={handlePincodeCheck} className="flex gap-2.5 max-w-sm">
                 <div className="flex border border-brand-border rounded-input overflow-hidden w-full bg-white shadow-soft">
                   <span className="p-2 text-brand-slate"><MapPin size={15} /></span>
                   <input
                     type="text"
                     maxLength={6}
-                    placeholder="Enter 6-digit delivery pincode"
+                    placeholder={isServices ? "Enter 6-digit service pincode" : "Enter 6-digit delivery pincode"}
                     value={pincode}
                     onChange={(e) => setPincode(e.target.value)}
                     className="w-full py-1.5 text-xs font-bold focus:outline-none text-brand-graphite"
@@ -196,7 +230,9 @@ export const ProductDetailPage: React.FC = () => {
                 <motion.button
                   whileTap={{ scale: 0.95 }}
                   type="submit"
-                  className="px-5 bg-brand-blue hover:bg-blue-650 text-white font-extrabold text-xs rounded-button uppercase tracking-wider transition-colors"
+                  className={`px-5 text-white font-extrabold text-xs rounded-button uppercase tracking-wider transition-colors ${
+                    isServices ? 'bg-amber-600 hover:bg-amber-700' : 'bg-brand-blue hover:bg-blue-650'
+                  }`}
                 >
                   Check
                 </motion.button>
@@ -211,7 +247,9 @@ export const ProductDetailPage: React.FC = () => {
             {/* Specs tables (20px curves) */}
             {product.specs && Object.keys(product.specs).length > 0 && (
               <div className="flex flex-col gap-3">
-                <span className={`font-black text-xs uppercase tracking-widest font-heading ${isServices ? 'text-zinc-300' : 'text-brand-graphite'}`}>Specifications & Features</span>
+                <span className={`font-black text-xs uppercase tracking-widest font-heading ${isServices ? 'text-zinc-300' : 'text-brand-graphite'}`}>
+                  {isServices ? 'Service Inclusions & Scope' : 'Specifications & Features'}
+                </span>
                 <div className="border border-brand-border rounded-card overflow-hidden text-xs shadow-soft">
                   {Object.entries(product.specs).map(([key, val], idx) => (
                     <div key={key} className={`grid grid-cols-3 p-3 text-left ${
@@ -229,7 +267,9 @@ export const ProductDetailPage: React.FC = () => {
 
             {/* Reviews list */}
             <div className="flex flex-col gap-3.5">
-              <span className={`font-black text-xs uppercase tracking-widest font-heading ${isServices ? 'text-zinc-300' : 'text-brand-graphite'}`}>Ratings & User Reviews</span>
+              <span className={`font-black text-xs uppercase tracking-widest font-heading ${isServices ? 'text-zinc-300' : 'text-brand-graphite'}`}>
+                {isServices ? 'Ratings & Service Feedback' : 'Ratings & User Reviews'}
+              </span>
               <div className="flex flex-col gap-3">
                 {mockReviews.map((rev, i) => (
                   <div key={i} className={`p-5 border rounded-card text-left shadow-soft ${isServices ? 'bg-[#2C2C2E] border-zinc-800 text-white' : 'bg-white border-brand-border'}`}>
@@ -254,7 +294,7 @@ export const ProductDetailPage: React.FC = () => {
         {similarProducts.length > 0 && (
           <div className="mt-16 pt-10 border-t border-brand-border/20">
             <h2 className={`text-xl font-bold mb-6 font-heading ${isServices ? 'text-white' : 'text-brand-graphite'}`}>
-              Recommended for you
+              {isServices ? 'Recommended Services' : 'Recommended for you'}
             </h2>
             <div className="grid grid-cols-5 gap-5">
               {similarProducts.map((p) => {
@@ -325,24 +365,34 @@ export const ProductDetailPage: React.FC = () => {
       <div className="w-full flex flex-col bg-white min-h-screen text-left pb-36 select-none text-brand-graphite font-sans selection:bg-brand-blue/20">
         {/* Navigation header row */}
         <div className={`px-4 py-3.5 sticky top-0 z-30 flex items-center justify-between border-b transition-colors ${
-          isServices ? 'bg-zinc-900/90 backdrop-blur-xl border-zinc-850 text-white' : 'bg-white/80 backdrop-blur-xl border-slate-200/60 text-brand-graphite shadow-[0_4px_20px_-10px_rgba(0,0,0,0.05)]'
+          isServices ? 'bg-zinc-950 border-zinc-800 text-white shadow-md' : 'bg-white/80 backdrop-blur-xl border-slate-200/60 text-brand-graphite shadow-[0_4px_20px_-10px_rgba(0,0,0,0.05)]'
         }`}>
           <button 
             onClick={goBack} 
-            className="w-9 h-9 rounded-full bg-slate-100 hover:bg-slate-200 flex items-center justify-center transition-colors active:scale-95"
+            className={`w-9 h-9 rounded-full flex items-center justify-center transition-colors active:scale-95 ${
+              isServices ? 'bg-zinc-850 hover:bg-zinc-800 text-white' : 'bg-slate-100 hover:bg-slate-200 text-zinc-700'
+            }`}
           >
-            <ArrowLeft size={18} strokeWidth={2.5} className="text-zinc-700" />
+            <ArrowLeft size={18} strokeWidth={2.5} className={isServices ? "text-white" : "text-zinc-700"} />
           </button>
-          <span className="font-extrabold text-xs tracking-wide font-heading uppercase text-zinc-800">Product Details</span>
+          <span className={`font-extrabold text-xs tracking-wider font-heading uppercase ${
+            isServices ? 'text-white font-black drop-shadow-sm' : 'text-zinc-800'
+          }`}>
+            {isServices ? 'Service Details' : 'Product Details'}
+          </span>
           <div className="flex gap-3">
             <button 
               onClick={() => setIsWishlisted(!isWishlisted)}
-              className="w-9 h-9 rounded-full bg-slate-100 hover:bg-slate-200 flex items-center justify-center transition-colors active:scale-95"
+              className={`w-9 h-9 rounded-full flex items-center justify-center transition-colors active:scale-95 ${
+                isServices ? 'bg-zinc-850 hover:bg-zinc-800 text-white' : 'bg-slate-100 hover:bg-slate-200 text-zinc-700'
+              }`}
             >
-              <Heart size={16} strokeWidth={2.5} className={isWishlisted ? "fill-brand-red text-brand-red" : "text-zinc-700"} />
+              <Heart size={16} strokeWidth={2.5} className={isWishlisted ? "fill-brand-red text-brand-red" : isServices ? "text-white" : "text-zinc-700"} />
             </button>
-            <button className="w-9 h-9 rounded-full bg-slate-100 hover:bg-slate-200 flex items-center justify-center transition-colors active:scale-95">
-              <Share2 size={16} strokeWidth={2.5} className="text-zinc-700" />
+            <button className={`w-9 h-9 rounded-full flex items-center justify-center transition-colors active:scale-95 ${
+              isServices ? 'bg-zinc-850 hover:bg-zinc-800 text-white' : 'bg-slate-100 hover:bg-slate-200 text-zinc-700'
+            }`}>
+              <Share2 size={16} strokeWidth={2.5} className={isServices ? "text-white" : "text-zinc-700"} />
             </button>
           </div>
         </div>
@@ -368,7 +418,7 @@ export const ProductDetailPage: React.FC = () => {
           )}
         </div>
 
-        {/* Product details */}
+        {/* Product / Service details */}
         <div className="p-5 flex flex-col gap-6">
           <div className="flex flex-col gap-3">
             <h1 className="text-[17px] font-extrabold leading-snug tracking-tight font-heading text-brand-graphite">{product.title}</h1>
@@ -392,19 +442,23 @@ export const ProductDetailPage: React.FC = () => {
             )}
           </div>
 
-          {/* Delivery checker */}
+          {/* Service/Delivery Availability checker */}
           <div className="flex flex-col gap-3 py-1">
-            <span className="text-xs uppercase font-black tracking-widest text-slate-400 font-heading">Delivery to</span>
+            <span className="text-xs uppercase font-black tracking-widest text-slate-400 font-heading">
+              {isServices ? 'Service Availability' : 'Delivery to'}
+            </span>
             <form onSubmit={handlePincodeCheck} className="flex gap-2 w-full max-w-sm relative">
               <input
                 type="text"
                 maxLength={6}
-                placeholder="Enter 6-digit code"
+                placeholder={isServices ? "Enter 6-digit service pincode" : "Enter 6-digit code"}
                 value={pincode}
                 onChange={(e) => setPincode(e.target.value)}
                 className="w-full pl-5 pr-24 py-3.5 bg-slate-100/80 border-transparent rounded-full text-[13px] font-bold focus:outline-none focus:bg-white focus:ring-2 focus:ring-brand-blue/20 focus:border-brand-blue/30 transition-all placeholder:text-slate-400"
               />
-              <button type="submit" className="absolute right-1.5 top-1.5 bottom-1.5 px-5 bg-zinc-900 text-white rounded-full text-xs font-black uppercase tracking-wider hover:bg-zinc-800 active:scale-95 transition-all shadow-sm">
+              <button type="submit" className={`absolute right-1.5 top-1.5 bottom-1.5 px-5 text-white rounded-full text-xs font-black uppercase tracking-wider active:scale-95 transition-all shadow-sm ${
+                isServices ? 'bg-amber-600 hover:bg-amber-700' : 'bg-zinc-900 hover:bg-zinc-800'
+              }`}>
                 Check
               </button>
             </form>
@@ -415,10 +469,12 @@ export const ProductDetailPage: React.FC = () => {
             )}
           </div>
 
-          {/* Key Specs */}
+          {/* Key Specs / Service Inclusions */}
           {product.specs && Object.keys(product.specs).length > 0 && (
             <div className="flex flex-col gap-3 mt-1">
-              <span className="text-xs uppercase font-black tracking-widest text-slate-400 font-heading">Key Specifications</span>
+              <span className="text-xs uppercase font-black tracking-widest text-slate-400 font-heading">
+                {isServices ? 'Service Inclusions & Details' : 'Key Specifications'}
+              </span>
               <div className="flex flex-col gap-2.5">
                 {Object.entries(product.specs).map(([key, val]) => {
                   const keyLower = key.toLowerCase();
@@ -428,6 +484,8 @@ export const ProductDetailPage: React.FC = () => {
                   else if (keyLower.includes('connect') || keyLower.includes('bluetooth')) Icon = Bluetooth;
                   else if (keyLower.includes('processor') || keyLower.includes('chip')) Icon = Cpu;
                   else if (keyLower.includes('display') || keyLower.includes('screen')) Icon = Smartphone;
+                  else if (keyLower.includes('slot') || keyLower.includes('time') || keyLower.includes('schedule')) Icon = Calendar;
+                  else if (keyLower.includes('technician') || keyLower.includes('warranty')) Icon = Wrench;
                   
                   return (
                     <div key={key} className="flex items-center gap-3.5 p-4 bg-slate-50/80 border border-slate-200/50 rounded-2xl transition-colors hover:bg-slate-100/80">
@@ -448,40 +506,40 @@ export const ProductDetailPage: React.FC = () => {
           {/* Trust Badges */}
           <div className="grid grid-cols-3 gap-2 p-5 mt-4 bg-white rounded-2xl border border-slate-200/60 shadow-[0_2px_12px_-4px_rgba(0,0,0,0.05)]">
             <div className="flex flex-col items-center text-center gap-2">
-              <div className="bg-slate-50 p-2.5 rounded-full text-zinc-700">
+              <div className={`p-2.5 rounded-full ${isServices ? 'bg-amber-50 text-amber-700' : 'bg-slate-50 text-zinc-700'}`}>
                 <ShieldCheck size={18} strokeWidth={2.5} />
               </div>
               <div className="flex flex-col">
-                <span className="text-xs font-black text-zinc-800 tracking-tight">100% Original</span>
-                <span className="text-xs font-bold text-slate-400">Products</span>
+                <span className="text-xs font-black text-zinc-800 tracking-tight">{isServices ? '100% Verified' : '100% Original'}</span>
+                <span className="text-xs font-bold text-slate-400">{isServices ? 'Professionals' : 'Products'}</span>
               </div>
             </div>
             <div className="flex flex-col items-center text-center gap-2 relative before:content-[''] before:absolute before:left-0 before:top-[10%] before:h-[80%] before:w-px before:bg-slate-100">
-              <div className="bg-slate-50 p-2.5 rounded-full text-zinc-700">
-                <Truck size={18} strokeWidth={2.5} />
+              <div className={`p-2.5 rounded-full ${isServices ? 'bg-amber-50 text-amber-700' : 'bg-slate-50 text-zinc-700'}`}>
+                {isServices ? <Calendar size={18} strokeWidth={2.5} /> : <Truck size={18} strokeWidth={2.5} />}
               </div>
               <div className="flex flex-col">
-                <span className="text-xs font-black text-zinc-800 tracking-tight">Fast Delivery</span>
-                <span className="text-xs font-bold text-slate-400">In Minutes</span>
+                <span className="text-xs font-black text-zinc-800 tracking-tight">{isServices ? 'On-Time Arrival' : 'Fast Delivery'}</span>
+                <span className="text-xs font-bold text-slate-400">{isServices ? 'Doorstep Service' : 'In Minutes'}</span>
               </div>
             </div>
             <div className="flex flex-col items-center text-center gap-2 relative before:content-[''] before:absolute before:left-0 before:top-[10%] before:h-[80%] before:w-px before:bg-slate-100">
-              <div className="bg-slate-50 p-2.5 rounded-full text-zinc-700">
+              <div className={`p-2.5 rounded-full ${isServices ? 'bg-amber-50 text-amber-700' : 'bg-slate-50 text-zinc-700'}`}>
                 <RefreshCcw size={18} strokeWidth={2.5} />
               </div>
               <div className="flex flex-col">
-                <span className="text-xs font-black text-zinc-800 tracking-tight">Easy Returns</span>
-                <span className="text-xs font-bold text-slate-400">Hassle Free</span>
+                <span className="text-xs font-black text-zinc-800 tracking-tight">{isServices ? 'Service Cover' : 'Easy Returns'}</span>
+                <span className="text-xs font-bold text-slate-400">{isServices ? '30-Day Guarantee' : 'Hassle Free'}</span>
               </div>
             </div>
           </div>
         </div>
 
-        {/* Mobile Recommended Products */}
+        {/* Mobile Recommended Services/Products */}
         {similarProducts.length > 0 && (
           <div className={`mt-2 pt-6 pb-4 border-t ${isServices ? 'bg-[#1C1C1E] border-zinc-800' : 'bg-white border-slate-200/60'}`}>
             <h2 className={`px-5 text-sm font-black uppercase tracking-widest font-heading mb-4 ${isServices ? 'text-white' : 'text-slate-400'}`}>
-              Recommended for you
+              {isServices ? 'Recommended Services' : 'Recommended for you'}
             </h2>
             <div className="grid grid-cols-2 gap-3 px-4 pb-4">
               {similarProducts.slice(0, 4).map((p) => {
@@ -521,12 +579,20 @@ export const ProductDetailPage: React.FC = () => {
           </div>
         )}
 
-        {/* Floating Mobile Bottom CTA Buttons (Pill shaped) */}
+        {/* Floating Mobile Bottom CTA Buttons */}
         <div className="fixed bottom-0 left-0 right-0 bg-white/95 backdrop-blur-xl border-t border-slate-200/60 z-45 text-center select-none shadow-[0_-8px_20px_-8px_rgba(0,0,0,0.1)] px-4 py-3 pb-safe">
           {product.isOutOfStock || (product.stock !== undefined && product.stock <= 0) ? (
             <div className="w-full h-[52px] bg-gray-100 text-gray-400 border border-gray-200 flex items-center justify-center gap-2 uppercase text-xs font-black rounded-full tracking-wide cursor-not-allowed">
-              <span>Out of Stock</span>
+              <span>{isServices ? 'Service Currently Unavailable' : 'Out of Stock'}</span>
             </div>
+          ) : isServices ? (
+            <button
+              onClick={handleBookNow}
+              className="w-full h-[52px] bg-amber-600 hover:bg-amber-700 text-white flex items-center justify-center gap-2 uppercase active:scale-[0.98] transition-all rounded-full tracking-wide shadow-[0_4px_16px_rgba(217,119,6,0.35)] font-black text-sm font-heading"
+            >
+              <Calendar size={18} strokeWidth={2.5} />
+              <span>Book Service Now</span>
+            </button>
           ) : (
             <div className="grid grid-cols-2 gap-3 text-xs font-extrabold font-heading">
               <button

@@ -2,15 +2,20 @@ import React, { useState, useEffect } from 'react';
 import { useApp } from '../../context/AppContext';
 import { useProducts } from '../../hooks/useProducts';
 import { useCategories } from '../../hooks/useCategories';
-import { Star, Clock, CheckCircle2, Calendar, ShieldCheck, MapPin, Heart, LayoutGrid } from 'lucide-react';
+import { 
+  Star, Clock, CheckCircle2, Calendar, ShieldCheck, 
+  MapPin, Heart, LayoutGrid, MessageSquare, Bot, X
+} from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { api } from '../../lib/api';
+import { ServiceQuickSupport } from '../common/ServiceQuickSupport';
 
 export const VerticalServices: React.FC = () => {
   const { addToCart, navigateTo, location } = useApp();
   const { products } = useProducts();
   const { categories } = useCategories();
   const [selectedCategory, setSelectedCategory] = useState('');
+  const [desktopSupportOpen, setDesktopSupportOpen] = useState(false);
   const [selectedServiceIdForBooking, setSelectedServiceIdForBooking] = useState<string | null>(null);
   const [selectedDate, setSelectedDate] = useState('Tomorrow');
   const [selectedTime, setSelectedTime] = useState('10:00 AM');
@@ -32,11 +37,13 @@ export const VerticalServices: React.FC = () => {
     }, 6000);
     return () => clearInterval(timer);
   }, [isHoveringCarousel, banners.length]);
+
   // Filter professional service vertical items
   const services = products.filter(p => p.vertical === 'services');
   const serviceCategories = categories.filter(c => c.vertical === 'services');
-  
-  const activeServices = selectedCategory === '' ? services : services.filter(p => p.category === selectedCategory);
+  const activeServices = selectedCategory === '' 
+    ? services 
+    : services.filter(p => p.category === selectedCategory);
 
   const dates = ['Today', 'Tomorrow', 'Saturday', 'Sunday'];
   const times = ['08:00 AM', '10:00 AM', '01:00 PM', '04:00 PM', '06:00 PM'];
@@ -196,7 +203,7 @@ export const VerticalServices: React.FC = () => {
           <div
             key={cat.id}
             onClick={() => setSelectedCategory(cat.id)}
-            className={`border rounded-card p-5 flex flex-col items-center justify-center text-center cursor-pointer transition-all duration-300 ${
+            className={`border rounded-card p-5 flex flex-col items-center justify-center text-center cursor-pointer transition-all duration-300 min-w-[150px] ${
               selectedCategory === cat.id
                 ? 'border-services-gold bg-services-gold/5 shadow-soft scale-[1.03]'
                 : 'border-brand-border/40 bg-white hover:border-brand-border/60 hover:scale-[1.01]'
@@ -284,8 +291,34 @@ export const VerticalServices: React.FC = () => {
           </div>
         </div>
 
-        {/* Right Side: Trust & Verification Guarantee Widget */}
+        {/* Right Side: Trust & Verification Guarantee Widget & Quick Live Support */}
         <div className="w-full lg:w-full max-w-[320px] shrink-0 flex flex-col gap-4">
+          {/* Live Support Card */}
+          <div className="bg-gradient-to-br from-amber-700 via-amber-600 to-amber-800 text-white rounded-card p-5 shadow-premium flex flex-col gap-3 text-left">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <div className="w-8 h-8 rounded-full bg-white/20 flex items-center justify-center">
+                  <Bot size={18} className="text-white" />
+                </div>
+                <span className="font-black text-xs font-heading">24/7 Live Support</span>
+              </div>
+              <span className="flex items-center gap-1 text-[10px] bg-emerald-400 text-zinc-950 font-black px-2 py-0.5 rounded-full">
+                <span className="w-1.5 h-1.5 rounded-full bg-zinc-950 animate-pulse" />
+                Live
+              </span>
+            </div>
+            <p className="text-xs text-amber-100 leading-relaxed font-medium">
+              Have questions about booking, rescheduling, or need a technician callback? Chat with our instant assistant.
+            </p>
+            <button
+              onClick={() => setDesktopSupportOpen(true)}
+              className="w-full py-2.5 bg-white text-amber-800 hover:bg-amber-50 rounded-xl font-extrabold text-xs uppercase tracking-wider shadow-sm transition-all flex items-center justify-center gap-2 font-heading"
+            >
+              <MessageSquare size={13} />
+              <span>Open Support Desk</span>
+            </button>
+          </div>
+
           <div className="bg-white border border-brand-border/40 rounded-card p-5 flex flex-col gap-4 shadow-soft">
             <span className="text-brand-graphite font-black text-xs uppercase tracking-widest border-b border-brand-border/40 pb-2.5 font-heading">
               ShopIndia Promise
@@ -383,6 +416,56 @@ export const VerticalServices: React.FC = () => {
           </div>
         </div>
       )}
+
+      {/* Floating Live Support & AI Chat Launcher Button (Desktop Bottom-Right) */}
+      <motion.button
+        whileHover={{ scale: 1.05 }}
+        whileTap={{ scale: 0.95 }}
+        onClick={() => setDesktopSupportOpen(true)}
+        className="fixed bottom-8 right-8 z-40 bg-gradient-to-r from-amber-600 to-amber-700 hover:from-amber-700 hover:to-amber-800 text-white rounded-full px-5 py-3.5 shadow-elevated flex items-center gap-3 border border-amber-400/40 transition-all font-heading font-extrabold text-xs tracking-wider uppercase cursor-pointer select-none"
+      >
+        <div className="relative">
+          <MessageSquare size={18} />
+          <span className="absolute -top-1 -right-1 w-2.5 h-2.5 rounded-full bg-emerald-400 border-2 border-white animate-pulse" />
+        </div>
+        <span>Live Support & Chat</span>
+      </motion.button>
+
+      {/* Desktop Support Modal Dialog */}
+      <AnimatePresence>
+        {desktopSupportOpen && (
+          <div className="fixed inset-0 bg-black/60 z-50 flex items-center justify-center p-6 backdrop-blur-xs text-left select-none">
+            <div className="absolute inset-0" onClick={() => setDesktopSupportOpen(false)} />
+            
+            <motion.div
+              initial={{ scale: 0.95, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              exit={{ scale: 0.95, opacity: 0 }}
+              className="bg-white rounded-3xl w-full max-w-2xl max-h-[90vh] overflow-y-auto p-6 shadow-elevated border border-brand-border relative z-10 text-brand-graphite font-sans"
+            >
+              <div className="flex justify-between items-center border-b border-brand-border pb-3 mb-4">
+                <div className="flex items-center gap-2.5">
+                  <div className="w-9 h-9 rounded-full bg-amber-100 text-amber-800 flex items-center justify-center">
+                    <Bot size={18} />
+                  </div>
+                  <div>
+                    <h3 className="font-extrabold text-base text-brand-graphite font-heading">24/7 Services Support & Live Chat</h3>
+                    <p className="text-xs text-slate-400 font-medium">Instant AI Answers, Technician Help & Ticket Desk</p>
+                  </div>
+                </div>
+                <button
+                  onClick={() => setDesktopSupportOpen(false)}
+                  className="w-8 h-8 rounded-full bg-slate-100 hover:bg-slate-200 flex items-center justify-center text-slate-500 font-bold transition-colors"
+                >
+                  <X size={16} />
+                </button>
+              </div>
+
+              <ServiceQuickSupport />
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
     </div>
   );
 };

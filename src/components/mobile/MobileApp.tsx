@@ -9,8 +9,10 @@ import { CartPage } from '../../pages/Cart';
 import { OrdersPage } from '../../pages/Orders';
 import { ProfilePage } from '../../pages/Profile';
 import { NotificationsPage } from '../../pages/Notifications';
-import { Home, User, MapPin, X, Search, ChevronDown, ShoppingBag, Zap, Wrench, LayoutGrid, Bell, ShoppingCart, ListOrdered } from 'lucide-react';
+import { Home, User, MapPin, X, Search, ChevronDown, ShoppingBag, Zap, Wrench, LayoutGrid, Bell, ShoppingCart, ListOrdered, MessageSquare } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
+import { ServiceQuickSupport } from '../common/ServiceQuickSupport';
+import { LocationModal } from '../common/LocationModal';
 
 export const MobileApp: React.FC = () => {
   const {
@@ -19,7 +21,6 @@ export const MobileApp: React.FC = () => {
     currentPath,
     navigateTo,
     location,
-    setLocation,
     cart,
     searchQuery,
     setSearchQuery,
@@ -28,7 +29,7 @@ export const MobileApp: React.FC = () => {
 
   const [drawerOpen, setDrawerOpen] = useState(false);
   const [showLocationModal, setShowLocationModal] = useState(false);
-  const [inputLocation, setInputLocation] = useState(location);
+  const [showSupportDrawer, setShowSupportDrawer] = useState(false);
   const [showHeader, setShowHeader] = useState(true);
   const lastScrollY = useRef(0);
 
@@ -65,14 +66,6 @@ export const MobileApp: React.FC = () => {
 
   const cartItemCount = cart.reduce((acc, item) => acc + item.quantity, 0);
   const unreadNotificationsCount = notifications.filter(n => !n.read).length;
-
-  const handleLocationSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-    if (inputLocation.trim()) {
-      setLocation(inputLocation);
-      setShowLocationModal(false);
-    }
-  };
 
   const renderActiveScreen = () => {
     switch (currentPath) {
@@ -191,7 +184,7 @@ export const MobileApp: React.FC = () => {
           showHeader ? 'opacity-100' : 'opacity-0 pointer-events-none'
         }`}>
           <div 
-            onClick={() => { setInputLocation(location); setShowLocationModal(true); }}
+            onClick={() => setShowLocationModal(true)}
             className={`flex items-center py-1.5 px-1 text-left select-none cursor-pointer transition-colors max-w-[75%]`}
           >
             <div className="flex gap-2 items-center overflow-hidden">
@@ -271,14 +264,25 @@ export const MobileApp: React.FC = () => {
         <nav className={`fixed bottom-0 left-0 right-0 h-16 border-t z-45 flex justify-around items-center select-none shadow-[0_-4px_20px_rgba(0,0,0,0.04)] bg-white transition-colors duration-300 px-2`}>
           {[
           { id: 'home', label: 'Home', icon: Home, action: () => navigateTo('home') },
-          { id: 'search', label: 'Category', icon: LayoutGrid, action: () => { setSearchQuery(''); navigateTo('search'); } },
-          { id: 'orders', label: 'Orders', icon: ListOrdered, action: () => navigateTo('orders') },
+          isServices ? {
+            id: 'support',
+            label: 'Support',
+            icon: MessageSquare,
+            action: () => setShowSupportDrawer(true)
+          } : {
+            id: 'search',
+            label: 'Category',
+            icon: LayoutGrid,
+            action: () => { setSearchQuery(''); navigateTo('search'); }
+          },
+          { id: 'orders', label: isServices ? 'Bookings' : 'Orders', icon: ListOrdered, action: () => navigateTo('orders') },
           { id: 'cart', label: 'Cart', icon: ShoppingCart, action: () => navigateTo('cart'), badge: true },
           { id: 'profile', label: 'Account', icon: User, action: () => navigateTo('profile') }
         ].map(tab => {
-          const isActive = activeTab === tab.id || (tab.id === 'search' && currentPath === 'search' && !searchQuery);
+          const isActive = (tab.id === 'support' && showSupportDrawer) || activeTab === tab.id || (tab.id === 'search' && currentPath === 'search' && !searchQuery);
           const Icon = tab.icon;
-          const activeColor = 'text-[#1A73E8]';
+          const activeColor = isServices ? 'text-amber-600' : 'text-[#1A73E8]';
+          const activeFill = isServices ? '#d97706' : '#1A73E8';
           const inactiveColor = 'text-[#64748b]';
 
           return (
@@ -292,7 +296,7 @@ export const MobileApp: React.FC = () => {
             >
               <div className="relative">
                 {/* When active, we set fill to the active color, else transparent */}
-                <Icon size={20} strokeWidth={isActive ? 2.5 : 2} className="transition-all duration-300" fill={isActive ? '#1A73E8' : 'transparent'} stroke={isActive ? '#1A73E8' : 'currentColor'} />
+                <Icon size={20} strokeWidth={isActive ? 2.5 : 2} className="transition-all duration-300" fill={isActive ? activeFill : 'transparent'} stroke={isActive ? activeFill : 'currentColor'} />
                 {tab.badge && cartItemCount > 0 && (
                   <span className="absolute -top-1.5 -right-2 flex h-4 min-w-4 items-center justify-center rounded-full bg-red-500 px-1 text-xs font-black text-white font-numbers border border-white">
                     {cartItemCount}
@@ -305,6 +309,42 @@ export const MobileApp: React.FC = () => {
         })}
         </nav>
       )}
+
+      {/* Support & AI Chat Drawer Bottom Sheet */}
+      <AnimatePresence>
+        {showSupportDrawer && (
+          <div className="fixed inset-0 bg-black/60 z-50 flex items-end justify-center select-none backdrop-blur-xs">
+            <div className="absolute inset-0" onClick={() => setShowSupportDrawer(false)} />
+            <motion.div
+              initial={{ y: '100%' }}
+              animate={{ y: 0 }}
+              exit={{ y: '100%' }}
+              transition={{ type: 'spring', damping: 26, stiffness: 220 }}
+              className="w-full max-h-[88vh] overflow-y-auto rounded-t-[28px] p-4 pb-8 text-left z-50 shadow-elevated bg-white border-t border-brand-border text-brand-graphite font-sans"
+            >
+              <div className="flex justify-between items-center border-b border-brand-border pb-3 mb-2">
+                <div className="flex items-center gap-2">
+                  <div className="w-8 h-8 rounded-full bg-amber-100 text-amber-800 flex items-center justify-center">
+                    <MessageSquare size={16} />
+                  </div>
+                  <div>
+                    <h3 className="font-extrabold text-sm text-brand-graphite font-heading">Services Support & Live Help</h3>
+                    <p className="text-[10px] text-slate-400 font-medium">Instant AI Answers & Ticket Desk</p>
+                  </div>
+                </div>
+                <button
+                  onClick={() => setShowSupportDrawer(false)}
+                  className="w-7 h-7 rounded-full bg-slate-100 hover:bg-slate-200 flex items-center justify-center text-slate-500 font-bold"
+                >
+                  <X size={14} />
+                </button>
+              </div>
+
+              <ServiceQuickSupport />
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
 
       {/* Hamburger Drawer Modal Sidebar */}
       <AnimatePresence>
@@ -391,76 +431,8 @@ export const MobileApp: React.FC = () => {
         )}
       </AnimatePresence>
 
-      {/* Address Picker Bottom Drawer Sheet */}
-      <AnimatePresence>
-        {showLocationModal && (
-          <div className="fixed inset-0 bg-black/60 z-50 flex items-end justify-center select-none backdrop-blur-xs">
-            <div className="absolute inset-0" onClick={() => setShowLocationModal(false)} />
-            <motion.div
-              initial={{ y: '100%' }}
-              animate={{ y: 0 }}
-              exit={{ y: '100%' }}
-              transition={{ type: 'spring', damping: 25, stiffness: 220 }}
-              className={`w-full rounded-t-bottom-nav p-5 pb-8 text-left z-50 shadow-elevated border-t ${
-                isServices ? 'bg-zinc-900 border-zinc-800 text-white' : 'bg-white border-brand-border text-brand-graphite'
-              }`}
-            >
-              <div className="flex justify-between items-center border-b border-brand-border pb-3 mb-4 leading-none">
-                <span className="font-extrabold text-sm">Select Delivery Location</span>
-                <button onClick={() => setShowLocationModal(false)} className="text-brand-slate hover:text-brand-graphite font-bold p-1">
-                  ✕
-                </button>
-              </div>
-
-              <form onSubmit={handleLocationSubmit} className="flex flex-col gap-4">
-                <div className="flex flex-col gap-1.5">
-                  <label htmlFor="m-address" className="text-xs font-black text-brand-slate uppercase tracking-wider">Address details</label>
-                  <input
-                    id="m-address"
-                    type="text"
-                    value={inputLocation}
-                    onChange={(e) => setInputLocation(e.target.value)}
-                    placeholder="Enter house no, street, city..."
-                    className={`p-3 rounded-input text-xs font-bold border focus:outline-none focus:border-brand-blue ${
-                      isServices ? 'bg-zinc-800 border-zinc-700 text-white' : 'bg-slate-50 border-brand-border text-brand-graphite'
-                    }`}
-                  />
-                </div>
-
-                <div className="flex flex-col gap-2">
-                  <span className="text-xs font-black text-brand-slate uppercase tracking-wider">Quick Addresses</span>
-                  {[
-                    'Home - Flat 302, MG Road, Bengaluru',
-                    'Office - Tower B, Embassy Tech Park, Bengaluru'
-                  ].map(addr => (
-                    <button
-                      key={addr}
-                      type="button"
-                      onClick={() => setInputLocation(addr)}
-                      className={`text-left text-xs font-bold p-3 border rounded-card transition-colors ${
-                        inputLocation === addr
-                          ? 'border-brand-blue bg-blue-50/20 text-brand-blue'
-                          : isServices
-                          ? 'border-zinc-800 bg-zinc-900 text-zinc-300'
-                          : 'border-brand-border bg-slate-50 text-brand-graphite'
-                      }`}
-                    >
-                      {addr}
-                    </button>
-                  ))}
-                </div>
-
-                <button
-                  type="submit"
-                  className="w-full py-3 bg-[#0066FF] hover:bg-blue-600 text-white font-extrabold text-xs rounded-button uppercase tracking-wider shadow mt-2"
-                >
-                  Deliver to this address
-                </button>
-              </form>
-            </motion.div>
-          </div>
-        )}
-      </AnimatePresence>
+      {/* Address Picker / Real-Time Live Location Modal */}
+      <LocationModal isOpen={showLocationModal} onClose={() => setShowLocationModal(false)} />
     </div>
   );
 };

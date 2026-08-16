@@ -2,11 +2,11 @@ import React, { useState, useMemo } from 'react';
 import { useApp } from '../context/AppContext';
 import { useProducts } from '../hooks/useProducts';
 import { useIsMobile } from '../hooks/useMediaQuery';
-import { Search, Star, Filter, ArrowUpDown, Heart } from 'lucide-react';
+import { Search, Star, Filter, ArrowUpDown, Heart, ShoppingCart, Zap } from 'lucide-react';
 import { motion } from 'framer-motion';
 
 export const SearchPage: React.FC = () => {
-  const { currentVertical, searchQuery, setSearchQuery, navigateTo } = useApp();
+  const { currentVertical, searchQuery, setSearchQuery, navigateTo, addToCart } = useApp();
   const isMobile = useIsMobile();
   const { products: allProducts, loading } = useProducts();
   const [wishlist, setWishlist] = useState<Record<string, boolean>>({});
@@ -348,6 +348,33 @@ export const SearchPage: React.FC = () => {
                     <span className="text-xs font-extrabold text-brand-graphite">₹{product.price.toLocaleString('en-IN')}</span>
                     <span className="text-xs text-brand-slate line-through">₹{product.originalPrice.toLocaleString('en-IN')}</span>
                     <span className="text-xs font-black text-brand-orange uppercase tracking-wider">{discount}%</span>
+                  </div>
+
+                  {/* Action Buttons: Add to Cart & Buy Now */}
+                  <div className="grid grid-cols-2 gap-1.5 mt-2.5 pt-2 border-t border-brand-border/60">
+                    <motion.button
+                      whileTap={{ scale: 0.94 }}
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        addToCart(product);
+                      }}
+                      className="py-1.5 px-1 rounded-lg bg-orange-50 hover:bg-orange-100 border border-brand-orange/30 text-brand-orange font-extrabold text-[10px] flex items-center justify-center gap-1 shadow-xs transition-colors"
+                    >
+                      <ShoppingCart size={11} className="text-brand-orange shrink-0" />
+                      <span className="truncate">Add to Cart</span>
+                    </motion.button>
+                    <motion.button
+                      whileTap={{ scale: 0.94 }}
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        addToCart(product);
+                        navigateTo('cart');
+                      }}
+                      className="py-1.5 px-1 rounded-lg bg-brand-blue hover:bg-blue-900 text-white font-extrabold text-[10px] flex items-center justify-center gap-1 shadow-xs transition-colors"
+                    >
+                      <Zap size={11} className="fill-amber-400 text-amber-400 shrink-0" />
+                      <span className="truncate">Buy Now</span>
+                    </motion.button>
                   </div>
                 </div>
               );

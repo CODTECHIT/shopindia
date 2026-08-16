@@ -107,46 +107,50 @@ export const VerticalQuickCommerceMobile: React.FC = () => {
         )}
       </div>
 
-      {/* Category Grid */}
-      <div className="w-full grid grid-cols-5 gap-y-3 gap-x-2 py-2 select-none justify-items-center">
+      {/* Category circular select scrollbar list */}
+      <div className="w-full flex gap-3 overflow-x-auto py-2.5 px-1 no-scrollbar select-none">
         {/* 'All' Option */}
-        <button
+        <div
           onClick={() => setActiveCat('')}
-          className={`flex flex-col items-center gap-1.5 p-1.5 rounded-xl border transition-all ${
-            activeCat === ''
-              ? 'bg-[#ECFDF5] border-brand-green shadow-soft'
-              : 'bg-white border-brand-border hover:border-brand-green/30'
+          className={`flex flex-col items-center shrink-0 w-[70px] text-center cursor-pointer transition-all ${
+            activeCat === '' ? 'scale-105' : 'opacity-85 hover:opacity-100'
           }`}
         >
-          <div className="w-11 h-11 flex items-center justify-center rounded-full overflow-hidden bg-brand-elevated border border-black/5 shadow-sm">
-            <LayoutGrid size={20} className={activeCat === '' ? "text-brand-green" : "text-brand-slate/60"} />
-          </div>
-          <span className={`text-center text-xs leading-tight font-heading ${
-            activeCat === '' ? 'font-black text-brand-green' : 'font-bold text-brand-slate'
+          <div className={`w-12 h-12 rounded-full border overflow-hidden mb-1.5 flex items-center justify-center bg-white transition-all shadow-sm ${
+            activeCat === '' ? 'border-brand-green ring-2 ring-emerald-200 shadow-md' : 'border-brand-border/80'
           }`}>
-            All
-          </span>
-        </button>
+            <LayoutGrid size={22} className={activeCat === '' ? "text-brand-green" : "text-slate-600"} />
+          </div>
+          <div className="min-h-[28px] flex items-start justify-center w-full">
+            <span className={`text-[11px] font-bold leading-tight line-clamp-2 w-full ${
+              activeCat === '' ? 'text-brand-green font-extrabold' : 'text-slate-700'
+            }`}>
+              All
+            </span>
+          </div>
+        </div>
 
         {quickCategories.map(cat => (
-          <button
+          <div
             key={cat.id}
             onClick={() => setActiveCat(cat.id)}
-            className={`flex flex-col items-center gap-1.5 p-1.5 rounded-xl border transition-all w-16 ${
-              activeCat === cat.id
-                ? 'bg-[#ECFDF5] border-brand-green shadow-soft'
-                : 'bg-white border-brand-border hover:border-brand-green/30'
+            className={`flex flex-col items-center shrink-0 w-[70px] text-center cursor-pointer transition-all ${
+              activeCat === cat.id ? 'scale-105' : 'opacity-85 hover:opacity-100'
             }`}
           >
-            <div className="w-12 h-12 rounded-full overflow-hidden bg-brand-elevated border border-black/5 shadow-sm">
-              <img src={cat.image || undefined} alt={cat.name} className="w-full h-full object-cover" fetchPriority="high" />
-            </div>
-            <span className={`text-center text-xs leading-tight font-heading ${
-              activeCat === cat.id ? 'font-black text-brand-green' : 'font-bold text-brand-slate'
+            <div className={`w-12 h-12 rounded-full border overflow-hidden mb-1.5 flex items-center justify-center bg-white transition-all shadow-sm ${
+              activeCat === cat.id ? 'border-brand-green ring-2 ring-emerald-200 shadow-md' : 'border-brand-border/80'
             }`}>
-              {cat.name}
-            </span>
-          </button>
+              <img src={cat.image || undefined} alt={cat.name} className="w-full h-full object-cover" />
+            </div>
+            <div className="min-h-[28px] flex items-start justify-center w-full">
+              <span className={`text-[11px] font-bold leading-tight line-clamp-2 w-full ${
+                activeCat === cat.id ? 'text-brand-green font-extrabold' : 'text-slate-700'
+              }`}>
+                {cat.name}
+              </span>
+            </div>
+          </div>
         ))}
       </div>
 

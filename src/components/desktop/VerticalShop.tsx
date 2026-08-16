@@ -239,42 +239,72 @@ export const VerticalShop: React.FC = () => {
 
       {/* Just For You (Recently Viewed / Recommended) */}
       {justForYou.length > 0 && (
-        <div className="w-full flex flex-col gap-4">
-          <div className="flex justify-between items-center px-2">
+        <div className="w-full flex flex-col gap-3">
+          <div className="flex justify-between items-center px-1">
             <h3 className="text-xs font-bold tracking-wider text-brand-graphite uppercase font-heading">Just For You</h3>
           </div>
-          <div className="flex gap-6 overflow-x-auto no-scrollbar scroll-smooth p-2 -mx-2">
+          <div className="flex gap-4 overflow-x-auto no-scrollbar scroll-smooth py-2 px-1">
             {justForYou.map(product => {
               const discount = Math.round(((product.originalPrice - product.price) / product.originalPrice) * 100);
+              const isWishlisted = wishlist[product.id];
               return (
                 <div
                   key={'jfy-'+product.id}
                   onClick={() => navigateTo('detail', product.id)}
-                  className="w-full max-w-[180px] flex-shrink-0 border border-brand-border/60 rounded-xl flex flex-col bg-white hover:shadow-hover-lift hover:border-brand-blue/30 transition-all duration-300 cursor-pointer group overflow-hidden"
+                  className="w-[190px] h-[305px] flex-shrink-0 border border-brand-border/70 rounded-2xl flex flex-col justify-between bg-white p-3 hover:shadow-hover-lift hover:border-brand-blue/40 transition-all duration-300 cursor-pointer group relative shadow-soft"
                 >
-                  <div className="w-full aspect-[4/3] flex items-center justify-center bg-slate-50/50 p-4 relative border-b border-brand-border/30">
-                    <img src={product.image} alt={product.title} className="max-h-full max-w-full object-contain group-hover:scale-105 transition-transform duration-500 ease-out mix-blend-multiply" />
+                  {/* Wishlist Heart */}
+                  <motion.button
+                    whileTap={{ scale: 0.8 }}
+                    onClick={(e) => toggleWishlist(product.id, e)}
+                    className="absolute top-4 right-4 p-1.5 rounded-full bg-white/90 hover:bg-white text-zinc-400 hover:text-brand-red shadow-soft border border-brand-border/60 transition-colors z-10"
+                  >
+                    <Heart size={12} className={isWishlisted ? "fill-brand-red text-brand-red" : ""} />
+                  </motion.button>
+
+                  {/* Uniform Image Frame */}
+                  <div className="w-full h-[140px] flex items-center justify-center bg-slate-50/80 rounded-xl p-3 relative overflow-hidden mb-2 border border-slate-100">
+                    <img 
+                      src={product.image} 
+                      alt={product.title} 
+                      className="max-h-full max-w-full object-contain group-hover:scale-105 transition-transform duration-500 ease-out mix-blend-multiply" 
+                    />
                     {product.isAssured && (
-                      <div className="absolute bottom-2 left-2 flex items-center gap-0.5 bg-white/95 text-xs font-black italic px-1.5 py-0.5 rounded shadow-sm border border-brand-blue/10">
+                      <div className="absolute bottom-2 left-2 flex items-center gap-0.5 bg-white/95 text-[9px] font-black italic px-1.5 py-0.5 rounded shadow-sm border border-brand-blue/10">
                         <span className="text-brand-blue">Shop</span><span className="text-brand-orange">Assured</span>
                       </div>
                     )}
                   </div>
-                  <div className="p-4 flex flex-col flex-1">
-                    <h4 className="text-xs font-medium text-brand-graphite line-clamp-2 leading-relaxed group-hover:text-brand-blue transition-colors font-heading mb-auto">{product.title}</h4>
-                  <div className="flex items-end justify-between mt-3">
-                    <div className="flex flex-col leading-none font-numbers">
-                      <span className="text-[13px] font-bold text-brand-graphite">₹{product.price.toLocaleString('en-IN')}</span>
-                      {product.originalPrice > product.price && (
-                        <div className="flex items-center gap-1.5 mt-1.5">
-                          <span className="text-xs text-brand-slate line-through">₹{product.originalPrice.toLocaleString('en-IN')}</span>
-                          <span className="text-[8.5px] text-brand-green font-extrabold">{discount}% OFF</span>
+
+                  {/* Details with consistent vertical spacing */}
+                  <div className="flex flex-col flex-1 justify-between">
+                    <div>
+                      <h4 className="text-xs font-bold text-brand-graphite line-clamp-2 leading-snug group-hover:text-brand-blue transition-colors font-heading min-h-[32px]">
+                        {product.title}
+                      </h4>
+                      <div className="flex items-center gap-1.5 mt-1.5 leading-none font-numbers">
+                        <div className="flex items-center gap-0.5 bg-emerald-50 border border-emerald-200/60 text-emerald-700 font-extrabold text-[10px] px-1.5 py-0.5 rounded">
+                          <span>{product.rating}</span>
+                          <Star size={7} className="fill-emerald-700 text-emerald-700" />
                         </div>
+                        <span className="text-[10px] text-slate-400 font-bold">({product.ratingCount.toLocaleString('en-IN')})</span>
+                      </div>
+                    </div>
+
+                    {/* Price and Discount anchored to bottom */}
+                    <div className="pt-2 border-t border-brand-border/50 flex items-baseline justify-between font-numbers leading-none mt-2">
+                      <div className="flex items-baseline gap-1.5">
+                        <span className="text-sm font-extrabold text-brand-graphite">₹{product.price.toLocaleString('en-IN')}</span>
+                        {product.originalPrice > product.price && (
+                          <span className="text-[10.5px] text-slate-400 line-through">₹{product.originalPrice.toLocaleString('en-IN')}</span>
+                        )}
+                      </div>
+                      {product.originalPrice > product.price && (
+                        <span className="text-[9.5px] font-black text-brand-orange uppercase">{discount}% OFF</span>
                       )}
                     </div>
                   </div>
                 </div>
-              </div>
               );
             })}
           </div>
@@ -490,7 +520,7 @@ export const VerticalShop: React.FC = () => {
                           </div>
 
                           <div className="p-5 flex flex-col flex-1">
-                            <h4 className="text-xs font-semibold text-brand-graphite line-clamp-2 leading-relaxed mb-3 group-hover:text-brand-blue transition-colors font-heading">
+                            <h4 className="text-xs font-semibold text-brand-graphite line-clamp-2 leading-relaxed mb-3 group-hover:text-brand-blue transition-colors font-heading min-h-[36px]">
                               {product.title}
                             </h4>
 

@@ -4,13 +4,14 @@ import { useProducts } from '../../hooks/useProducts';
 import { useCategories } from '../../hooks/useCategories';
 import { 
   Heart, ShieldCheck,
-  Clock, ChevronRight, Truck, Award, RotateCcw, Star
+  Clock, ChevronRight, Truck, Award, RotateCcw, Star,
+  ShoppingCart, Zap
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { api } from '../../lib/api';
 
 export const VerticalShopMobile: React.FC = () => {
-  const { navigateTo, setSearchQuery } = useApp();
+  const { navigateTo, setSearchQuery, addToCart } = useApp();
   const [timeLeft, setTimeLeft] = useState({ hours: 12, minutes: 44, seconds: 12 });
   const [wishlist, setWishlist] = useState<Record<string, boolean>>({});
   const [currentSlide, setCurrentSlide] = useState(0);
@@ -273,6 +274,33 @@ export const VerticalShopMobile: React.FC = () => {
                       <span className="text-xs font-black text-brand-orange uppercase tracking-wider">{discount}% Off</span>
                     </>
                   )}
+                </div>
+
+                {/* Action Buttons: Add to Cart & Buy Now */}
+                <div className="grid grid-cols-2 gap-1.5 mt-2.5 pt-2 border-t border-brand-border/60">
+                  <motion.button
+                    whileTap={{ scale: 0.94 }}
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      addToCart(product);
+                    }}
+                    className="py-1.5 px-1 rounded-lg bg-orange-50 hover:bg-orange-100 border border-brand-orange/30 text-brand-orange font-extrabold text-[10px] flex items-center justify-center gap-1 shadow-xs transition-colors"
+                  >
+                    <ShoppingCart size={11} className="text-brand-orange shrink-0" />
+                    <span className="truncate">Add to Cart</span>
+                  </motion.button>
+                  <motion.button
+                    whileTap={{ scale: 0.94 }}
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      addToCart(product);
+                      navigateTo('cart');
+                    }}
+                    className="py-1.5 px-1 rounded-lg bg-brand-blue hover:bg-blue-900 text-white font-extrabold text-[10px] flex items-center justify-center gap-1 shadow-xs transition-colors"
+                  >
+                    <Zap size={11} className="fill-amber-400 text-amber-400 shrink-0" />
+                    <span className="truncate">Buy Now</span>
+                  </motion.button>
                 </div>
               </div>
             );

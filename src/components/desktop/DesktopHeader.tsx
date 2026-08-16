@@ -3,7 +3,11 @@ import { useApp } from '../../context/AppContext';
 import { useCustomer } from '../../context/CustomerContext';
 import { useProducts } from '../../hooks/useProducts';
 import { CartDrawer } from '../common/CartDrawer';
-import { Search, ShoppingCart, ChevronDown, User, Package, LogOut, Briefcase, MapPin, Sparkles, Zap, ShoppingBag, Mic, Camera, Wrench, Bell } from 'lucide-react';
+import { LocationModal } from '../common/LocationModal';
+import { 
+  Search, ShoppingBag, Zap, Wrench, Bell, ShoppingCart, User, 
+  Mic, Camera, Sparkles, MapPin, ChevronDown, Package, LogOut, Briefcase 
+} from 'lucide-react';
 import { motion } from 'framer-motion';
 
 export const DesktopHeader: React.FC = () => {
@@ -24,6 +28,7 @@ export const DesktopHeader: React.FC = () => {
   const [showSuggestions, setShowSuggestions] = useState(false);
   const [suggestions, setSuggestions] = useState<string[]>([]);
   const [showProfileDropdown, setShowProfileDropdown] = useState(false);
+  const [showLocationModal, setShowLocationModal] = useState(false);
   const [isCartDrawerOpen, setIsCartDrawerOpen] = useState(false);
   const [logoLoaded, setLogoLoaded] = useState(true);
   const suggestionRef = useRef<HTMLDivElement>(null);
@@ -184,10 +189,14 @@ export const DesktopHeader: React.FC = () => {
             );
           })}
         </div>
-        <div className="flex items-center gap-2 text-xs font-bold">
-          <MapPin size={13} className="text-brand-blue" />
-          <span>Delivering to: <strong className="text-brand-graphite">{location}</strong></span>
-        </div>
+        <button 
+          onClick={() => setShowLocationModal(true)}
+          className="flex items-center gap-1.5 text-xs font-bold py-1 px-2.5 rounded-lg hover:bg-slate-100/90 border border-transparent hover:border-brand-border/60 transition-all cursor-pointer select-none group"
+        >
+          <MapPin size={13} className="text-brand-blue shrink-0 group-hover:animate-bounce" />
+          <span className="text-brand-slate">Delivering to: <strong className="text-brand-graphite">{location}</strong></span>
+          <ChevronDown size={11} className="text-brand-slate shrink-0 ml-0.5 group-hover:text-brand-blue" />
+        </button>
       </div>
 
       {/* Main Header Container */}
@@ -405,6 +414,9 @@ export const DesktopHeader: React.FC = () => {
 
       {/* Cart Drawer */}
       <CartDrawer isOpen={isCartDrawerOpen} onClose={() => setIsCartDrawerOpen(false)} />
+
+      {/* Location Modal */}
+      <LocationModal isOpen={showLocationModal} onClose={() => setShowLocationModal(false)} />
     </header>
   );
 };
