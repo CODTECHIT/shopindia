@@ -59,14 +59,14 @@ export const PaymentsPage: React.FC = () => {
                 <div className="w-10 h-10 rounded-xl bg-brand-blue/10 text-brand-blue flex items-center justify-center">{TYPE_META[m.type].icon}</div>
                 <div>
                   <p className="font-bold text-sm text-brand-graphite">{m.label}</p>
-                  <p className="text-[11px] text-brand-slate">{m.type === 'UPI' ? m.upiId : m.type === 'NET_BANKING' ? m.bankName : `•••• ${m.last4}${m.expiry ? ` · ${m.expiry}` : ''}`}</p>
+                  <p className="text-xs text-brand-slate">{m.type === 'UPI' ? m.upiId : m.type === 'NET_BANKING' ? m.bankName : `•••• ${m.last4}${m.expiry ? ` · ${m.expiry}` : ''}`}</p>
                 </div>
               </div>
               {m.isDefault && <Badge tone="green"><Check className="w-3 h-3 inline -mt-0.5 mr-0.5" /> Default</Badge>}
             </div>
             <div className="flex items-center justify-between pt-3 border-t border-brand-border/40">
               {!m.isDefault ? (
-                <button onClick={() => setDefaultPaymentMethod(m.id)} className="text-[11px] font-bold text-brand-blue hover:underline">Set default</button>
+                <button onClick={() => setDefaultPaymentMethod(m.id)} className="text-xs font-bold text-brand-blue hover:underline">Set default</button>
               ) : <span />}
               <button disabled={isDeleting === m.id} onClick={async () => {
                 if (confirm('Are you sure you want to remove this payment method?')) {
@@ -97,7 +97,7 @@ export const PaymentsPage: React.FC = () => {
                 </div>
                 <div>
                   <p className="text-xs font-bold text-brand-graphite capitalize">{t.type} {t.orderNumber ? `· ${t.orderNumber}` : ''}</p>
-                  <p className="text-[10px] text-brand-slate">{new Date(t.createdAt).toLocaleDateString('en-IN', { day: 'numeric', month: 'short' })} · {t.method}</p>
+                  <p className="text-xs text-brand-slate">{new Date(t.createdAt).toLocaleDateString('en-IN', { day: 'numeric', month: 'short' })} · {t.method}</p>
                 </div>
               </div>
               <div className="text-right">
@@ -129,30 +129,30 @@ export const PaymentsPage: React.FC = () => {
 
             {type === 'UPI' && (
               <div className="flex flex-col gap-1">
-                <label className="text-[10px] font-black uppercase text-brand-slate">UPI ID</label>
+                <label className="text-xs font-black uppercase text-brand-slate">UPI ID</label>
                 <input className={fieldCls} placeholder="yourname@upi" value={fields.upiId || ''} onChange={(e) => setF('upiId', e.target.value)} required />
               </div>
             )}
             {type === 'NET_BANKING' && (
               <div className="flex flex-col gap-1">
-                <label className="text-[10px] font-black uppercase text-brand-slate">Bank Name</label>
+                <label className="text-xs font-black uppercase text-brand-slate">Bank Name</label>
                 <input className={fieldCls} placeholder="e.g. HDFC Bank" value={fields.bankName || ''} onChange={(e) => setF('bankName', e.target.value)} required />
               </div>
             )}
             {(type === 'CREDIT_CARD' || type === 'DEBIT_CARD') && (
               <div className="grid grid-cols-2 gap-3">
                 <div className="col-span-2 flex flex-col gap-1">
-                  <label className="text-[10px] font-black uppercase text-brand-slate">Card Number</label>
+                  <label className="text-xs font-black uppercase text-brand-slate">Card Number</label>
                   <input className={fieldCls} inputMode="numeric" placeholder="1234 5678 9012 3456" value={fields.cardNumber || ''} onChange={(e) => setF('cardNumber', e.target.value)} required />
                 </div>
                 <div className="flex flex-col gap-1">
-                  <label className="text-[10px] font-black uppercase text-brand-slate">Brand</label>
+                  <label className="text-xs font-black uppercase text-brand-slate">Brand</label>
                   <select className={fieldCls} value={fields.brand || 'Visa'} onChange={(e) => setF('brand', e.target.value)}>
                     <option>Visa</option><option>Mastercard</option><option>RuPay</option>
                   </select>
                 </div>
                 <div className="flex flex-col gap-1">
-                  <label className="text-[10px] font-black uppercase text-brand-slate">Expiry</label>
+                  <label className="text-xs font-black uppercase text-brand-slate">Expiry</label>
                   <input className={fieldCls} placeholder="MM/YY" value={fields.expiry || ''} onChange={(e) => setF('expiry', e.target.value)} />
                 </div>
               </div>

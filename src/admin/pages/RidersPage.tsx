@@ -84,7 +84,7 @@ export const RidersPage: React.FC = () => {
                 <td className="px-5 py-4">
                   <p className="font-numbers font-semibold text-gray-900">₹{r.riderProfile?.walletBalance || 0}</p>
                   {r.riderProfile?.walletBalance > 0 && (
-                    <button onClick={() => processPayout(r.id, r.riderProfile.walletBalance)} className="text-[10px] text-blue-600 font-semibold hover:underline mt-1">
+                    <button onClick={() => processPayout(r.id, r.riderProfile.walletBalance)} className="text-xs text-blue-600 font-semibold hover:underline mt-1">
                       Clear Dues
                     </button>
                   )}

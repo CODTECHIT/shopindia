@@ -53,22 +53,10 @@ export const VerticalQuickCommerce: React.FC = () => {
 
   return (
     <div className="w-full flex flex-col min-h-screen bg-brand-bg text-brand-graphite relative select-none font-sans">
-      {/* Promo banner strip */}
-      <div className="bg-gradient-to-r from-brand-green to-brand-blue text-white px-12 py-3.5 flex justify-between items-center text-xs font-bold shadow-soft select-none font-heading">
-        <div className="flex items-center gap-3">
-          <Clock size={16} className="text-white animate-pulse" />
-          <span>FAST 10 MINUTE DELIVERY — Groceries, fresh fruits & items at your doorstep!</span>
-        </div>
-        <div className="flex items-center gap-1 hover:underline cursor-pointer" onClick={() => navigateTo('search')}>
-          <span>Explore Catalog</span>
-          <ArrowRight size={14} />
-        </div>
-      </div>
-
       {/* Hero Banner Carousel */}
       <div className="max-w-[1440px] mx-auto w-full px-8 pt-8">
         <div 
-          className="w-full h-[360px] rounded-hero overflow-hidden shadow-premium relative bg-zinc-950 group"
+          className="w-full h-[260px] md:h-[320px] lg:h-[380px] rounded-hero overflow-hidden shadow-premium relative bg-zinc-950 group"
           onMouseEnter={() => setIsHoveringCarousel(true)}
           onMouseLeave={() => setIsHoveringCarousel(false)}
         >
@@ -82,22 +70,19 @@ export const VerticalQuickCommerce: React.FC = () => {
                 transition={{ duration: 0.8, ease: [0.16, 1, 0.3, 1] }}
                 className="absolute inset-0 w-full h-full"
               >
-                <motion.img
-                  initial={{ scale: 1.06 }}
-                  animate={{ scale: 1 }}
-                  transition={{ duration: 6, ease: 'easeOut' }}
+                {/* Main Image */}
+                <img
                   src={banners[currentSlide]?.image}
                   alt={banners[currentSlide]?.title}
-                  className="absolute inset-0 w-full h-full object-cover opacity-70 select-none"
+                  className="absolute inset-0 w-full h-full object-cover object-center select-none"
                 />
-                <div className="absolute inset-0 bg-gradient-to-r from-zinc-950/75 via-zinc-950/20 to-transparent z-0" />
                 
-                <div className="absolute inset-y-0 left-0 pl-20 flex flex-col justify-center max-w-xl z-10 text-left text-white select-none">
+                <div className="absolute inset-y-0 left-0 pl-10 md:pl-20 flex flex-col justify-center max-w-xl z-10 text-left text-white select-none drop-shadow-md">
                   <motion.span
                     initial={{ opacity: 0, y: 10 }}
                     animate={{ opacity: 1, y: 0 }}
                     transition={{ delay: 0.2, duration: 0.5 }}
-                    className="bg-brand-green/90 text-[9px] font-bold uppercase px-3 py-1 rounded-sm w-max tracking-widest mb-5 shadow-soft"
+                    className="bg-brand-green/90 text-xs font-bold uppercase px-3 py-1 rounded-sm w-max tracking-widest mb-5 shadow-soft"
                   >
                     10-Min Delivery
                   </motion.span>
@@ -113,7 +98,7 @@ export const VerticalQuickCommerce: React.FC = () => {
                     initial={{ opacity: 0, y: 15 }}
                     animate={{ opacity: 1, y: 0 }}
                     transition={{ delay: 0.4, duration: 0.6 }}
-                    className="text-sm font-medium text-zinc-300 mb-8 leading-relaxed max-w-md"
+                    className="text-sm font-medium text-zinc-100 mb-8 leading-relaxed max-w-md drop-shadow-md"
                   >
                     {banners[currentSlide]?.subtitle}
                   </motion.p>
@@ -141,38 +126,38 @@ export const VerticalQuickCommerce: React.FC = () => {
 
       <div className="max-w-[1440px] mx-auto w-full px-8 py-8 flex gap-6">
         {/* Left Column: Vertical Category Navigation Menu (Stripe/Blinkit style) */}
-        <aside className="w-[240px] flex flex-col bg-white border border-brand-border rounded-card shadow-premium shrink-0 h-fit sticky top-[130px]">
+        <aside className="w-full max-w-[240px] flex flex-col bg-white border border-brand-border rounded-card shadow-premium shrink-0 h-fit sticky top-[130px]">
           <span className="p-4 border-b border-brand-border font-extrabold text-xs uppercase tracking-wider text-brand-green font-heading">
             Categories
           </span>
           <div className="flex flex-col py-2">
             <button
               onClick={() => setSelectedCatId('')}
-              className={`flex items-center gap-3.5 px-4.5 py-3.5 text-left transition-all border-l-4 font-bold text-xs ${
+              className={`flex items-center gap-3.5 px-5 py-3.5 text-left transition-all border-l-4 font-bold text-xs ${
                 selectedCatId === '' 
                 ? 'bg-green-50/20 text-brand-green border-brand-green font-extrabold' 
                 : 'border-transparent hover:bg-slate-50/50 text-brand-slate hover:text-brand-graphite'
               }`}
             >
-              <div className="w-8 h-8 rounded-full bg-brand-green/10 border border-brand-green/20 overflow-hidden shrink-0 flex items-center justify-center p-1.5">
-                <LayoutGrid size={16} className="text-brand-green" />
+              <div className="w-16 h-16 rounded-full bg-brand-green/10 border border-brand-green/20 overflow-hidden shrink-0 flex items-center justify-center p-1.5">
+                <LayoutGrid size={24} className="text-brand-green" />
               </div>
-              <span className="font-heading text-xs">All Categories</span>
+              <span className="font-heading text-sm font-extrabold">All Categories</span>
             </button>
             {quickCategories.map(cat => (
               <button
                 key={cat.id}
                 onClick={() => setSelectedCatId(cat.id)}
-                className={`flex items-center gap-3.5 px-4.5 py-3.5 text-left transition-all border-l-4 font-bold text-xs ${
+                className={`flex items-center gap-3.5 px-5 py-3.5 text-left transition-all border-l-4 font-bold text-xs ${
                   selectedCatId === cat.id
                     ? 'bg-green-50/20 text-brand-green border-brand-green font-extrabold'
                     : 'border-transparent hover:bg-slate-50/50 text-brand-slate hover:text-brand-graphite'
                 }`}
               >
-                <div className="w-8 h-8 rounded-full bg-slate-50 overflow-hidden shrink-0 flex items-center justify-center border border-brand-border">
+                <div className="w-16 h-16 rounded-full bg-slate-50 overflow-hidden shrink-0 flex items-center justify-center border border-brand-border">
                   <img src={cat.image || undefined} alt={cat.name} className="w-full h-full object-cover" />
                 </div>
-                <span className="font-heading">{cat.name}</span>
+                <span className="font-heading text-sm font-extrabold">{cat.name}</span>
               </button>
             ))}
           </div>
@@ -216,7 +201,7 @@ export const VerticalQuickCommerce: React.FC = () => {
 
                   {/* Discount tag overlay */}
                   {discount > 0 && (
-                    <span className="absolute top-3 left-3 bg-[#ECFDF5] border border-brand-green/10 text-brand-green text-[9px] font-black px-2 py-0.5 rounded shadow-soft z-10 font-numbers uppercase tracking-wider">
+                    <span className="absolute top-3 left-3 bg-[#ECFDF5] border border-brand-green/10 text-brand-green text-xs font-black px-2 py-0.5 rounded shadow-soft z-10 font-numbers uppercase tracking-wider">
                       {discount}% OFF
                     </span>
                   )}
@@ -227,7 +212,7 @@ export const VerticalQuickCommerce: React.FC = () => {
                   </div>
 
                   {/* Time badge */}
-                  <div className="flex items-center gap-1 text-[9.5px] text-brand-green font-extrabold bg-[#ECFDF5] border border-brand-green/10 rounded-sm w-max px-2 py-0.5 mb-2.5 shadow-soft leading-none">
+                  <div className="flex items-center gap-1 text-xs text-brand-green font-extrabold bg-[#ECFDF5] border border-brand-green/10 rounded-sm w-max px-2 py-0.5 mb-2.5 shadow-soft leading-none">
                     <Clock size={10} className="text-brand-green" />
                     <span>{product.deliveryTime}</span>
                   </div>
@@ -236,7 +221,7 @@ export const VerticalQuickCommerce: React.FC = () => {
                   <h3 className="text-xs font-bold text-brand-graphite line-clamp-2 leading-relaxed mb-1 min-h-[36px] group-hover:text-brand-green transition-colors font-heading">
                     {product.title}
                   </h3>
-                  <div className="text-[10px] text-brand-slate font-extrabold mb-3">
+                  <div className="text-xs text-brand-slate font-extrabold mb-3">
                     {product.specs?.['Weight'] || product.specs?.['Volume'] || 'Pack'}
                   </div>
 
@@ -245,7 +230,7 @@ export const VerticalQuickCommerce: React.FC = () => {
                     <div className="flex flex-col leading-none">
                       <span className="text-sm font-extrabold text-brand-graphite">₹{product.price}</span>
                       {product.originalPrice > product.price && (
-                        <span className="text-[10px] text-brand-slate line-through mt-0.5">₹{product.originalPrice}</span>
+                        <span className="text-xs text-brand-slate line-through mt-0.5">₹{product.originalPrice}</span>
                       )}
                     </div>
 
@@ -266,7 +251,7 @@ export const VerticalQuickCommerce: React.FC = () => {
                         >
                           <Minus size={11} strokeWidth={3} />
                         </button>
-                        <span className="px-2.5 min-w-[20px] text-center select-none">{qty}</span>
+                        <span className="px-2.5 min-w-full max-w-[20px] text-center select-none">{qty}</span>
                         <button
                           onClick={() => updateQuantity(product.id, qty + 1)}
                           className="px-2 py-1.5 hover:bg-emerald-700 transition-colors"
@@ -290,18 +275,18 @@ export const VerticalQuickCommerce: React.FC = () => {
           <div className="flex items-center gap-3">
             <div className="p-2 rounded bg-green-800/20 relative">
               <ShoppingCart size={18} />
-              <span className="absolute -top-1.5 -right-1.5 flex h-4 min-w-4 items-center justify-center rounded-full bg-brand-orange text-[9px] font-black text-white font-numbers">
+              <span className="absolute -top-1.5 -right-1.5 flex h-4 min-w-4 items-center justify-center rounded-full bg-brand-orange text-xs font-black text-white font-numbers">
                 {activeCartCount}
               </span>
             </div>
             <div className="flex flex-col leading-tight text-left">
               <span className="font-extrabold text-sm font-numbers">₹{activeCartTotal.toLocaleString('en-IN')}</span>
-              <span className="text-[9.5px] text-green-100 font-extrabold uppercase tracking-widest font-heading">Checkout with Quick Cart</span>
+              <span className="text-xs text-green-100 font-extrabold uppercase tracking-widest font-heading">Checkout with Quick Cart</span>
             </div>
           </div>
           <button
             onClick={() => navigateTo('cart')}
-            className="flex items-center gap-1.5 bg-white text-brand-green px-4.5 py-2 rounded-button text-xs font-black shadow hover:bg-slate-50 transition-colors uppercase tracking-wider"
+            className="flex items-center gap-1.5 bg-white text-brand-green px-5 py-2 rounded-button text-xs font-black shadow hover:bg-slate-50 transition-colors uppercase tracking-wider"
           >
             <span>View Cart</span>
             <ArrowRight size={14} />

@@ -96,7 +96,7 @@ export const ReportsPage: React.FC = () => {
 
       <div className="bg-white rounded-2xl border border-gray-100 shadow-premium overflow-hidden">
         <div className="p-4 border-b border-gray-100 flex flex-wrap gap-3">
-          <div className="flex-1 min-w-[150px] max-w-xs relative">
+          <div className="flex-1 min-w-full max-w-[150px] max-w-xs relative">
             <Filter className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
             <select 
               value={selectedBranch}
@@ -108,7 +108,7 @@ export const ReportsPage: React.FC = () => {
             </select>
           </div>
 
-          <div className="flex-1 min-w-[150px] max-w-xs relative">
+          <div className="flex-1 min-w-full max-w-[150px] max-w-xs relative">
             <Calendar className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
             <select
               value={period}

@@ -7,7 +7,7 @@ import { api } from '../lib/api';
 import { getCustomerToken } from '../lib/customerAuth';
 
 export type VerticalType = 'shop' | 'quick' | 'services';
-export type PathType = 'home' | 'search' | 'detail' | 'cart' | 'orders' | 'profile' | 'dashboard';
+export type PathType = 'home' | 'search' | 'detail' | 'cart' | 'orders' | 'profile' | 'dashboard' | 'notifications';
 
 export interface OrderItem {
   product: Product;
@@ -24,6 +24,21 @@ export interface Order {
   status: 'placed' | 'confirmed' | 'packing' | 'shipping' | 'delivered' | 'cancelled';
   deliveryTimeEstimate: string;
   location: string;
+}
+
+export type NotificationType = 'order' | 'quick' | 'service' | 'promo';
+
+export interface Notification {
+  id: string;
+  type: NotificationType;
+  title: string;
+  message: string;
+  timestamp: string;
+  read: boolean;
+  actionText?: string;
+  icon: any;
+  color: string;
+  bg: string;
 }
 
 interface AppContextType {
@@ -49,6 +64,10 @@ interface AppContextType {
   placeOrder: (payload: { addressId: string; paymentMethodId: string; items: any[]; total: number }) => Promise<void>;
   cancelOrder: (orderId: string) => Promise<void>;
   updateOrderStatus: (orderId: string, status: string) => Promise<void>;
+  notifications: Notification[];
+  addNotification: (n: Omit<Notification, 'id' | 'read' | 'timestamp'>) => void;
+  markAsRead: (id: string) => void;
+  markAllAsRead: () => void;
 }
 
 const AppContext = createContext<AppContextType | undefined>(undefined);
@@ -79,6 +98,27 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
 
   // Orders
   const [orders, setOrders] = useState<Order[]>([]);
+
+  // Notifications
+  const [notifications, setNotifications] = useState<Notification[]>([]);
+
+  const addNotification = (n: Omit<Notification, 'id' | 'read' | 'timestamp'>) => {
+    const newNotif: Notification = {
+      ...n,
+      id: Math.random().toString(36).substring(7),
+      read: false,
+      timestamp: 'Just now'
+    };
+    setNotifications(prev => [newNotif, ...prev]);
+  };
+
+  const markAsRead = (id: string) => {
+    setNotifications(prev => prev.map(n => n.id === id ? { ...n, read: true } : n));
+  };
+
+  const markAllAsRead = () => {
+    setNotifications(prev => prev.map(n => ({ ...n, read: true })));
+  };
 
   // Fetch initial data from API
   useEffect(() => {
@@ -191,11 +231,33 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   const placeOrder = async (payload: { addressId: string; paymentMethodId: string; items: any[]; total: number }) => {
     try {
       await api.post('/api/orders', payload);
-      // Fetch orders again to get the new order
-      const res = await api.get<{ orders: Order[] }>('/api/orders');
-      if (res.orders) setOrders(res.orders);
-      clearCart();
-      navigateTo('orders');
+        // Fetch orders again to get the new order
+        const res = await api.get<{ orders: Order[] }>('/api/orders');
+        if (res.orders) setOrders(res.orders);
+        
+        // Add a live notification for the placed order
+        const isQuick = currentVertical === 'quick';
+        const isService = currentVertical === 'services';
+        
+        // Use lucide-react icons dynamically or pass string names. 
+        // For simplicity, we just use string names that Notifications.tsx can map, or pass any generic object.
+        // But since we are inside AppContext we can't easily import icons here without adding them to AppContext.
+        addNotification({
+          type: isQuick ? 'quick' : isService ? 'service' : 'order',
+          title: isQuick ? 'Arriving in 10 mins! ⚡' : isService ? 'Service Booked \uD83D\uDEE0\uFE0F' : 'Order Placed! \uD83C\uDF89',
+          message: isQuick 
+            ? 'Your 10 Min delivery order has been placed and is being packed.' 
+            : isService 
+            ? 'Your service appointment has been successfully booked.' 
+            : 'Your order has been confirmed and is being processed.',
+          actionText: 'Track Order',
+          icon: isQuick ? 'Zap' : isService ? 'Wrench' : 'Package',
+          color: isQuick ? 'text-[#E5B500]' : isService ? 'text-amber-600' : 'text-blue-600',
+          bg: isQuick ? 'bg-[#FFDF00]/20' : isService ? 'bg-amber-50' : 'bg-blue-50'
+        });
+
+        clearCart();
+        navigateTo('orders');
     } catch (err) {
       console.error('Failed to place order', err);
       throw err;
@@ -262,7 +324,11 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         orders,
         placeOrder,
         cancelOrder,
-        updateOrderStatus
+        updateOrderStatus,
+        notifications,
+        addNotification,
+        markAsRead,
+        markAllAsRead
       }}
     >
       {children}

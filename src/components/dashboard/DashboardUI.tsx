@@ -79,7 +79,7 @@ export const Badge: React.FC<{ children: React.ReactNode; tone?: 'blue' | 'green
     purple: 'bg-purple-50 text-purple-700 border-purple-100',
   };
   return (
-    <span className={`px-2.5 py-1 rounded-full text-[10px] font-bold capitalize tracking-wide border ${tones[tone]}`}>
+    <span className={`px-2.5 py-1 rounded-full text-xs font-bold capitalize tracking-wide border ${tones[tone]}`}>
       {children}
     </span>
   );

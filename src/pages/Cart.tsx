@@ -63,7 +63,7 @@ export const CartPage: React.FC = () => {
                   return (
                     <div
                       key={`${item.product.id}-${item.product.deliveryTime || ''}`}
-                      className="bg-white border border-brand-border rounded-card p-5 flex gap-4.5 shadow-premium hover:border-brand-border/80 transition-all relative"
+                      className="bg-white border border-brand-border rounded-card p-5 flex gap-5 shadow-premium hover:border-brand-border/80 transition-all relative"
                     >
                       <div className="w-24 h-24 rounded-card overflow-hidden shrink-0 bg-brand-elevated border border-brand-border/40 p-2 flex items-center justify-center shadow-soft">
                         <img src={item.product.image} alt={item.product.title} className="max-h-full max-w-full object-contain" />
@@ -84,10 +84,10 @@ export const CartPage: React.FC = () => {
                             </button>
                           </div>
                           {item.product.specs?.['Weight'] && (
-                            <span className="text-[10px] text-brand-slate font-extrabold block mt-1">Pack Size: {item.product.specs['Weight']}</span>
+                            <span className="text-xs text-brand-slate font-extrabold block mt-1">Pack Size: {item.product.specs['Weight']}</span>
                           )}
                           {item.product.deliveryTime && (
-                            <span className="text-[9.5px] font-extrabold text-brand-green bg-green-50 px-2 py-0.5 rounded w-max mt-2 block shadow-soft border border-brand-green/10 leading-none">
+                            <span className="text-xs font-extrabold text-brand-green bg-green-50 px-2 py-0.5 rounded w-max mt-2 block shadow-soft border border-brand-green/10 leading-none">
                               Scheduled: {item.product.deliveryTime}
                             </span>
                           )}
@@ -98,8 +98,8 @@ export const CartPage: React.FC = () => {
                             <span className="text-sm font-extrabold text-brand-graphite">₹{item.product.price}</span>
                             {item.product.originalPrice > item.product.price && (
                               <>
-                                <span className="text-[10px] text-brand-slate line-through">₹{item.product.originalPrice}</span>
-                                <span className="text-[9.5px] font-black text-brand-orange uppercase tracking-wider">{itemDiscount}% off</span>
+                                <span className="text-xs text-brand-slate line-through">₹{item.product.originalPrice}</span>
+                                <span className="text-xs font-black text-brand-orange uppercase tracking-wider">{itemDiscount}% off</span>
                               </>
                             )}
                           </div>
@@ -113,7 +113,7 @@ export const CartPage: React.FC = () => {
                             >
                               <Minus size={11} strokeWidth={3} />
                             </button>
-                            <span className="px-2.5 min-w-[20px] text-center select-none">{item.quantity}</span>
+                            <span className="px-2.5 min-w-full max-w-[20px] text-center select-none">{item.quantity}</span>
                             <button
                               onClick={() => updateQuantity(item.product.id, item.quantity + 1)}
                               className="px-2 py-1.5 hover:bg-blue-600 transition-colors"
@@ -149,13 +149,13 @@ export const CartPage: React.FC = () => {
                   <motion.button
                     whileTap={{ scale: 0.95 }}
                     type="submit"
-                    className="px-4.5 bg-brand-blue text-white rounded-button text-[10px] font-black uppercase tracking-wider"
+                    className="px-5 bg-brand-blue text-white rounded-button text-xs font-black uppercase tracking-wider"
                   >
                     Apply
                   </motion.button>
                 </form>
                 {couponMsg && (
-                  <span className={`text-[10px] font-bold block mt-2.5 leading-normal ${couponApplied ? 'text-brand-green' : 'text-brand-red'}`}>
+                  <span className={`text-xs font-bold block mt-2.5 leading-normal ${couponApplied ? 'text-brand-green' : 'text-brand-red'}`}>
                     {couponMsg}
                   </span>
                 )}
@@ -198,7 +198,7 @@ export const CartPage: React.FC = () => {
                     <span>Proceed to Checkout</span>
                     <ArrowRight size={14} />
                   </motion.button>
-                  <div className="flex gap-2.5 items-center justify-center text-[10px] text-brand-slate font-extrabold select-none">
+                  <div className="flex gap-2.5 items-center justify-center text-xs text-brand-slate font-extrabold select-none">
                     <ShieldCheck size={14} className="text-brand-green" />
                     <span>Safe payments & 100% genuine products</span>
                   </div>
@@ -261,7 +261,7 @@ export const CartPage: React.FC = () => {
                           </button>
                         </div>
                         {item.product.deliveryTime && (
-                            <span className="text-[9px] font-bold text-brand-green bg-[#ECFDF5] border border-brand-green/20 px-2 py-0.5 rounded-full w-max mt-2 block shadow-sm">
+                            <span className="text-xs font-bold text-brand-green bg-[#ECFDF5] border border-brand-green/20 px-2 py-0.5 rounded-full w-max mt-2 block shadow-sm">
                               Slot: {item.product.deliveryTime}
                             </span>
                           )}
@@ -271,7 +271,7 @@ export const CartPage: React.FC = () => {
                         <div className="flex items-baseline gap-1.5 leading-none">
                           <span className="text-lg font-black text-zinc-800 tracking-tighter">₹{item.product.price.toLocaleString('en-IN')}</span>
                           {item.product.originalPrice > item.product.price && (
-                            <span className="text-[11px] text-slate-400 line-through font-semibold">₹{item.product.originalPrice.toLocaleString('en-IN')}</span>
+                            <span className="text-xs text-slate-400 line-through font-semibold">₹{item.product.originalPrice.toLocaleString('en-IN')}</span>
                           )}
                         </div>
 
@@ -300,7 +300,7 @@ export const CartPage: React.FC = () => {
 
             {/* Bill Details */}
             <div className="bg-white border border-slate-200/60 rounded-3xl p-6 shadow-[0_2px_12px_-4px_rgba(0,0,0,0.05)] flex flex-col gap-4 font-numbers select-none">
-              <span className="text-zinc-800 font-black text-[11px] tracking-widest uppercase font-heading border-b border-slate-100 pb-3 text-left">
+              <span className="text-zinc-800 font-black text-xs tracking-widest uppercase font-heading border-b border-slate-100 pb-3 text-left">
                 Payment Details
               </span>
               <div className="flex flex-col gap-3.5 text-xs text-slate-500 font-bold">

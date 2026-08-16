@@ -62,7 +62,7 @@ export const DashboardLayout: React.FC<{ activeTab: DashboardTab; onTabChange: (
             </div>
             <div className="min-w-0">
               <p className="text-sm font-extrabold text-brand-graphite truncate font-heading">{profile.name}</p>
-              <p className="text-[10px] font-bold text-brand-slate uppercase tracking-wider truncate mt-0.5">{profile.email}</p>
+              <p className="text-xs font-bold text-brand-slate uppercase tracking-wider truncate mt-0.5">{profile.email}</p>
             </div>
           </div>
 
@@ -85,7 +85,7 @@ export const DashboardLayout: React.FC<{ activeTab: DashboardTab; onTabChange: (
                   <Icon size={16} strokeWidth={active ? 2.5 : 2} />
                   <span className="flex-1 text-left">{item.label}</span>
                   {badge ? (
-                    <span className="min-w-[18px] h-[18px] px-1 rounded-full bg-brand-red text-white text-[10px] font-black flex items-center justify-center">
+                    <span className="min-w-full max-w-[18px] h-[18px] px-1 rounded-full bg-brand-red text-white text-xs font-black flex items-center justify-center">
                       {badge}
                     </span>
                   ) : null}
@@ -116,7 +116,7 @@ export const DashboardLayout: React.FC<{ activeTab: DashboardTab; onTabChange: (
             <Menu size={20} />
           </button>
           <div className="flex items-center gap-2">
-            <div className="w-7 h-7 rounded-lg bg-white/15 flex items-center justify-center text-[10px] font-black">SI</div>
+            <div className="w-7 h-7 rounded-lg bg-white/15 flex items-center justify-center text-xs font-black">SI</div>
             <span className="font-black text-sm font-heading">My Account</span>
           </div>
         </div>
@@ -138,7 +138,7 @@ export const DashboardLayout: React.FC<{ activeTab: DashboardTab; onTabChange: (
               <div className="p-5 border-b border-white/10 flex items-center justify-between">
                 <div>
                   <h2 className="font-black font-heading">ShopIndia</h2>
-                  <p className="text-[11px] text-white/50">My Account</p>
+                  <p className="text-xs text-white/50">My Account</p>
                 </div>
                 <button onClick={() => setDrawer(false)} aria-label="Close menu" className="p-1"><X size={18} /></button>
               </div>
@@ -153,7 +153,7 @@ export const DashboardLayout: React.FC<{ activeTab: DashboardTab; onTabChange: (
                       }`}>
                       <Icon className="w-4 h-4" />
                       <span className="flex-1 text-left">{item.label}</span>
-                      {badge ? <span className="min-w-[18px] h-[18px] px-1 rounded-full bg-red-500 text-[10px] font-black flex items-center justify-center">{badge}</span> : null}
+                      {badge ? <span className="min-w-full max-w-[18px] h-[18px] px-1 rounded-full bg-red-500 text-xs font-black flex items-center justify-center">{badge}</span> : null}
                     </button>
                   );
                 })}

@@ -37,7 +37,7 @@ export const CouponsRewardsPage: React.FC = () => {
               <div key={r.id} className="flex items-center justify-between">
                 <div>
                   <p className="text-xs font-bold text-brand-graphite capitalize">{r.source}</p>
-                  <p className="text-[10px] text-brand-slate">{r.description}</p>
+                  <p className="text-xs text-brand-slate">{r.description}</p>
                 </div>
                 <Badge tone="green">+{r.points} pts</Badge>
               </div>
@@ -64,11 +64,11 @@ export const CouponsRewardsPage: React.FC = () => {
                       <Badge tone={STATE_TONE[c.state]}>{c.state}</Badge>
                     </div>
                     <p className="text-xs font-bold text-brand-orange mt-1">{c.discountType === 'PERCENTAGE' ? `${c.discountValue}% off` : `₹${c.discountValue} off`}</p>
-                    <p className="text-[10px] text-brand-slate mt-0.5">{c.title} · Min ₹{c.minOrderValue.toLocaleString('en-IN')}</p>
+                    <p className="text-xs text-brand-slate mt-0.5">{c.title} · Min ₹{c.minOrderValue.toLocaleString('en-IN')}</p>
                     <div className="flex items-center justify-between mt-2 pt-2 border-t border-brand-border/40">
-                      <span className="text-[10px] text-brand-slate">Valid till {new Date(c.validUntil).toLocaleDateString('en-IN', { day: 'numeric', month: 'short' })}</span>
+                      <span className="text-xs text-brand-slate">Valid till {new Date(c.validUntil).toLocaleDateString('en-IN', { day: 'numeric', month: 'short' })}</span>
                       {g.key === 'available' && (
-                        <button onClick={() => { navigator.clipboard?.writeText(c.code).catch(() => {}); alert(`Coupon ${c.code} copied!`); }} className="inline-flex items-center gap-1 text-[10px] font-bold text-brand-blue"><Copy className="w-3 h-3" /> Copy</button>
+                        <button onClick={() => { navigator.clipboard?.writeText(c.code).catch(() => {}); alert(`Coupon ${c.code} copied!`); }} className="inline-flex items-center gap-1 text-xs font-bold text-brand-blue"><Copy className="w-3 h-3" /> Copy</button>
                       )}
                     </div>
                   </div>
@@ -91,7 +91,7 @@ export const CouponsRewardsPage: React.FC = () => {
               <div className="w-10 h-10 rounded-xl bg-brand-blue/10 text-brand-blue flex items-center justify-center">{x.icon}</div>
               <div>
                 <p className="text-xs font-bold text-brand-graphite">{x.title}</p>
-                <p className="text-[10px] text-brand-slate">{x.desc}</p>
+                <p className="text-xs text-brand-slate">{x.desc}</p>
               </div>
             </div>
           ))}

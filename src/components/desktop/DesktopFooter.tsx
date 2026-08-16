@@ -93,7 +93,7 @@ export const DesktopFooter: React.FC = () => {
           <CreditCard size={24} className="hover:text-brand-graphite transition-colors" />
           <Smartphone size={24} className="hover:text-brand-graphite transition-colors" />
           <Wallet size={24} className="hover:text-brand-graphite transition-colors" />
-          <span className="text-[10px] font-bold ml-1">100% SECURE</span>
+          <span className="text-xs font-bold ml-1">100% SECURE</span>
         </div>
       </div>
     </footer>

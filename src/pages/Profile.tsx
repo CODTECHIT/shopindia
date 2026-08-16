@@ -115,16 +115,16 @@ export const ProfilePage: React.FC = () => {
 
                 {authMode === 'register' && (
                   <div className="flex flex-col gap-2">
-                    <label className="text-[10px] font-black text-brand-slate uppercase tracking-wider flex items-center gap-1.5"><User size={12}/> Full Name</label>
+                    <label className="text-xs font-black text-brand-slate uppercase tracking-wider flex items-center gap-1.5"><User size={12}/> Full Name</label>
                     <input value={aName} onChange={(e) => setAName(e.target.value)} placeholder="E.g. Jane Doe" required className="px-4 py-3.5 border border-slate-200 rounded-xl text-sm font-bold text-brand-graphite focus:outline-none focus:border-brand-blue focus:ring-4 focus:ring-brand-blue/10 transition-all bg-slate-50 focus:bg-white placeholder:text-slate-400" />
                   </div>
                 )}
                 <div className="flex flex-col gap-2">
-                  <label className="text-[10px] font-black text-brand-slate uppercase tracking-wider flex items-center gap-1.5"><Mail size={12}/> Email Address</label>
+                  <label className="text-xs font-black text-brand-slate uppercase tracking-wider flex items-center gap-1.5"><Mail size={12}/> Email Address</label>
                   <input type="email" value={aEmail} onChange={(e) => setAEmail(e.target.value)} placeholder="you@example.com" required className="px-4 py-3.5 border border-slate-200 rounded-xl text-sm font-bold text-brand-graphite focus:outline-none focus:border-brand-blue focus:ring-4 focus:ring-brand-blue/10 transition-all bg-slate-50 focus:bg-white placeholder:text-slate-400" />
                 </div>
                 <div className="flex flex-col gap-2">
-                  <label className="text-[10px] font-black text-brand-slate uppercase tracking-wider flex items-center gap-1.5"><ShieldCheck size={12}/> Password</label>
+                  <label className="text-xs font-black text-brand-slate uppercase tracking-wider flex items-center gap-1.5"><ShieldCheck size={12}/> Password</label>
                   <input type="password" value={aPass} onChange={(e) => setAPass(e.target.value)} placeholder="••••••••" required className="px-4 py-3.5 border border-slate-200 rounded-xl text-sm font-bold text-brand-graphite focus:outline-none focus:border-brand-blue focus:ring-4 focus:ring-brand-blue/10 transition-all bg-slate-50 focus:bg-white placeholder:text-slate-400" />
                 </div>
                 

@@ -52,12 +52,12 @@ export const VerticalQuickCommerceMobile: React.FC = () => {
   return (
     <div className="w-full flex flex-col gap-3 py-3.5 px-3 bg-[#FAF9F6] min-h-screen text-brand-graphite font-sans pb-28">
       {/* 10 Min Header Strip */}
-      <div className="w-full py-2 px-3.5 rounded-[16px] bg-[#ECFDF5] text-brand-green flex justify-between items-center text-[10px] font-bold border border-brand-green/10 font-heading">
+      <div className="w-full py-2 px-3.5 rounded-[16px] bg-[#ECFDF5] text-brand-green flex justify-between items-center text-xs font-bold border border-brand-green/10 font-heading">
         <span className="flex items-center gap-1.5">
           <Clock size={12} className="animate-pulse" />
           Delivered in 10 minutes from store
         </span>
-        <span className="text-[8px] uppercase tracking-wider bg-brand-green text-white px-2 py-0.5 rounded-full font-black">10 MINS</span>
+        <span className="text-xs uppercase tracking-wider bg-brand-green text-white px-2 py-0.5 rounded-full font-black">10 MINS</span>
       </div>
 
       {/* Hero Banner Carousel */}
@@ -74,15 +74,15 @@ export const VerticalQuickCommerceMobile: React.FC = () => {
                 className="absolute inset-0 w-full h-full"
                 onClick={() => navigateTo('search')}
               >
-                <img src={banners[currentSlide].image} alt={banners[currentSlide].title} className="w-full h-full object-cover opacity-50" />
-                <div className="absolute inset-0 bg-gradient-to-r from-zinc-950/80 via-zinc-950/30 to-transparent flex flex-col justify-center px-6 text-white text-left select-none">
+                <img src={banners[currentSlide].image} alt={banners[currentSlide].title} className="w-full h-full object-cover" />
+                <div className="absolute inset-0 flex flex-col justify-center px-6 text-white text-left select-none drop-shadow-md">
                   <span className="text-[7.5px] bg-brand-green text-white font-black px-2 py-0.5 rounded w-max uppercase tracking-wider mb-2 shadow-soft">
                     10-Min Delivery
                   </span>
                   <h3 className="text-xs font-black line-clamp-1 font-heading uppercase tracking-wide leading-tight drop-shadow">
                     {banners[currentSlide].title}
                   </h3>
-                  <p className="text-[9.5px] opacity-90 line-clamp-1 text-zinc-300 font-semibold mt-1">
+                  <p className="text-xs opacity-90 line-clamp-1 text-zinc-300 font-semibold mt-1">
                     {banners[currentSlide].subtitle}
                   </p>
                 </div>
@@ -102,7 +102,7 @@ export const VerticalQuickCommerceMobile: React.FC = () => {
           </>
         ) : (
           <div className="absolute inset-0 flex flex-col items-center justify-center text-zinc-500 bg-[#FAF9F6] border border-brand-border">
-            <span className="text-[10px] font-bold">Loading...</span>
+            <span className="text-xs font-bold">Loading...</span>
           </div>
         )}
       </div>
@@ -121,7 +121,7 @@ export const VerticalQuickCommerceMobile: React.FC = () => {
           <div className="w-11 h-11 flex items-center justify-center rounded-full overflow-hidden bg-brand-elevated border border-black/5 shadow-sm">
             <LayoutGrid size={20} className={activeCat === '' ? "text-brand-green" : "text-brand-slate/60"} />
           </div>
-          <span className={`text-center text-[9px] leading-tight font-heading ${
+          <span className={`text-center text-xs leading-tight font-heading ${
             activeCat === '' ? 'font-black text-brand-green' : 'font-bold text-brand-slate'
           }`}>
             All
@@ -141,7 +141,7 @@ export const VerticalQuickCommerceMobile: React.FC = () => {
             <div className="w-12 h-12 rounded-full overflow-hidden bg-brand-elevated border border-black/5 shadow-sm">
               <img src={cat.image || undefined} alt={cat.name} className="w-full h-full object-cover" fetchPriority="high" />
             </div>
-            <span className={`text-center text-[9px] leading-tight font-heading ${
+            <span className={`text-center text-xs leading-tight font-heading ${
               activeCat === cat.id ? 'font-black text-brand-green' : 'font-bold text-brand-slate'
             }`}>
               {cat.name}
@@ -174,7 +174,7 @@ export const VerticalQuickCommerceMobile: React.FC = () => {
 
               {/* Discount tag overlay */}
               {discount > 0 && (
-                <span className="absolute top-2 left-2 bg-[#ECFDF5] text-brand-green text-[8px] font-black px-1.5 py-0.5 rounded shadow-soft z-10 font-numbers uppercase tracking-wider">
+                <span className="absolute top-2 left-2 bg-[#ECFDF5] text-brand-green text-xs font-black px-1.5 py-0.5 rounded shadow-soft z-10 font-numbers uppercase tracking-wider">
                   {discount}% OFF
                 </span>
               )}
@@ -185,10 +185,10 @@ export const VerticalQuickCommerceMobile: React.FC = () => {
               </div>
 
               {/* Title & Info */}
-              <h3 className="text-[10px] font-bold text-brand-graphite line-clamp-2 leading-snug mb-0.5 min-h-[30px] font-heading">
+              <h3 className="text-xs font-bold text-brand-graphite line-clamp-2 leading-snug mb-0.5 min-h-[30px] font-heading">
                 {product.title}
               </h3>
-              <span className="text-[9px] text-brand-slate font-extrabold mb-3.5">
+              <span className="text-xs text-brand-slate font-extrabold mb-3.5">
                 {product.specs?.['Weight'] || product.specs?.['Volume'] || 'Pack'}
               </span>
 
@@ -197,7 +197,7 @@ export const VerticalQuickCommerceMobile: React.FC = () => {
                 <div className="flex flex-col leading-none">
                   <span className="text-xs font-extrabold text-brand-graphite">₹{product.price}</span>
                   {product.originalPrice > product.price && (
-                    <span className="text-[9px] text-brand-slate line-through mt-0.5">₹{product.originalPrice}</span>
+                    <span className="text-xs text-brand-slate line-through mt-0.5">₹{product.originalPrice}</span>
                   )}
                 </div>
 
@@ -205,12 +205,12 @@ export const VerticalQuickCommerceMobile: React.FC = () => {
                   <motion.button
                     whileTap={{ scale: 0.95 }}
                     onClick={() => addToCart(product)}
-                    className="px-3.5 py-1.5 border border-brand-green/20 bg-[#ECFDF5] text-brand-green text-[10px] font-black rounded-button uppercase shadow-soft transition-colors"
+                    className="px-3.5 py-1.5 border border-brand-green/20 bg-[#ECFDF5] text-brand-green text-xs font-black rounded-button uppercase shadow-soft transition-colors"
                   >
                     Add
                   </motion.button>
                 ) : (
-                  <div className="flex items-center border border-brand-green bg-brand-green text-white rounded-button overflow-hidden text-[10px] font-extrabold shadow-soft">
+                  <div className="flex items-center border border-brand-green bg-brand-green text-white rounded-button overflow-hidden text-xs font-extrabold shadow-soft">
                     <button
                       onClick={() => updateQuantity(product.id, qty - 1)}
                       className="px-1.5 py-1.5 hover:bg-emerald-700 transition-colors"
@@ -218,7 +218,7 @@ export const VerticalQuickCommerceMobile: React.FC = () => {
                     >
                       <Minus size={10} strokeWidth={3} />
                     </button>
-                    <span className="px-2 min-w-[15px] text-center select-none">{qty}</span>
+                    <span className="px-2 min-w-full max-w-[15px] text-center select-none">{qty}</span>
                     <button
                       onClick={() => updateQuantity(product.id, qty + 1)}
                       className="px-1.5 py-1.5 hover:bg-emerald-700 transition-colors"
@@ -240,18 +240,18 @@ export const VerticalQuickCommerceMobile: React.FC = () => {
           <div className="flex items-center gap-2">
             <div className="p-1.5 rounded bg-green-800/40 relative">
               <ShoppingBag size={15} />
-              <span className="absolute -top-1 -right-1 flex h-3.5 min-w-3.5 items-center justify-center rounded-full bg-brand-orange text-[8px] font-black text-white font-numbers">
+              <span className="absolute -top-1 -right-1 flex h-3.5 min-w-3.5 items-center justify-center rounded-full bg-brand-orange text-xs font-black text-white font-numbers">
                 {activeCartCount}
               </span>
             </div>
             <div className="flex flex-col leading-none text-left">
               <span className="font-extrabold text-xs font-numbers">₹{activeCartTotal.toLocaleString('en-IN')}</span>
-              <span className="text-[8px] text-emerald-100 font-extrabold uppercase tracking-widest font-heading">Quick Checkout</span>
+              <span className="text-xs text-emerald-100 font-extrabold uppercase tracking-widest font-heading">Quick Checkout</span>
             </div>
           </div>
           <button
             onClick={() => navigateTo('cart')}
-            className="flex items-center gap-1 bg-white text-brand-green px-3.5 py-1.5 rounded-button text-[10px] font-black shadow hover:bg-slate-50 transition-colors uppercase tracking-wider"
+            className="flex items-center gap-1 bg-white text-brand-green px-3.5 py-1.5 rounded-button text-xs font-black shadow hover:bg-slate-50 transition-colors uppercase tracking-wider"
           >
             <span>Proceed</span>
             <ArrowRight size={12} />

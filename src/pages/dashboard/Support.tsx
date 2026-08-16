@@ -60,25 +60,25 @@ export const SupportCenterPage: React.FC = () => {
           <h3 className="font-extrabold text-sm text-brand-graphite font-heading mb-4">Raise a Support Ticket</h3>
           <form onSubmit={submitTicket} className="space-y-3">
             <div className="flex flex-col gap-1">
-              <label className="text-[10px] font-black uppercase text-brand-slate">Subject</label>
+              <label className="text-xs font-black uppercase text-brand-slate">Subject</label>
               <input className={fieldCls} value={ticket.subject} onChange={(e) => setTicket((t) => ({ ...t, subject: e.target.value }))} required />
             </div>
             <div className="grid grid-cols-2 gap-3">
               <div className="flex flex-col gap-1">
-                <label className="text-[10px] font-black uppercase text-brand-slate">Category</label>
+                <label className="text-xs font-black uppercase text-brand-slate">Category</label>
                 <select className={fieldCls} value={ticket.category} onChange={(e) => setTicket((t) => ({ ...t, category: e.target.value }))}>
                   {['Order Issue', 'Payment', 'Refund', 'Product', 'Delivery', 'Other'].map((c) => <option key={c}>{c}</option>)}
                 </select>
               </div>
               <div className="flex flex-col gap-1">
-                <label className="text-[10px] font-black uppercase text-brand-slate">Priority</label>
+                <label className="text-xs font-black uppercase text-brand-slate">Priority</label>
                 <select className={fieldCls} value={ticket.priority} onChange={(e) => setTicket((t) => ({ ...t, priority: e.target.value }))}>
                   {['low', 'medium', 'high', 'urgent'].map((c) => <option key={c} className="capitalize">{c}</option>)}
                 </select>
               </div>
             </div>
             <div className="flex flex-col gap-1">
-              <label className="text-[10px] font-black uppercase text-brand-slate">Describe your issue</label>
+              <label className="text-xs font-black uppercase text-brand-slate">Describe your issue</label>
               <textarea className={`${fieldCls} min-h-[80px]`} value={ticket.message} onChange={(e) => setTicket((t) => ({ ...t, message: e.target.value }))} required />
             </div>
             <PrimaryButton>Submit Ticket</PrimaryButton>
@@ -92,7 +92,7 @@ export const SupportCenterPage: React.FC = () => {
                   <div key={t.id} className="flex items-center justify-between px-3 py-2.5 border border-brand-border rounded-lg">
                     <div>
                       <p className="text-xs font-bold text-brand-graphite">{t.subject}</p>
-                      <p className="text-[10px] text-brand-slate">{t.id} · {t.category} · {t.date}</p>
+                      <p className="text-xs text-brand-slate">{t.id} · {t.category} · {t.date}</p>
                     </div>
                     <Badge tone="blue">{t.status}</Badge>
                   </div>
@@ -108,7 +108,7 @@ export const SupportCenterPage: React.FC = () => {
             <div className="w-8 h-8 rounded-full bg-white/15 flex items-center justify-center"><MessageSquare className="w-4 h-4" /></div>
             <div>
               <p className="text-xs font-bold">Live Chat Support</p>
-              <p className="text-[10px] text-white/60">Typically replies in a few minutes</p>
+              <p className="text-xs text-white/60">Typically replies in a few minutes</p>
             </div>
           </div>
           <div className="flex-1 p-4 space-y-3 min-h-[220px] max-h-72 overflow-y-auto bg-slate-50/40">

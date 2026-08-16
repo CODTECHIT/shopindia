@@ -65,7 +65,7 @@ export const VerticalShopMobile: React.FC = () => {
     <div className="w-full flex flex-col gap-7 py-6 px-4 bg-brand-bg min-h-screen text-brand-graphite font-sans pb-24 transition-colors duration-300">
       
       {/* 2. Circular Categories Grid (2x5 structure layout matching user reference) */}
-      <div className="w-full bg-white border border-brand-border rounded-card p-4 shadow-soft grid grid-cols-5 gap-y-4.5 gap-x-2 select-none justify-items-center">
+      <div className="w-full bg-white border border-brand-border rounded-card p-4 shadow-soft grid grid-cols-5 gap-y-5 gap-x-2 select-none justify-items-center">
         {shopCategories.map((cat) => {
           return (
             <div
@@ -79,7 +79,7 @@ export const VerticalShopMobile: React.FC = () => {
               <div className={`w-11 h-11 rounded-full flex items-center justify-center mb-1.5 shadow-soft bg-slate-50 text-slate-600 transition-all overflow-hidden border border-brand-border/60`}>
                 <img src={cat.image || undefined} alt={cat.name} className="w-full h-full object-cover" />
               </div>
-              <div className="h-6.5 flex items-start justify-center w-full overflow-hidden">
+              <div className="h-7 flex items-start justify-center w-full overflow-hidden">
                 <span className="text-[8.5px] font-semibold text-brand-graphite opacity-90 line-clamp-2 w-full tracking-tight leading-tight font-heading">
                   {cat.name}
                 </span>
@@ -103,15 +103,15 @@ export const VerticalShopMobile: React.FC = () => {
                 className="absolute inset-0 w-full h-full"
                 onClick={() => navigateTo('search')}
               >
-                <img src={banners[currentSlide].image} alt={banners[currentSlide].title} className="w-full h-full object-cover opacity-50" />
-                <div className="absolute inset-0 bg-gradient-to-r from-zinc-950/80 via-zinc-950/30 to-transparent flex flex-col justify-center px-6 text-white text-left select-none">
+                <img src={banners[currentSlide].image} alt={banners[currentSlide].title} className="w-full h-full object-cover" />
+                <div className="absolute inset-0 flex flex-col justify-center px-6 text-white text-left select-none drop-shadow-md">
                   <span className="text-[7.5px] bg-brand-orange text-white font-black px-2 py-0.5 rounded w-max uppercase tracking-wider mb-2 shadow-soft">
                     Super Deal
                   </span>
                   <h3 className="text-xs font-black line-clamp-1 font-heading uppercase tracking-wide leading-tight drop-shadow">
                     {banners[currentSlide].title}
                   </h3>
-                  <p className="text-[9.5px] opacity-90 line-clamp-1 text-zinc-300 font-semibold mt-1">
+                  <p className="text-xs opacity-90 line-clamp-1 text-zinc-300 font-semibold mt-1">
                     {banners[currentSlide].subtitle}
                   </p>
                 </div>
@@ -138,7 +138,7 @@ export const VerticalShopMobile: React.FC = () => {
       </div>
 
       {/* 4. Mobile Deals of the Day Box */}
-      <div className="w-full bg-white rounded-[20px] p-4.5 shadow-soft border border-brand-border flex flex-col gap-4">
+      <div className="w-full bg-white rounded-[20px] p-5 shadow-soft border border-brand-border flex flex-col gap-4">
         <div className="flex justify-between items-center border-b border-brand-border pb-3 leading-none select-none">
           <div className="flex items-center gap-2">
             <span className="text-xs font-black text-brand-graphite uppercase tracking-wide font-heading">Deals of the Day</span>
@@ -149,7 +149,7 @@ export const VerticalShopMobile: React.FC = () => {
           </div>
           <button
             onClick={() => navigateTo('search')}
-            className="text-[9.5px] font-black text-brand-blue uppercase tracking-widest flex items-center gap-0.5"
+            className="text-xs font-black text-brand-blue uppercase tracking-widest flex items-center gap-0.5"
           >
             <span>See All</span>
             <ChevronRight size={10} />
@@ -165,7 +165,7 @@ export const VerticalShopMobile: React.FC = () => {
               <div
                 key={product.id}
                 onClick={() => navigateTo('detail', product.id)}
-                className="w-[110px] shrink-0 flex flex-col text-left cursor-pointer group relative"
+                className="w-full max-w-[110px] shrink-0 flex flex-col text-left cursor-pointer group relative"
               >
                 {/* Wishlist Heart */}
                 <motion.button
@@ -176,11 +176,11 @@ export const VerticalShopMobile: React.FC = () => {
                   <Heart size={10} className={isWishlisted ? "fill-brand-red text-brand-red" : ""} />
                 </motion.button>
 
-                <div className="w-[110px] aspect-[5/4] border border-brand-border/60 rounded-[16px] flex items-center justify-center p-1 bg-white mb-2 overflow-hidden shadow-sm">
+                <div className="w-full max-w-[110px] aspect-[5/4] border border-brand-border/60 rounded-[16px] flex items-center justify-center p-1 bg-white mb-2 overflow-hidden shadow-sm">
                   <img src={product.image} alt={product.title} className="max-h-full max-w-full object-contain" />
                 </div>
-                <h4 className="text-[10px] font-bold text-brand-graphite line-clamp-1 leading-snug font-heading px-1">{product.title}</h4>
-                <span className="text-[10px] font-extrabold text-brand-graphite mt-0.5 font-numbers px-1">₹{product.price.toLocaleString('en-IN')}</span>
+                <h4 className="text-xs font-bold text-brand-graphite line-clamp-1 leading-snug font-heading px-1">{product.title}</h4>
+                <span className="text-xs font-extrabold text-brand-graphite mt-0.5 font-numbers px-1">₹{product.price.toLocaleString('en-IN')}</span>
                 {product.originalPrice > product.price && (
                   <span className="text-[8.5px] font-black text-brand-orange uppercase tracking-wider font-numbers px-1 mt-0.5">{discount}% OFF</span>
                 )}
@@ -200,58 +200,18 @@ export const VerticalShopMobile: React.FC = () => {
         ].map((item, idx) => {
           const Icon = item.icon;
           return (
-            <div key={idx} className="flex flex-col items-center text-center p-1 relative border-r border-brand-border last:border-0">
-              <div className={`w-8 h-8 rounded-full flex items-center justify-center mb-1.5 ${item.color} shadow-soft`}>
-                <Icon size={12} strokeWidth={2.5} />
+            <div key={idx} className="flex flex-col items-center text-center p-0.5 relative border-r border-brand-border last:border-0">
+              <div className={`w-8 h-8 rounded-full flex items-center justify-center mb-1.5 ${item.color} shadow-soft shrink-0`}>
+                <Icon size={14} strokeWidth={2.5} />
               </div>
-              <span className="text-[8.5px] font-black text-brand-graphite leading-none tracking-tight font-heading">{item.title}</span>
-              <span className="text-[7px] font-bold text-brand-slate mt-0.5 leading-none">{item.desc}</span>
+              <span className="text-[9px] sm:text-[10px] font-black text-brand-graphite leading-tight tracking-tight font-heading">{item.title}</span>
+              <span className="text-[8px] sm:text-[8.5px] font-bold text-brand-slate mt-0.5 leading-tight">{item.desc}</span>
             </div>
           );
         })}
       </div>
 
-      {/* 4.8. Top Brands Section (Mobile reference layout) */}
-      <div className="w-full flex flex-col gap-3">
-        <div className="flex justify-between items-center leading-none">
-          <span className="text-xs font-black text-brand-graphite uppercase tracking-wide font-heading">Top Brands</span>
-          <button
-            onClick={() => navigateTo('search')}
-            className="text-[9.5px] font-black text-brand-blue uppercase tracking-widest flex items-center gap-0.5"
-          >
-            <span>View All</span>
-            <ChevronRight size={10} />
-          </button>
-        </div>
-        <div className="w-full flex gap-3 overflow-x-auto no-scrollbar scroll-smooth py-1">
-          {[
-            { name: 'boAt', style: 'font-black tracking-tighter text-red-600' },
-            { name: 'Apple', icon: Apple, style: 'font-extrabold text-neutral-850' },
-            { name: 'SAMSUNG', style: 'font-black tracking-widest text-blue-800' },
-            { name: 'ONEPLUS', style: 'font-bold tracking-tight text-red-650' },
-            { name: 'NIKE', style: 'font-black italic tracking-widest text-neutral-900' },
-            { name: 'PHILIPS', style: 'font-black tracking-wide text-blue-900' }
-          ].map((brand, idx) => {
-            const Icon = brand.icon;
-            return (
-              <div 
-                key={idx}
-                onClick={() => { setSearchQuery(brand.name); navigateTo('search'); }}
-                className="px-6 py-4.5 bg-white border border-brand-border rounded-card flex items-center justify-center shrink-0 min-w-[92px] h-[48px] shadow-soft hover:shadow-premium active:scale-95 transition-all cursor-pointer"
-              >
-                {Icon ? (
-                  <div className="flex items-center gap-1">
-                    <Icon size={12} className="fill-neutral-900 text-neutral-900" />
-                    <span className="text-[10px] font-black">{brand.name}</span>
-                  </div>
-                ) : (
-                  <span className={`text-[10px] ${brand.style}`}>{brand.name}</span>
-                )}
-              </div>
-            );
-          })}
-        </div>
-      </div>
+
 
       {/* 5. Mobile Product Grid Feed */}
       <div className="w-full flex flex-col gap-2">
@@ -279,7 +239,7 @@ export const VerticalShopMobile: React.FC = () => {
                 </motion.button>
 
                 {product.isAssured && (
-                  <div className="absolute top-2.5 left-2.5 z-10 flex items-center gap-0.5 bg-blue-50/95 text-[8px] font-black italic px-1.5 py-0.5 rounded border border-brand-blue/20 backdrop-blur-sm select-none shadow-sm">
+                  <div className="absolute top-2.5 left-2.5 z-10 flex items-center gap-0.5 bg-blue-50/95 text-xs font-black italic px-1.5 py-0.5 rounded border border-brand-blue/20 backdrop-blur-sm select-none shadow-sm">
                     <span className="text-brand-blue">ShopIndia</span>
                     <span className="text-brand-orange">Assured</span>
                   </div>
@@ -291,26 +251,26 @@ export const VerticalShopMobile: React.FC = () => {
                 </div>
                 
                 {/* Content */}
-                <h3 className="text-[10px] font-bold text-brand-graphite line-clamp-2 leading-snug mb-1 min-h-[30px] font-heading px-0.5">
+                <h3 className="text-xs font-bold text-brand-graphite line-clamp-2 leading-snug mb-1 min-h-[30px] font-heading px-0.5">
                   {product.title}
                 </h3>
                 
                 {/* Rating Count */}
                 <div className="flex items-center gap-1.5 mb-2 mt-auto leading-none px-0.5">
-                  <div className="flex items-center gap-0.5 bg-brand-green/10 border border-brand-green/20 text-brand-green font-extrabold text-[8px] px-1.5 py-0.5 rounded shadow-soft font-numbers">
+                  <div className="flex items-center gap-0.5 bg-brand-green/10 border border-brand-green/20 text-brand-green font-extrabold text-xs px-1.5 py-0.5 rounded shadow-soft font-numbers">
                     <span>{product.rating}</span>
                     <Star size={7} className="fill-brand-green text-brand-green" />
                   </div>
-                  <span className="text-[9px] text-brand-slate font-bold font-numbers">({product.ratingCount.toLocaleString('en-IN')})</span>
+                  <span className="text-xs text-brand-slate font-bold font-numbers">({product.ratingCount.toLocaleString('en-IN')})</span>
                 </div>
                 
                 {/* Price block details */}
                 <div className="flex items-baseline gap-1 mt-1 leading-none font-numbers px-0.5">
-                  <span className="text-[11px] font-extrabold text-brand-graphite">₹{product.price.toLocaleString('en-IN')}</span>
+                  <span className="text-xs font-extrabold text-brand-graphite">₹{product.price.toLocaleString('en-IN')}</span>
                   {product.originalPrice > product.price && (
                     <>
-                      <span className="text-[9px] text-brand-slate line-through">₹{product.originalPrice.toLocaleString('en-IN')}</span>
-                      <span className="text-[8px] font-black text-brand-orange uppercase tracking-wider">{discount}% Off</span>
+                      <span className="text-xs text-brand-slate line-through">₹{product.originalPrice.toLocaleString('en-IN')}</span>
+                      <span className="text-xs font-black text-brand-orange uppercase tracking-wider">{discount}% Off</span>
                     </>
                   )}
                 </div>

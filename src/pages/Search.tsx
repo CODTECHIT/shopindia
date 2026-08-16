@@ -77,7 +77,7 @@ export const SearchPage: React.FC = () => {
     return (
       <div className="max-w-7xl mx-auto w-full flex gap-8 py-8 px-12 text-left font-sans text-brand-graphite">
         {/* Left Filter Sidebar */}
-        <aside className={`w-[260px] p-6 border rounded-card shrink-0 h-fit select-none shadow-premium ${
+        <aside className={`w-full max-w-[260px] p-6 border rounded-card shrink-0 h-fit select-none shadow-premium ${
           isServices ? 'bg-[#2C2C2E] border-zinc-800 text-white' : 'bg-white border-brand-border'
         }`}>
           <div className="flex justify-between items-center border-b pb-3.5 mb-5 border-brand-border/10">
@@ -89,7 +89,7 @@ export const SearchPage: React.FC = () => {
 
           {/* Sort By Section */}
           <div className="mb-6">
-            <span className="font-black text-[9px] uppercase text-brand-slate tracking-widest block mb-3 font-heading">Sort Results</span>
+            <span className="font-black text-xs uppercase text-brand-slate tracking-widest block mb-3 font-heading">Sort Results</span>
             <div className="flex flex-col gap-2">
               {[
                 { id: 'relevance', name: 'Relevance' },
@@ -114,7 +114,7 @@ export const SearchPage: React.FC = () => {
 
           {/* Price Range Slider */}
           <div className="mb-6">
-            <span className="font-black text-[9px] uppercase text-brand-slate tracking-widest block mb-2.5 font-heading">Price Limit</span>
+            <span className="font-black text-xs uppercase text-brand-slate tracking-widest block mb-2.5 font-heading">Price Limit</span>
             <input
               type="range"
               min={0}
@@ -124,7 +124,7 @@ export const SearchPage: React.FC = () => {
               onChange={(e) => setMaxPrice(Number(e.target.value))}
               className="w-full h-1 bg-slate-100 rounded-lg appearance-none cursor-pointer accent-brand-blue mb-3 dark:bg-zinc-800"
             />
-            <div className="flex justify-between text-[10px] font-black text-brand-slate font-numbers">
+            <div className="flex justify-between text-xs font-black text-brand-slate font-numbers">
               <span>₹0</span>
               <span>₹{maxPrice.toLocaleString('en-IN')}</span>
             </div>
@@ -132,7 +132,7 @@ export const SearchPage: React.FC = () => {
 
           {/* Brands Filter */}
           <div className="mb-6">
-            <span className="font-black text-[9px] uppercase text-brand-slate tracking-widest block mb-3 font-heading">Brand</span>
+            <span className="font-black text-xs uppercase text-brand-slate tracking-widest block mb-3 font-heading">Brand</span>
             <div className="flex flex-col gap-2 max-h-40 overflow-y-auto no-scrollbar font-bold">
               {brands.map(brand => (
                 <label key={brand} className="flex items-center gap-2.5 text-xs text-brand-slate hover:text-brand-graphite dark:hover:text-white cursor-pointer select-none">
@@ -150,7 +150,7 @@ export const SearchPage: React.FC = () => {
 
           {/* Customer Ratings Filter */}
           <div className="mb-2">
-            <span className="font-black text-[9px] uppercase text-brand-slate tracking-widest block mb-3 font-heading">Customer Rating</span>
+            <span className="font-black text-xs uppercase text-brand-slate tracking-widest block mb-3 font-heading">Customer Rating</span>
             <div className="flex flex-col gap-2">
               {[4, 3, 2].map(star => (
                 <button
@@ -169,7 +169,7 @@ export const SearchPage: React.FC = () => {
 
         {/* Search Results Display */}
         <main className="flex-1">
-          <div className={`p-4.5 border rounded-card mb-6 flex justify-between items-center shadow-premium ${
+          <div className={`p-5 border rounded-card mb-6 flex justify-between items-center shadow-premium ${
             isServices ? 'bg-[#2C2C2E] border-zinc-800 text-white' : 'bg-white border-brand-border'
           }`}>
             <span className="text-xs font-bold text-brand-slate">
@@ -203,7 +203,7 @@ export const SearchPage: React.FC = () => {
                   <div
                     key={product.id}
                     onClick={() => navigateTo('detail', product.id)}
-                    className={`border rounded-card p-4.5 flex flex-col hover:shadow-hover-lift hover:-translate-y-1 transition-all duration-350 cursor-pointer group h-full relative ${
+                    className={`border rounded-card p-5 flex flex-col hover:shadow-hover-lift hover:-translate-y-1 transition-all duration-350 cursor-pointer group h-full relative ${
                       isServices ? 'bg-[#2C2C2E] border-zinc-800 text-white' : 'bg-white border-brand-border'
                     }`}
                   >
@@ -217,30 +217,30 @@ export const SearchPage: React.FC = () => {
                     </motion.button>
 
                     {product.isAssured && (
-                      <div className="absolute bottom-3.5 left-3.5 z-10 flex items-center gap-0.5 bg-blue-50/95 text-[8px] font-black italic px-1.5 py-0.5 rounded border border-brand-blue/20 backdrop-blur-sm select-none shadow-soft">
+                      <div className="absolute bottom-3.5 left-3.5 z-10 flex items-center gap-0.5 bg-blue-50/95 text-xs font-black italic px-1.5 py-0.5 rounded border border-brand-blue/20 backdrop-blur-sm select-none shadow-soft">
                         <span className="text-brand-blue">ShopIndia</span>
                         <span className="text-brand-orange">Assured</span>
                       </div>
                     )}
-                    <div className="w-full aspect-square flex items-center justify-center mb-4.5 bg-brand-elevated rounded-card border border-brand-border/40 p-2 overflow-hidden shadow-soft">
+                    <div className="w-full aspect-square flex items-center justify-center mb-5 bg-brand-elevated rounded-card border border-brand-border/40 p-2 overflow-hidden shadow-soft">
                       <img src={product.image} alt={product.title} className="max-h-full max-w-full object-contain group-hover:scale-105 transition-transform duration-300" />
                     </div>
                     <h3 className="text-xs font-bold text-brand-graphite line-clamp-2 leading-relaxed mb-2.5 min-h-[36px] group-hover:text-brand-blue transition-colors dark:group-hover:text-services-gold dark:text-white font-heading">
                       {product.title}
                     </h3>
                     <div className="flex items-center gap-2 mb-3 mt-auto leading-none">
-                      <div className="flex items-center gap-0.5 bg-brand-green text-white font-extrabold text-[9px] px-1.5 py-0.5 rounded shadow-soft font-numbers">
+                      <div className="flex items-center gap-0.5 bg-brand-green text-white font-extrabold text-xs px-1.5 py-0.5 rounded shadow-soft font-numbers">
                         <span>{product.rating}</span>
                         <Star size={8} className="fill-white text-white" />
                       </div>
-                      <span className="text-[10px] text-brand-slate font-bold font-numbers">({product.ratingCount.toLocaleString('en-IN')})</span>
+                      <span className="text-xs text-brand-slate font-bold font-numbers">({product.ratingCount.toLocaleString('en-IN')})</span>
                     </div>
                     <div className="flex items-baseline gap-1.5 leading-none font-numbers mt-1">
                       <span className="text-sm font-extrabold text-brand-graphite dark:text-white">₹{product.price.toLocaleString('en-IN')}</span>
                       {product.originalPrice > product.price && (
                         <>
-                          <span className="text-[10px] text-brand-slate line-through">₹{product.originalPrice.toLocaleString('en-IN')}</span>
-                          <span className="text-[9.5px] font-black text-brand-orange uppercase tracking-wider">{discount}% Off</span>
+                          <span className="text-xs text-brand-slate line-through">₹{product.originalPrice.toLocaleString('en-IN')}</span>
+                          <span className="text-xs font-black text-brand-orange uppercase tracking-wider">{discount}% Off</span>
                         </>
                       )}
                     </div>
@@ -300,7 +300,7 @@ export const SearchPage: React.FC = () => {
             <motion.button
               whileTap={{ scale: 0.95 }}
               onClick={() => { setSearchQuery(''); handleResetFilters(); }}
-              className="px-4 py-2 bg-brand-blue text-white rounded-button text-[9.5px] font-black shadow mt-2 uppercase tracking-wider"
+              className="px-4 py-2 bg-brand-blue text-white rounded-button text-xs font-black shadow mt-2 uppercase tracking-wider"
             >
               Reset Filters
             </motion.button>
@@ -326,7 +326,7 @@ export const SearchPage: React.FC = () => {
                   </motion.button>
 
                   {product.isAssured && (
-                      <div className="absolute top-2.5 left-2.5 z-10 flex items-center gap-0.5 bg-blue-50/95 text-[7px] font-black italic px-1 py-0.5 rounded border border-brand-blue/20 backdrop-blur-sm select-none shadow-sm">
+                      <div className="absolute top-2.5 left-2.5 z-10 flex items-center gap-0.5 bg-blue-50/95 text-xs font-black italic px-1 py-0.5 rounded border border-brand-blue/20 backdrop-blur-sm select-none shadow-sm">
                         <span className="text-brand-blue">ShopIndia</span>
                         <span className="text-brand-orange">Assured</span>
                       </div>
@@ -334,20 +334,20 @@ export const SearchPage: React.FC = () => {
                   <div className="w-full aspect-square flex items-center justify-center mb-2.5 bg-brand-elevated rounded-[20px] p-1.5 overflow-hidden shadow-soft border border-brand-border/40">
                     <img src={product.image} alt={product.title} className="max-h-full max-w-full object-contain" />
                   </div>
-                  <h3 className="text-[10px] font-bold text-brand-graphite line-clamp-2 leading-snug mb-1 min-h-[30px] font-heading">
+                  <h3 className="text-xs font-bold text-brand-graphite line-clamp-2 leading-snug mb-1 min-h-[30px] font-heading">
                     {product.title}
                   </h3>
                   <div className="flex items-center gap-1.5 mb-1.5 mt-auto leading-none">
-                    <div className="flex items-center gap-0.5 bg-brand-green text-white font-extrabold text-[8px] px-1.5 py-0.5 rounded shadow-soft font-numbers">
+                    <div className="flex items-center gap-0.5 bg-brand-green text-white font-extrabold text-xs px-1.5 py-0.5 rounded shadow-soft font-numbers">
                       <span>{product.rating}</span>
                       <Star size={7} className="fill-white text-white" />
                     </div>
-                    <span className="text-[8px] text-brand-slate font-bold font-numbers">({product.ratingCount.toLocaleString('en-IN')})</span>
+                    <span className="text-xs text-brand-slate font-bold font-numbers">({product.ratingCount.toLocaleString('en-IN')})</span>
                   </div>
                   <div className="flex items-baseline gap-1 mt-1 leading-none font-numbers">
-                    <span className="text-[11px] font-extrabold text-brand-graphite">₹{product.price.toLocaleString('en-IN')}</span>
-                    <span className="text-[8px] text-brand-slate line-through">₹{product.originalPrice.toLocaleString('en-IN')}</span>
-                    <span className="text-[8px] font-black text-brand-orange uppercase tracking-wider">{discount}%</span>
+                    <span className="text-xs font-extrabold text-brand-graphite">₹{product.price.toLocaleString('en-IN')}</span>
+                    <span className="text-xs text-brand-slate line-through">₹{product.originalPrice.toLocaleString('en-IN')}</span>
+                    <span className="text-xs font-black text-brand-orange uppercase tracking-wider">{discount}%</span>
                   </div>
                 </div>
               );
@@ -368,13 +368,13 @@ export const SearchPage: React.FC = () => {
               </div>
 
               {/* Brands selection */}
-              <span className="text-[9px] text-brand-slate font-black uppercase tracking-widest block mb-2.5 font-heading">Select Brand</span>
+              <span className="text-xs text-brand-slate font-black uppercase tracking-widest block mb-2.5 font-heading">Select Brand</span>
               <div className="flex flex-wrap gap-2 mb-4 font-bold">
                 {brands.map(brand => (
                   <button
                     key={brand}
                     onClick={() => setSelectedBrand(selectedBrand === brand ? null : brand)}
-                    className={`px-3.5 py-2 rounded-full text-[10px] border transition-all ${
+                    className={`px-3.5 py-2 rounded-full text-xs border transition-all ${
                       selectedBrand === brand
                         ? 'bg-brand-blue text-white border-brand-blue'
                         : 'bg-slate-50 text-brand-slate border-brand-border'
@@ -386,13 +386,13 @@ export const SearchPage: React.FC = () => {
               </div>
 
               {/* Ratings selection */}
-              <span className="text-[9px] text-brand-slate font-black uppercase tracking-widest block mb-2.5 font-heading">Customer Rating</span>
+              <span className="text-xs text-brand-slate font-black uppercase tracking-widest block mb-2.5 font-heading">Customer Rating</span>
               <div className="grid grid-cols-3 gap-2 mb-6 font-bold">
                 {[4, 3, 2].map(star => (
                   <button
                     key={star}
                     onClick={() => setMinRating(minRating === star ? null : star)}
-                    className={`py-2 text-center text-[10px] border rounded-button transition-all ${
+                    className={`py-2 text-center text-xs border rounded-button transition-all ${
                       minRating === star
                         ? 'border-brand-blue bg-blue-50/15 text-brand-blue'
                         : 'border-brand-border bg-slate-50 text-brand-slate'

@@ -51,7 +51,7 @@ export const AddressesPage: React.FC = () => {
                 <div className="w-9 h-9 rounded-lg bg-brand-blue/10 text-brand-blue flex items-center justify-center">{typeIcon(a.type)}</div>
                 <div>
                   <p className="font-bold text-sm text-brand-graphite">{a.label}</p>
-                  <p className="text-[11px] text-brand-slate">{a.fullName} · {a.mobile}</p>
+                  <p className="text-xs text-brand-slate">{a.fullName} · {a.mobile}</p>
                 </div>
               </div>
               {a.isDefault && <Badge tone="green"><Check className="w-3 h-3 inline -mt-0.5 mr-0.5" /> Default</Badge>}
@@ -62,7 +62,7 @@ export const AddressesPage: React.FC = () => {
             </p>
             <div className="flex items-center justify-between pt-3 border-t border-brand-border/40">
               {!a.isDefault ? (
-                <button onClick={() => setDefaultAddress(a.id)} className="text-[11px] font-bold text-brand-blue hover:underline">Set as default</button>
+                <button onClick={() => setDefaultAddress(a.id)} className="text-xs font-bold text-brand-blue hover:underline">Set as default</button>
               ) : <span />}
               <div className="flex gap-1.5">
                 <button disabled={isDeleting === a.id} onClick={() => startEdit(a)} aria-label="Edit" className="p-2 rounded-lg bg-slate-100 hover:bg-slate-200 text-brand-slate disabled:opacity-50"><Pencil className="w-3.5 h-3.5" /></button>
@@ -94,39 +94,39 @@ export const AddressesPage: React.FC = () => {
 
             <div className="grid grid-cols-2 gap-3">
               <div className="col-span-2 flex flex-col gap-1">
-                <label className="text-[10px] font-black uppercase text-brand-slate">Full Name</label>
+                <label className="text-xs font-black uppercase text-brand-slate">Full Name</label>
                 <input className={fieldCls} value={form.fullName} onChange={(e) => setF('fullName', e.target.value)} required />
               </div>
               <div className="flex flex-col gap-1">
-                <label className="text-[10px] font-black uppercase text-brand-slate">Mobile</label>
+                <label className="text-xs font-black uppercase text-brand-slate">Mobile</label>
                 <input className={fieldCls} value={form.mobile} onChange={(e) => setF('mobile', e.target.value)} required />
               </div>
               <div className="flex flex-col gap-1">
-                <label className="text-[10px] font-black uppercase text-brand-slate">Pincode</label>
+                <label className="text-xs font-black uppercase text-brand-slate">Pincode</label>
                 <input className={fieldCls} value={form.pincode} onChange={(e) => setF('pincode', e.target.value)} required />
               </div>
               <div className="col-span-2 flex flex-col gap-1">
-                <label className="text-[10px] font-black uppercase text-brand-slate">Address Line 1</label>
+                <label className="text-xs font-black uppercase text-brand-slate">Address Line 1</label>
                 <input className={fieldCls} value={form.line1} onChange={(e) => setF('line1', e.target.value)} required />
               </div>
               <div className="col-span-2 flex flex-col gap-1">
-                <label className="text-[10px] font-black uppercase text-brand-slate">Address Line 2</label>
+                <label className="text-xs font-black uppercase text-brand-slate">Address Line 2</label>
                 <input className={fieldCls} value={form.line2 || ''} onChange={(e) => setF('line2', e.target.value)} />
               </div>
               <div className="flex flex-col gap-1">
-                <label className="text-[10px] font-black uppercase text-brand-slate">City</label>
+                <label className="text-xs font-black uppercase text-brand-slate">City</label>
                 <input className={fieldCls} value={form.city} onChange={(e) => setF('city', e.target.value)} required />
               </div>
               <div className="flex flex-col gap-1">
-                <label className="text-[10px] font-black uppercase text-brand-slate">State</label>
+                <label className="text-xs font-black uppercase text-brand-slate">State</label>
                 <input className={fieldCls} value={form.state} onChange={(e) => setF('state', e.target.value)} required />
               </div>
               <div className="flex flex-col gap-1">
-                <label className="text-[10px] font-black uppercase text-brand-slate">Landmark</label>
+                <label className="text-xs font-black uppercase text-brand-slate">Landmark</label>
                 <input className={fieldCls} value={form.landmark || ''} onChange={(e) => setF('landmark', e.target.value)} />
               </div>
               <div className="flex flex-col gap-1">
-                <label className="text-[10px] font-black uppercase text-brand-slate">Label</label>
+                <label className="text-xs font-black uppercase text-brand-slate">Label</label>
                 <select className={fieldCls} value={form.label} onChange={(e) => setF('label', e.target.value)}>
                   <option>Home</option><option>Work</option><option>Other</option>
                 </select>

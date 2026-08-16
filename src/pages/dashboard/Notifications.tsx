@@ -54,10 +54,10 @@ export const NotificationsPage: React.FC = () => {
                   <p className="text-xs font-bold text-brand-graphite">{n.title}</p>
                   {!n.isRead && <span className="w-2 h-2 rounded-full bg-brand-blue flex-shrink-0" />}
                 </div>
-                <p className="text-[11px] text-brand-slate mt-0.5">{n.message}</p>
+                <p className="text-xs text-brand-slate mt-0.5">{n.message}</p>
                 <div className="flex items-center gap-2 mt-1.5">
                   <Badge tone="slate">{meta.label}</Badge>
-                  <span className="text-[10px] text-brand-slate">{new Date(n.createdAt).toLocaleString('en-IN', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' })}</span>
+                  <span className="text-xs text-brand-slate">{new Date(n.createdAt).toLocaleString('en-IN', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' })}</span>
                 </div>
               </div>
               <button onClick={(e) => { e.stopPropagation(); removeNotification(n.id); }} aria-label="Delete notification" className="p-1.5 rounded-lg text-brand-slate hover:bg-red-50 hover:text-red-500 flex-shrink-0">

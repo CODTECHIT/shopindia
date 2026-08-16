@@ -36,7 +36,7 @@ export const CartDrawer: React.FC<CartDrawerProps> = ({ isOpen, onClose }) => {
             animate={{ x: 0 }}
             exit={{ x: '100%' }}
             transition={{ type: 'spring', damping: 25, stiffness: 200 }}
-            className="fixed top-0 right-0 h-full w-[400px] bg-white shadow-2xl z-[100] flex flex-col font-sans"
+            className="fixed top-0 right-0 h-full w-full max-w-[400px] bg-white shadow-2xl z-[100] flex flex-col font-sans"
           >
             <div className="flex items-center justify-between p-5 border-b border-brand-border">
               <h2 className="text-lg font-bold text-brand-graphite font-heading">

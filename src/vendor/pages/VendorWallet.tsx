@@ -101,7 +101,7 @@ export const VendorWallet: React.FC = () => {
                 <p className="text-base font-bold text-gray-900">{wallet?.bankDetails?.bankName || 'Not Linked'}</p>
                 <p className="text-xs font-mono text-gray-500">{wallet?.bankDetails?.accountNumber || 'No Account Linked'}</p>
                 {wallet?.bankDetails?.ifsc && (
-                  <p className="text-[10px] font-mono text-gray-400 uppercase">IFSC: {wallet.bankDetails.ifsc}</p>
+                  <p className="text-xs font-mono text-gray-400 uppercase">IFSC: {wallet.bankDetails.ifsc}</p>
                 )}
                 <button
                   onClick={() => setBankModal(true)}

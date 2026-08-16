@@ -109,7 +109,7 @@ export const PromotionsPage: React.FC = () => {
 
               <div className="flex items-center gap-2">
                 <hr className="flex-1 border-gray-100" />
-                <span className="text-[10px] text-gray-400 font-bold uppercase">OR PASTE URL</span>
+                <span className="text-xs text-gray-400 font-bold uppercase">OR PASTE URL</span>
                 <hr className="flex-1 border-gray-100" />
               </div>
               <input type="url" required value={form.image} onChange={e => setForm({ ...form, image: e.target.value })} className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm" placeholder="https://..." />
@@ -165,7 +165,7 @@ export const PromotionsPage: React.FC = () => {
                     <h3 className="font-bold text-gray-900">{banner.title || 'Untitled'}</h3>
                     {banner.subtitle && <p className="text-xs text-gray-500">{banner.subtitle}</p>}
                   </div>
-                  <span className="text-[10px] font-bold uppercase px-2 py-0.5 rounded-full bg-blue-50 text-blue-600">{banner.vertical}</span>
+                  <span className="text-xs font-bold uppercase px-2 py-0.5 rounded-full bg-blue-50 text-blue-600">{banner.vertical}</span>
                 </div>
                 
                 <div className="mt-4 flex gap-2">

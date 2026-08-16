@@ -77,7 +77,7 @@ export const AdminSidebar: React.FC<SidebarProps> = ({ currentTab, onTabChange }
           </div>
           <div className="min-w-0">
             <p className="text-xs font-semibold text-white truncate">{user?.name}</p>
-            <p className="text-[10px] text-white/50 uppercase tracking-wider font-mono">{user?.role}</p>
+            <p className="text-xs text-white/50 uppercase tracking-wider font-mono">{user?.role}</p>
           </div>
         </div>
         <button

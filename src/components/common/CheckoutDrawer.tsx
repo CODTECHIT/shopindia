@@ -14,12 +14,19 @@ interface CheckoutDrawerProps {
 }
 
 export const CheckoutDrawer: React.FC<CheckoutDrawerProps> = ({ isOpen, onClose, subtotal, discount, delivery, total }) => {
-  const { addresses, paymentMethods } = useCustomer();
+  const { addresses, paymentMethods, addAddress, addPaymentMethod } = useCustomer();
   const { cart, placeOrder } = useApp();
   
   const [selectedAddress, setSelectedAddress] = useState(addresses.find(a => a.isDefault)?.id || addresses[0]?.id || '');
   const [selectedPayment, setSelectedPayment] = useState(paymentMethods.find(p => p.isDefault)?.id || paymentMethods[0]?.id || 'COD');
   const [isSubmitting, setIsSubmitting] = useState(false);
+
+  // Inline forms state
+  const [isAddingAddress, setIsAddingAddress] = useState(false);
+  const [newAddr, setNewAddr] = useState({ label: '', fullName: '', mobile: '', line1: '', city: '', state: '', pincode: '' });
+  
+  const [isAddingPayment, setIsAddingPayment] = useState(false);
+  const [newPayment, setNewPayment] = useState({ label: '', type: 'UPI' });
 
   // If new addresses/payments are added, auto-select them if none selected
   React.useEffect(() => {
@@ -73,7 +80,7 @@ export const CheckoutDrawer: React.FC<CheckoutDrawerProps> = ({ isOpen, onClose,
             animate={{ x: 0 }} 
             exit={{ x: '100%' }} 
             transition={{ type: 'spring', damping: 25, stiffness: 200 }}
-            className="fixed inset-y-0 right-0 w-full md:w-[450px] bg-white shadow-elevated z-50 flex flex-col overflow-hidden"
+            className="fixed inset-y-0 right-0 w-full md:w-full max-w-[450px] bg-white shadow-elevated z-50 flex flex-col overflow-hidden"
           >
             {/* Header */}
             <div className="bg-white px-5 py-4 flex items-center justify-between border-b border-brand-border">
@@ -90,13 +97,34 @@ export const CheckoutDrawer: React.FC<CheckoutDrawerProps> = ({ isOpen, onClose,
               <div className="space-y-3">
                 <div className="flex items-center justify-between">
                   <h3 className="text-xs font-black uppercase tracking-wider text-brand-slate font-heading">1. Delivery Address</h3>
-                  <button onClick={() => window.location.hash = '#/account?tab=addresses'} className="text-[10px] font-bold text-brand-blue hover:underline">Add New</button>
+                  {!isAddingAddress && (
+                    <button onClick={() => setIsAddingAddress(true)} className="text-xs font-bold text-brand-blue hover:underline">Add New</button>
+                  )}
                 </div>
                 
-                {addresses.length === 0 ? (
+                {isAddingAddress ? (
+                  <div className="bg-slate-50 border border-brand-border rounded-xl p-4 space-y-3">
+                    <input type="text" placeholder="Full Name" value={newAddr.fullName} onChange={e => setNewAddr({...newAddr, fullName: e.target.value})} className="w-full text-xs p-2.5 border border-brand-border rounded-lg outline-none focus:border-brand-blue" />
+                    <input type="text" placeholder="Mobile Number" value={newAddr.mobile} onChange={e => setNewAddr({...newAddr, mobile: e.target.value})} className="w-full text-xs p-2.5 border border-brand-border rounded-lg outline-none focus:border-brand-blue" />
+                    <input type="text" placeholder="Flat, House no., Building, Company" value={newAddr.line1} onChange={e => setNewAddr({...newAddr, line1: e.target.value})} className="w-full text-xs p-2.5 border border-brand-border rounded-lg outline-none focus:border-brand-blue" />
+                    <div className="flex gap-2">
+                      <input type="text" placeholder="City" value={newAddr.city} onChange={e => setNewAddr({...newAddr, city: e.target.value})} className="w-1/2 text-xs p-2.5 border border-brand-border rounded-lg outline-none focus:border-brand-blue" />
+                      <input type="text" placeholder="State" value={newAddr.state} onChange={e => setNewAddr({...newAddr, state: e.target.value})} className="w-1/2 text-xs p-2.5 border border-brand-border rounded-lg outline-none focus:border-brand-blue" />
+                    </div>
+                    <input type="text" placeholder="Pincode" value={newAddr.pincode} onChange={e => setNewAddr({...newAddr, pincode: e.target.value})} className="w-full text-xs p-2.5 border border-brand-border rounded-lg outline-none focus:border-brand-blue" />
+                    <div className="flex gap-2 pt-2">
+                      <button onClick={() => setIsAddingAddress(false)} className="flex-1 py-2 text-xs font-bold text-brand-slate bg-white border border-brand-border rounded-lg">Cancel</button>
+                      <button onClick={async () => {
+                        if(!newAddr.fullName || !newAddr.mobile || !newAddr.line1 || !newAddr.city || !newAddr.state || !newAddr.pincode) return alert("Please fill all details");
+                        await addAddress({ ...newAddr, label: newAddr.label || 'Home', type: 'home', country: 'India', isDefault: true });
+                        setIsAddingAddress(false);
+                      }} className="flex-1 py-2 text-xs font-bold text-white bg-brand-blue rounded-lg">Save</button>
+                    </div>
+                  </div>
+                ) : addresses.length === 0 ? (
                   <div className="bg-white border border-dashed border-brand-border rounded-xl p-4 text-center">
                     <p className="text-xs text-brand-slate font-semibold mb-2">No saved addresses found.</p>
-                    <button onClick={() => window.location.hash = '#/account?tab=addresses'} className="px-4 py-2 bg-brand-blue/10 text-brand-blue rounded-button text-xs font-bold">Add Delivery Address</button>
+                    <button onClick={() => setIsAddingAddress(true)} className="px-4 py-2 bg-brand-blue/10 text-brand-blue rounded-button text-xs font-bold">Add Delivery Address</button>
                   </div>
                 ) : (
                   <div className="flex flex-col gap-2">
@@ -108,9 +136,9 @@ export const CheckoutDrawer: React.FC<CheckoutDrawerProps> = ({ isOpen, onClose,
                         <div>
                           <div className="flex items-center gap-2">
                             <span className="font-bold text-brand-graphite text-xs">{addr.label || 'Home'}</span>
-                            <span className="text-[10px] text-brand-slate font-bold font-numbers">{addr.mobile}</span>
+                            <span className="text-xs text-brand-slate font-bold font-numbers">{addr.mobile}</span>
                           </div>
-                          <p className="text-[11px] text-brand-slate mt-0.5 leading-relaxed">{addr.line1}, {addr.city}, {addr.state} - {addr.pincode}</p>
+                          <p className="text-xs text-brand-slate mt-0.5 leading-relaxed">{addr.line1}, {addr.city}, {addr.state} - {addr.pincode}</p>
                         </div>
                       </label>
                     ))}
@@ -122,23 +150,42 @@ export const CheckoutDrawer: React.FC<CheckoutDrawerProps> = ({ isOpen, onClose,
               <div className="space-y-3">
                 <div className="flex items-center justify-between">
                   <h3 className="text-xs font-black uppercase tracking-wider text-brand-slate font-heading">2. Payment Method</h3>
-                  <button onClick={() => window.location.hash = '#/account?tab=payments'} className="text-[10px] font-bold text-brand-blue hover:underline">Manage</button>
+                  {!isAddingPayment && (
+                    <button onClick={() => setIsAddingPayment(true)} className="text-xs font-bold text-brand-blue hover:underline">Manage</button>
+                  )}
                 </div>
 
-                {paymentMethods.length === 0 ? (
+                {isAddingPayment ? (
+                  <div className="bg-slate-50 border border-brand-border rounded-xl p-4 space-y-3">
+                    <select value={newPayment.type} onChange={e => setNewPayment({...newPayment, type: e.target.value})} className="w-full text-xs p-2.5 border border-brand-border rounded-lg outline-none focus:border-brand-blue">
+                      <option value="UPI">UPI</option>
+                      <option value="CREDIT_CARD">Credit Card</option>
+                      <option value="DEBIT_CARD">Debit Card</option>
+                    </select>
+                    <input type="text" placeholder={newPayment.type === 'UPI' ? 'Enter UPI ID' : 'Name on Card'} value={newPayment.label} onChange={e => setNewPayment({...newPayment, label: e.target.value})} className="w-full text-xs p-2.5 border border-brand-border rounded-lg outline-none focus:border-brand-blue" />
+                    <div className="flex gap-2 pt-2">
+                      <button onClick={() => setIsAddingPayment(false)} className="flex-1 py-2 text-xs font-bold text-brand-slate bg-white border border-brand-border rounded-lg">Cancel</button>
+                      <button onClick={async () => {
+                        if(!newPayment.label) return alert("Please enter payment details");
+                        await addPaymentMethod({ type: newPayment.type as any, label: newPayment.label, isDefault: true, upiId: newPayment.type === 'UPI' ? newPayment.label : undefined });
+                        setIsAddingPayment(false);
+                      }} className="flex-1 py-2 text-xs font-bold text-white bg-brand-blue rounded-lg">Save</button>
+                    </div>
+                  </div>
+                ) : paymentMethods.length === 0 ? (
                   <div className="flex flex-col gap-2">
                      <label className={`flex items-center justify-between p-3 border rounded-xl cursor-pointer transition-all ${selectedPayment === 'COD' ? 'border-brand-blue bg-blue-50/50' : 'border-brand-border bg-white hover:border-brand-border/80'}`}>
                       <div className="flex items-center gap-3">
                         <div className={`w-4 h-4 rounded-full border-2 flex items-center justify-center shrink-0 ${selectedPayment === 'COD' ? 'border-brand-blue' : 'border-slate-300'}`}>
                           {selectedPayment === 'COD' && <div className="w-2 h-2 rounded-full bg-brand-blue" />}
                         </div>
-                        <div className="w-4 h-4 bg-emerald-100 text-emerald-600 rounded flex items-center justify-center text-[8px] font-black font-numbers">₹</div>
+                        <div className="w-4 h-4 bg-emerald-100 text-emerald-600 rounded flex items-center justify-center text-xs font-black font-numbers">₹</div>
                         <span className="font-bold text-brand-graphite text-xs">Cash on Delivery (COD)</span>
                       </div>
                     </label>
                     <div className="bg-white border border-dashed border-brand-border rounded-xl p-4 text-center mt-2">
-                      <p className="text-[11px] text-brand-slate font-semibold mb-2">No saved payment methods.</p>
-                      <button onClick={() => window.location.hash = '#/account?tab=payments'} className="px-4 py-2 bg-brand-blue/10 text-brand-blue rounded-button text-[10px] font-bold">Add Payment Method</button>
+                      <p className="text-xs text-brand-slate font-semibold mb-2">No saved payment methods.</p>
+                      <button onClick={() => setIsAddingPayment(true)} className="px-4 py-2 bg-brand-blue/10 text-brand-blue rounded-button text-xs font-bold">Add Payment Method</button>
                     </div>
                   </div>
                 ) : (
@@ -160,7 +207,7 @@ export const CheckoutDrawer: React.FC<CheckoutDrawerProps> = ({ isOpen, onClose,
                         <div className={`w-4 h-4 rounded-full border-2 flex items-center justify-center shrink-0 ${selectedPayment === 'COD' ? 'border-brand-blue' : 'border-slate-300'}`}>
                           {selectedPayment === 'COD' && <div className="w-2 h-2 rounded-full bg-brand-blue" />}
                         </div>
-                        <div className="w-4 h-4 bg-emerald-100 text-emerald-600 rounded flex items-center justify-center text-[8px] font-black font-numbers">₹</div>
+                        <div className="w-4 h-4 bg-emerald-100 text-emerald-600 rounded flex items-center justify-center text-xs font-black font-numbers">₹</div>
                         <span className="font-bold text-brand-graphite text-xs">Cash on Delivery (COD)</span>
                       </div>
                     </label>
@@ -205,7 +252,7 @@ export const CheckoutDrawer: React.FC<CheckoutDrawerProps> = ({ isOpen, onClose,
                   </>
                 )}
               </button>
-              <div className="flex gap-2 items-center justify-center text-[10px] text-brand-slate font-extrabold mt-3">
+              <div className="flex gap-2 items-center justify-center text-xs text-brand-slate font-extrabold mt-3">
                 <ShieldCheck className="w-3.5 h-3.5 text-brand-green" />
                 <span>100% Secure Checkout</span>
               </div>

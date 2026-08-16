@@ -61,7 +61,7 @@ export const VendorSidebar: React.FC<SidebarProps> = ({ currentTab, onTabChange 
           </div>
           <div className="min-w-0">
             <p className="text-xs font-semibold text-gray-900 truncate">{user?.name}</p>
-            <p className="text-[10px] text-gray-400 font-mono">VENDOR</p>
+            <p className="text-xs text-gray-400 font-mono">VENDOR</p>
           </div>
         </div>
         <button

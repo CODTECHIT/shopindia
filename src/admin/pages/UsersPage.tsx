@@ -71,7 +71,7 @@ export const UsersPage: React.FC = () => {
       </div>
 
       <div className="flex flex-wrap gap-3 items-center justify-between">
-        <div className="relative flex-1 min-w-[200px] max-w-xs">
+        <div className="relative flex-1 min-w-full max-w-[200px] max-w-xs">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
           <input
             value={q}

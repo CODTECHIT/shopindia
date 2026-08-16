@@ -26,3 +26,6 @@ server/.env
 *.njsproj
 *.sln
 *.sw?
+
+
+shop-india-\ec2-key.pem

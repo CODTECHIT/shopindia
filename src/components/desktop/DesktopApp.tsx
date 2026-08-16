@@ -10,6 +10,7 @@ import { ProductDetailPage } from '../../pages/ProductDetail';
 import { CartPage } from '../../pages/Cart';
 import { OrdersPage } from '../../pages/Orders';
 import { ProfilePage } from '../../pages/Profile';
+import { NotificationsPage } from '../../pages/Notifications';
 import { DashboardInner } from '../../pages/dashboard/DashboardPortal';
 
 export const DesktopApp: React.FC = () => {
@@ -31,6 +32,8 @@ export const DesktopApp: React.FC = () => {
         return <OrdersPage />;
       case 'profile':
         return <ProfilePage />;
+      case 'notifications':
+        return <NotificationsPage />;
       case 'dashboard':
         return <DashboardInner />;
       default:

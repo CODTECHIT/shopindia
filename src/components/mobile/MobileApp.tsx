@@ -8,7 +8,8 @@ import { ProductDetailPage } from '../../pages/ProductDetail';
 import { CartPage } from '../../pages/Cart';
 import { OrdersPage } from '../../pages/Orders';
 import { ProfilePage } from '../../pages/Profile';
-import { Home, User, MapPin, X, Search, ChevronDown, ShoppingBag, Zap, Wrench, LayoutGrid, RotateCcw } from 'lucide-react';
+import { NotificationsPage } from '../../pages/Notifications';
+import { Home, User, MapPin, X, Search, ChevronDown, ShoppingBag, Zap, Wrench, LayoutGrid, RotateCcw, Bell, ShoppingCart, ListOrdered } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 
 export const MobileApp: React.FC = () => {
@@ -21,7 +22,8 @@ export const MobileApp: React.FC = () => {
     setLocation,
     cart,
     searchQuery,
-    setSearchQuery
+    setSearchQuery,
+    notifications
   } = useApp();
 
   const [drawerOpen, setDrawerOpen] = useState(false);
@@ -62,6 +64,7 @@ export const MobileApp: React.FC = () => {
   }, [currentPath]);
 
   const cartItemCount = cart.reduce((acc, item) => acc + item.quantity, 0);
+  const unreadNotificationsCount = notifications.filter(n => !n.read).length;
 
   const handleLocationSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -87,6 +90,8 @@ export const MobileApp: React.FC = () => {
         return <OrdersPage />;
       case 'profile':
         return <ProfilePage />;
+      case 'notifications':
+        return <NotificationsPage />;
       default:
         return <VerticalShopMobile />;
     }
@@ -170,7 +175,7 @@ export const MobileApp: React.FC = () => {
                   ) : (
                     <>
                       <Icon size={14} className={`transition-all ${isActive ? item.iconActive : item.iconInactive}`} strokeWidth={2.5} />
-                      <span className={`text-[11px] tracking-wide leading-none ${isActive ? 'font-black' : 'font-bold'}`}>
+                      <span className={`text-xs tracking-wide leading-none ${isActive ? 'font-black' : 'font-bold'}`}>
                         {item.title}
                       </span>
                     </>
@@ -182,20 +187,39 @@ export const MobileApp: React.FC = () => {
         </div>
 
         {/* Row 2: Location indicator row (Static height, transition opacity only) */}
-        <div className={`w-full transition-all duration-220 h-[36px] flex-shrink-0 ${
+        <div className={`w-full transition-all duration-220 h-[36px] flex-shrink-0 flex items-center justify-between ${
           showHeader ? 'opacity-100' : 'opacity-0 pointer-events-none'
         }`}>
           <div 
             onClick={() => { setInputLocation(location); setShowLocationModal(true); }}
-            className={`flex items-center py-1.5 px-1 text-left select-none cursor-pointer transition-colors`}
+            className={`flex items-center py-1.5 px-1 text-left select-none cursor-pointer transition-colors max-w-[75%]`}
           >
-            <div className="flex gap-2.5 items-center">
-              <MapPin size={12} className="text-slate-800" />
-              <span className="text-[9.5px] font-bold max-w-[210px] truncate text-slate-800">
+            <div className="flex gap-2 items-center overflow-hidden">
+              <MapPin size={12} className="text-slate-800 shrink-0" />
+              <span className="text-xs font-bold truncate text-slate-800">
                 {location}
               </span>
             </div>
-            <ChevronDown size={11} className="text-slate-800" />
+            <ChevronDown size={11} className="text-slate-800 shrink-0 ml-1" />
+          </div>
+
+          <div className="flex items-center gap-4 px-1 shrink-0">
+            <button onClick={() => navigateTo('notifications')} className="relative transition-transform active:scale-95">
+              <Bell size={18} strokeWidth={2.2} className="text-slate-800" />
+              {unreadNotificationsCount > 0 && (
+                <span className="absolute -top-1 -right-1.5 flex h-[14px] min-w-[14px] items-center justify-center rounded-full bg-brand-red px-1 text-[9px] font-black text-white font-numbers shadow-sm border border-white">
+                  {unreadNotificationsCount}
+                </span>
+              )}
+            </button>
+            <button onClick={() => navigateTo('cart')} className="relative transition-transform active:scale-95">
+              <ShoppingCart size={18} strokeWidth={2.2} className="text-slate-800" />
+              {cartItemCount > 0 && (
+                <span className="absolute -top-1.5 -right-2 flex h-[14px] min-w-[14px] items-center justify-center rounded-full bg-brand-red px-1 text-[9px] font-black text-white font-numbers shadow-sm">
+                  {cartItemCount}
+                </span>
+              )}
+            </button>
           </div>
         </div>
 
@@ -247,9 +271,9 @@ export const MobileApp: React.FC = () => {
         <nav className={`fixed bottom-0 left-0 right-0 h-16 border-t z-45 flex justify-around items-center select-none shadow-[0_-4px_20px_rgba(0,0,0,0.04)] bg-white transition-colors duration-300 px-2`}>
           {[
           { id: 'home', label: 'Home', icon: Home, action: () => navigateTo('home') },
-          { id: 'search', label: 'Categories', icon: LayoutGrid, action: () => { setSearchQuery(''); navigateTo('search'); } },
-          { id: 'orders', label: 'Buy Again', icon: RotateCcw, action: () => navigateTo('orders') },
-          { id: 'cart', label: 'Basket', icon: ShoppingBag, action: () => navigateTo('cart'), badge: true },
+          { id: 'search', label: 'Category', icon: LayoutGrid, action: () => { setSearchQuery(''); navigateTo('search'); } },
+          { id: 'orders', label: 'Orders', icon: ListOrdered, action: () => navigateTo('orders') },
+          { id: 'cart', label: 'Cart', icon: ShoppingCart, action: () => navigateTo('cart'), badge: true },
           { id: 'profile', label: 'Account', icon: User, action: () => navigateTo('profile') }
         ].map(tab => {
           const isActive = activeTab === tab.id || (tab.id === 'search' && currentPath === 'search' && !searchQuery);
@@ -270,12 +294,12 @@ export const MobileApp: React.FC = () => {
                 {/* When active, we set fill to the active color, else transparent */}
                 <Icon size={20} strokeWidth={isActive ? 2.5 : 2} className="transition-all duration-300" fill={isActive ? '#1A73E8' : 'transparent'} stroke={isActive ? '#1A73E8' : 'currentColor'} />
                 {tab.badge && cartItemCount > 0 && (
-                  <span className="absolute -top-1.5 -right-2 flex h-4 min-w-4 items-center justify-center rounded-full bg-red-500 px-1 text-[9px] font-black text-white font-numbers border border-white">
+                  <span className="absolute -top-1.5 -right-2 flex h-4 min-w-4 items-center justify-center rounded-full bg-red-500 px-1 text-xs font-black text-white font-numbers border border-white">
                     {cartItemCount}
                   </span>
                 )}
               </div>
-              <span className={`text-[10px] font-sans transition-all duration-300 ${isActive ? 'font-bold' : 'font-medium'}`}>{tab.label}</span>
+              <span className={`text-xs font-sans transition-all duration-300 ${isActive ? 'font-bold' : 'font-medium'}`}>{tab.label}</span>
             </motion.button>
           );
         })}
@@ -310,7 +334,7 @@ export const MobileApp: React.FC = () => {
                   </div>
                   <div className="flex flex-col leading-tight text-left">
                     <span className="font-extrabold text-sm">Guest Account</span>
-                    <span className="text-[10px] text-zinc-400 font-semibold">guest@shopindia.com</span>
+                    <span className="text-xs text-zinc-400 font-semibold">guest@shopindia.com</span>
                   </div>
                 </div>
                 <button onClick={() => setDrawerOpen(false)} className="text-zinc-400 hover:text-white p-1 rounded-full">
@@ -320,7 +344,7 @@ export const MobileApp: React.FC = () => {
 
               {/* Drawer Links */}
               <div className="flex-1 overflow-y-auto py-5 flex flex-col font-bold text-xs">
-                <span className="px-5 text-[9px] text-brand-slate uppercase tracking-widest block mb-2">Business Verticals</span>
+                <span className="px-5 text-xs text-brand-slate uppercase tracking-widest block mb-2">Business Verticals</span>
                 <button
                   onClick={() => { setCurrentVertical('shop'); setDrawerOpen(false); }}
                   className={`flex items-center gap-3 px-5 py-3 text-left border-l-4 ${currentVertical === 'shop' ? 'border-brand-blue bg-blue-50/30 text-brand-blue' : 'border-transparent text-brand-graphite'}`}
@@ -342,7 +366,7 @@ export const MobileApp: React.FC = () => {
 
                 <div className="border-t border-brand-border my-4" />
 
-                <span className="px-5 text-[9px] text-brand-slate uppercase tracking-widest block mb-2">Quick Links</span>
+                <span className="px-5 text-xs text-brand-slate uppercase tracking-widest block mb-2">Quick Links</span>
                 <button
                   onClick={() => { navigateTo('profile'); setDrawerOpen(false); }}
                   className="flex items-center gap-3 px-5 py-3 hover:bg-slate-50 transition-colors text-left text-brand-graphite"
@@ -390,7 +414,7 @@ export const MobileApp: React.FC = () => {
 
               <form onSubmit={handleLocationSubmit} className="flex flex-col gap-4">
                 <div className="flex flex-col gap-1.5">
-                  <label htmlFor="m-address" className="text-[9px] font-black text-brand-slate uppercase tracking-wider">Address details</label>
+                  <label htmlFor="m-address" className="text-xs font-black text-brand-slate uppercase tracking-wider">Address details</label>
                   <input
                     id="m-address"
                     type="text"
@@ -404,7 +428,7 @@ export const MobileApp: React.FC = () => {
                 </div>
 
                 <div className="flex flex-col gap-2">
-                  <span className="text-[9px] font-black text-brand-slate uppercase tracking-wider">Quick Addresses</span>
+                  <span className="text-xs font-black text-brand-slate uppercase tracking-wider">Quick Addresses</span>
                   {[
                     'Home - Flat 302, MG Road, Bengaluru',
                     'Office - Tower B, Embassy Tech Park, Bengaluru'

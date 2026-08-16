@@ -3,7 +3,7 @@ import { useApp } from '../../context/AppContext';
 import { useCustomer } from '../../context/CustomerContext';
 import { useProducts } from '../../hooks/useProducts';
 import { CartDrawer } from '../common/CartDrawer';
-import { Search, ShoppingCart, ChevronDown, User, Package, LogOut, Briefcase, MapPin, Sparkles, Zap, ShoppingBag, Mic, Camera, Wrench } from 'lucide-react';
+import { Search, ShoppingCart, ChevronDown, User, Package, LogOut, Briefcase, MapPin, Sparkles, Zap, ShoppingBag, Mic, Camera, Wrench, Bell } from 'lucide-react';
 import { motion } from 'framer-motion';
 
 export const DesktopHeader: React.FC = () => {
@@ -15,7 +15,8 @@ export const DesktopHeader: React.FC = () => {
     location,
     searchQuery,
     setSearchQuery,
-    getCartTotal
+    getCartTotal,
+    notifications
   } = useApp();
 
   const { isAuthenticated, profile, logout } = useCustomer();
@@ -27,6 +28,7 @@ export const DesktopHeader: React.FC = () => {
   const [logoLoaded, setLogoLoaded] = useState(true);
   const suggestionRef = useRef<HTMLDivElement>(null);
   const { products } = useProducts();
+  const unreadNotificationsCount = notifications.filter(n => !n.read).length;
 
   // Handle outside click for search suggestions
   useEffect(() => {
@@ -162,17 +164,17 @@ export const DesktopHeader: React.FC = () => {
                 ) : (
                   <>
                     {/* Visual circle icon badge */}
-                    <div className={`w-5.5 h-5.5 rounded-full flex items-center justify-center shrink-0 transition-all ${
+                    <div className={`w-6 h-6 rounded-full flex items-center justify-center shrink-0 transition-all ${
                       isActive ? 'bg-white/15 text-white' : item.iconInactive
                     }`}>
                       <Icon size={10} strokeWidth={2.5} />
                     </div>
 
                     <div className="flex flex-col leading-none text-left">
-                      <span className="text-[10px] font-black tracking-wide">
+                      <span className="text-xs font-black tracking-wide">
                         {item.title}
                       </span>
-                      <span className={`text-[7px] mt-0.5 whitespace-nowrap leading-none ${isActive ? 'opacity-85' : 'opacity-70'}`}>
+                      <span className={`text-xs mt-0.5 whitespace-nowrap leading-none ${isActive ? 'opacity-85' : 'opacity-70'}`}>
                         {item.subtitle}
                       </span>
                     </div>
@@ -182,7 +184,7 @@ export const DesktopHeader: React.FC = () => {
             );
           })}
         </div>
-        <div className="flex items-center gap-2 text-[11px] font-bold">
+        <div className="flex items-center gap-2 text-xs font-bold">
           <MapPin size={13} className="text-brand-blue" />
           <span>Delivering to: <strong className="text-brand-graphite">{location}</strong></span>
         </div>
@@ -203,12 +205,12 @@ export const DesktopHeader: React.FC = () => {
             ) : (
               <span className="text-xl font-extrabold tracking-tight italic flex items-center gap-1 text-brand-graphite">
                 ShopIndia
-                {currentVertical === 'quick' && <span className="text-[9px] uppercase font-black tracking-widest px-1.5 py-0.5 rounded bg-brand-green/10 text-brand-green not-italic">10M</span>}
-                {currentVertical === 'services' && <span className="text-[9px] uppercase font-black tracking-widest px-1.5 py-0.5 rounded bg-services-gold/15 text-services-gold not-italic">PRO</span>}
+                {currentVertical === 'quick' && <span className="text-xs uppercase font-black tracking-widest px-1.5 py-0.5 rounded bg-brand-green/10 text-brand-green not-italic">10M</span>}
+                {currentVertical === 'services' && <span className="text-xs uppercase font-black tracking-widest px-1.5 py-0.5 rounded bg-services-gold/15 text-services-gold not-italic">PRO</span>}
               </span>
             )}
             {currentVertical === 'shop' && (
-              <span className="text-[8px] tracking-wider uppercase font-black text-brand-orange hover:underline flex items-center gap-0.5 leading-none mt-0.5">
+              <span className="text-xs tracking-wider uppercase font-black text-brand-orange hover:underline flex items-center gap-0.5 leading-none mt-0.5">
                 Explore <span className="text-brand-blue">Plus</span>
                 <Sparkles size={8} className="fill-brand-blue text-brand-blue animate-pulse" />
               </span>
@@ -274,6 +276,22 @@ export const DesktopHeader: React.FC = () => {
 
         {/* Right Menu Controls */}
         <div className="flex items-center gap-8 shrink-0 text-xs font-bold">
+          {/* Notifications Button */}
+          <button 
+            onClick={() => navigateTo('notifications')}
+            className={`flex items-center gap-2 py-2 px-3 rounded-button transition-all hover:bg-slate-100 ${theme.buttonBg.replace('bg-', 'hover:bg-').replace('text-white', 'text-brand-graphite')}`}
+          >
+            <div className="relative">
+              <Bell size={18} />
+              {unreadNotificationsCount > 0 && (
+                <span className="absolute -top-1 -right-1 flex h-3.5 min-w-3.5 items-center justify-center rounded-full bg-brand-red px-1 text-[8px] font-black text-white font-numbers border border-white">
+                  {unreadNotificationsCount}
+                </span>
+              )}
+            </div>
+            <span className={currentVertical === 'services' ? 'text-white' : ''}>Alerts</span>
+          </button>
+
           {/* Profile Dropdown */}
           <div
             className="relative"
@@ -286,7 +304,7 @@ export const DesktopHeader: React.FC = () => {
             >
               {isAuthenticated && profile ? (
                 <>
-                  <div className="w-5 h-5 rounded-full bg-white/20 flex items-center justify-center text-[10px] uppercase font-black tracking-widest">{profile.name?.charAt(0) || 'U'}</div>
+                  <div className="w-5 h-5 rounded-full bg-white/20 flex items-center justify-center text-xs uppercase font-black tracking-widest">{profile.name?.charAt(0) || 'U'}</div>
                   <span>{profile.name?.split(' ')[0] || 'User'}</span>
                 </>
               ) : (
@@ -308,32 +326,32 @@ export const DesktopHeader: React.FC = () => {
                       <div className="w-9 h-9 rounded-full bg-brand-blue/10 flex items-center justify-center text-brand-blue font-black uppercase">{profile.name?.charAt(0) || 'U'}</div>
                       <div className="flex flex-col leading-tight">
                         <span className="font-extrabold text-brand-graphite">{profile.name || 'User'}</span>
-                        <span className="text-[10px] text-brand-slate font-medium">{profile.email}</span>
+                        <span className="text-xs text-brand-slate font-medium">{profile.email}</span>
                       </div>
                     </div>
                   ) : (
                     <div className="p-4 border-b border-brand-border bg-slate-50/50 flex flex-col items-start gap-2">
                       <span className="font-extrabold text-brand-graphite text-sm">Welcome</span>
-                      <span className="text-[10px] text-brand-slate font-medium leading-tight">Sign in to access your orders, saved items, and settings.</span>
-                      <button onClick={() => navigateTo('profile')} className="mt-1 w-full py-2 bg-brand-blue text-white rounded-button text-[10px] uppercase tracking-wider font-bold">Sign In / Register</button>
+                      <span className="text-xs text-brand-slate font-medium leading-tight">Sign in to access your orders, saved items, and settings.</span>
+                      <button onClick={() => navigateTo('profile')} className="mt-1 w-full py-2 bg-brand-blue text-white rounded-button text-xs uppercase tracking-wider font-bold">Sign In / Register</button>
                     </div>
                   )}
 
                   <button
                     onClick={() => { navigateTo(isAuthenticated ? 'dashboard' : 'profile'); setShowProfileDropdown(false); }}
-                    className="flex items-center gap-3.5 px-4.5 py-3 hover:bg-slate-50 transition-colors text-left"
+                    className="flex items-center gap-3.5 px-5 py-3 hover:bg-slate-50 transition-colors text-left"
                   >
                     <User size={15} className="text-brand-slate" /> My Profile
                   </button>
                   <button
                     onClick={() => { navigateTo('orders'); setShowProfileDropdown(false); }}
-                    className="flex items-center gap-3.5 px-4.5 py-3 hover:bg-slate-50 transition-colors text-left"
+                    className="flex items-center gap-3.5 px-5 py-3 hover:bg-slate-50 transition-colors text-left"
                   >
                     <Package size={15} className="text-brand-slate" /> Orders & Tracking
                   </button>
                   <button
                     onClick={() => { setIsCartDrawerOpen(true); setShowProfileDropdown(false); }}
-                    className="flex items-center gap-3.5 px-4.5 py-3 hover:bg-slate-50 transition-colors text-left border-b border-brand-border"
+                    className="flex items-center gap-3.5 px-5 py-3 hover:bg-slate-50 transition-colors text-left border-b border-brand-border"
                   >
                     <ShoppingCart size={15} className="text-brand-slate" /> Active Cart
                   </button>
@@ -344,7 +362,7 @@ export const DesktopHeader: React.FC = () => {
                         logout(); 
                         setShowProfileDropdown(false); 
                       }}
-                      className="flex items-center gap-3.5 px-4.5 py-3 hover:bg-red-50 text-brand-red transition-colors text-left font-black"
+                      className="flex items-center gap-3.5 px-5 py-3 hover:bg-red-50 text-brand-red transition-colors text-left font-black"
                     >
                       <LogOut size={15} /> Logout
                     </button>
@@ -377,7 +395,7 @@ export const DesktopHeader: React.FC = () => {
             </div>
             <span>Cart</span>
             {cartItemCount > 0 && (
-              <span className="text-[11px] font-black text-brand-graphite dark:text-white hidden lg:inline font-numbers">
+              <span className="text-xs font-black text-brand-graphite dark:text-white hidden lg:inline font-numbers">
                 (₹{getCartTotal().toLocaleString('en-IN')})
               </span>
             )}

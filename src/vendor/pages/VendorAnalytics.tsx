@@ -151,7 +151,7 @@ export const VendorAnalytics: React.FC = () => {
                       style={{ height: `${(d.revenue / maxRev) * 120}px` }}
                       title={`₹${d.revenue}`}
                     />
-                    <span className="text-[10px] text-gray-400">{d._id.slice(5)}</span>
+                    <span className="text-xs text-gray-400">{d._id.slice(5)}</span>
                   </div>
                 ))}
               </div>

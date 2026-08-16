@@ -68,7 +68,7 @@ export const ReviewsPage: React.FC = () => {
                       {r.isVerified && <Badge tone="green"><CheckCircle2 className="w-3 h-3 inline -mt-0.5 mr-0.5" /> Verified Purchase</Badge>}
                     </div>
                   </div>
-                  <span className="text-[10px] text-brand-slate">{new Date(r.createdAt).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' })}</span>
+                  <span className="text-xs text-brand-slate">{new Date(r.createdAt).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' })}</span>
                 </div>
                 {r.title && <p className="text-xs font-extrabold text-brand-graphite mt-2">{r.title}</p>}
                 <p className="text-xs text-brand-slate mt-1 leading-relaxed">{r.body}</p>
@@ -78,8 +78,8 @@ export const ReviewsPage: React.FC = () => {
                   </div>
                 )}
                 <div className="flex gap-2 mt-3 pt-3 border-t border-brand-border/40">
-                  <button onClick={() => openEdit(r.id)} className="inline-flex items-center gap-1 text-[11px] font-bold text-brand-slate hover:text-brand-blue"><Pencil className="w-3.5 h-3.5" /> Edit</button>
-                  <button onClick={() => removeReview(r.id)} className="inline-flex items-center gap-1 text-[11px] font-bold text-brand-slate hover:text-red-500"><Trash2 className="w-3.5 h-3.5" /> Delete</button>
+                  <button onClick={() => openEdit(r.id)} className="inline-flex items-center gap-1 text-xs font-bold text-brand-slate hover:text-brand-blue"><Pencil className="w-3.5 h-3.5" /> Edit</button>
+                  <button onClick={() => removeReview(r.id)} className="inline-flex items-center gap-1 text-xs font-bold text-brand-slate hover:text-red-500"><Trash2 className="w-3.5 h-3.5" /> Delete</button>
                 </div>
               </div>
             </div>
@@ -96,7 +96,7 @@ export const ReviewsPage: React.FC = () => {
             </div>
 
             <div className="flex flex-col gap-1">
-              <label className="text-[10px] font-black uppercase text-brand-slate">Product</label>
+              <label className="text-xs font-black uppercase text-brand-slate">Product</label>
               <select className={fieldCls} value={productId} onChange={(e) => setProductId(e.target.value)}>
                 {purchasable.map((p) => <option key={p.id} value={p.id}>{p.title}</option>)}
                 {!purchasable.some((p) => p.id === productId) && productId && <option value={productId}>Selected product</option>}
@@ -104,7 +104,7 @@ export const ReviewsPage: React.FC = () => {
             </div>
 
             <div className="flex flex-col gap-1">
-              <label className="text-[10px] font-black uppercase text-brand-slate">Rating</label>
+              <label className="text-xs font-black uppercase text-brand-slate">Rating</label>
               <div className="flex gap-1">
                 {[1, 2, 3, 4, 5].map((i) => (
                   <button key={i} type="button" onClick={() => setRating(i)} aria-label={`${i} star`}>
@@ -115,16 +115,16 @@ export const ReviewsPage: React.FC = () => {
             </div>
 
             <div className="flex flex-col gap-1">
-              <label className="text-[10px] font-black uppercase text-brand-slate">Title</label>
+              <label className="text-xs font-black uppercase text-brand-slate">Title</label>
               <input className={fieldCls} value={title} onChange={(e) => setTitle(e.target.value)} placeholder="Summarize your experience" />
             </div>
             <div className="flex flex-col gap-1">
-              <label className="text-[10px] font-black uppercase text-brand-slate">Review</label>
+              <label className="text-xs font-black uppercase text-brand-slate">Review</label>
               <textarea className={`${fieldCls} min-h-[90px]`} value={body} onChange={(e) => setBody(e.target.value)} placeholder="What did you like or dislike?" required />
             </div>
 
             <div className="flex flex-col gap-2">
-              <label className="text-[10px] font-black uppercase text-brand-slate">Photos</label>
+              <label className="text-xs font-black uppercase text-brand-slate">Photos</label>
               <div className="flex gap-2 flex-wrap">
                 {images.map((img, i) => (
                   <div key={i} className="relative">

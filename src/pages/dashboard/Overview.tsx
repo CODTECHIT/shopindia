@@ -73,11 +73,11 @@ export const OverviewPage: React.FC<{ onNavigate: (t: DashboardTab) => void }> =
             {recentOrders.map((o) => (
               <div key={o.id} className="border border-brand-border rounded-card p-4 flex flex-col gap-2 hover:border-brand-blue/30 transition-colors">
                 <div className="flex items-center justify-between gap-2">
-                  <span className="text-[11px] font-bold font-numbers text-brand-graphite truncate">{o.id}</span>
+                  <span className="text-xs font-bold font-numbers text-brand-graphite truncate">{o.id}</span>
                   <Badge tone={statusTone(o.status)}>{o.status}</Badge>
                 </div>
-                <p className="text-[11px] text-brand-slate">{o.date}</p>
-                <p className="text-sm font-bold text-brand-graphite font-numbers">₹{o.total.toLocaleString('en-IN')} <span className="text-[10px] font-medium text-brand-slate">· {o.items.length} items</span></p>
+                <p className="text-xs text-brand-slate">{o.date}</p>
+                <p className="text-sm font-bold text-brand-graphite font-numbers">₹{o.total.toLocaleString('en-IN')} <span className="text-xs font-medium text-brand-slate">· {o.items.length} items</span></p>
               </div>
             ))}
           </div>
@@ -94,10 +94,10 @@ export const OverviewPage: React.FC<{ onNavigate: (t: DashboardTab) => void }> =
                   <div className="w-9 h-9 rounded-lg bg-brand-orange/10 flex items-center justify-center text-brand-orange"><Ticket className="w-4 h-4" /></div>
                   <div>
                     <p className="text-xs font-extrabold font-numbers text-brand-graphite">{c.code}</p>
-                    <p className="text-[11px] text-brand-slate">{c.title}</p>
+                    <p className="text-xs text-brand-slate">{c.title}</p>
                   </div>
                 </div>
-                <span className="text-[11px] text-brand-orange font-bold">-{c.discountValue}{c.discountType === 'PERCENTAGE' ? '%' : ''}</span>
+                <span className="text-xs text-brand-orange font-bold">-{c.discountValue}{c.discountType === 'PERCENTAGE' ? '%' : ''}</span>
               </div>
             ))}
             {activeCoupons.length === 0 && <p className="text-xs text-brand-slate">No active coupons.</p>}
@@ -115,7 +115,7 @@ export const OverviewPage: React.FC<{ onNavigate: (t: DashboardTab) => void }> =
                 <div className={`mt-1.5 w-2 h-2 rounded-full flex-shrink-0 ${n.isRead ? 'bg-slate-200' : 'bg-brand-blue'}`} />
                 <div className="min-w-0">
                   <p className="text-xs font-bold text-brand-graphite">{n.title}</p>
-                  <p className="text-[11px] text-brand-slate line-clamp-1">{n.message}</p>
+                  <p className="text-xs text-brand-slate line-clamp-1">{n.message}</p>
                 </div>
               </div>
             ))}

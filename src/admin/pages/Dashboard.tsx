@@ -324,16 +324,16 @@ export const Dashboard: React.FC = () => {
               <line x1={paddingLeft} y1={paddingTop + plotHeight} x2={svgWidth - paddingRight} y2={paddingTop + plotHeight} stroke="#e2e8f0" strokeWidth={1.5} />
 
               {/* Y Axis Labels */}
-              <text x={paddingLeft - 8} y={paddingTop + 4} textAnchor="end" className="text-[10px] fill-gray-400 font-medium font-numbers">
+              <text x={paddingLeft - 8} y={paddingTop + 4} textAnchor="end" className="text-xs fill-gray-400 font-medium font-numbers">
                 {fmtRs(maxRev)}
               </text>
-              <text x={paddingLeft - 8} y={paddingTop + plotHeight * 0.33 + 4} textAnchor="end" className="text-[10px] fill-gray-400 font-medium font-numbers">
+              <text x={paddingLeft - 8} y={paddingTop + plotHeight * 0.33 + 4} textAnchor="end" className="text-xs fill-gray-400 font-medium font-numbers">
                 {fmtRs(Math.round(maxRev * 0.66))}
               </text>
-              <text x={paddingLeft - 8} y={paddingTop + plotHeight * 0.66 + 4} textAnchor="end" className="text-[10px] fill-gray-400 font-medium font-numbers">
+              <text x={paddingLeft - 8} y={paddingTop + plotHeight * 0.66 + 4} textAnchor="end" className="text-xs fill-gray-400 font-medium font-numbers">
                 {fmtRs(Math.round(maxRev * 0.33))}
               </text>
-              <text x={paddingLeft - 8} y={paddingTop + plotHeight + 4} textAnchor="end" className="text-[10px] fill-gray-400 font-medium font-numbers">
+              <text x={paddingLeft - 8} y={paddingTop + plotHeight + 4} textAnchor="end" className="text-xs fill-gray-400 font-medium font-numbers">
                 ₹0
               </text>
 
@@ -427,7 +427,7 @@ export const Dashboard: React.FC = () => {
                     x={x}
                     y={paddingTop + plotHeight + 16}
                     textAnchor="middle"
-                    className="text-[10px] fill-gray-400 font-medium"
+                    className="text-xs fill-gray-400 font-medium"
                   >
                     {label}
                   </text>
@@ -448,13 +448,13 @@ export const Dashboard: React.FC = () => {
                     transform: `translate(${isRightHalf ? '-110%' : '10%'}, -110%)`,
                   }}
                 >
-                  <p className="text-[10px] font-semibold text-gray-400 uppercase tracking-wider">
+                  <p className="text-xs font-semibold text-gray-400 uppercase tracking-wider">
                     {p.data._id}
                   </p>
                   <p className="text-sm font-bold text-gray-900 mt-0.5">
                     {fmtRs(p.data.revenue)}
                   </p>
-                  <p className="text-[10px] text-gray-500 mt-0.5">
+                  <p className="text-xs text-gray-500 mt-0.5">
                     {p.data.count} {p.data.count === 1 ? 'order' : 'orders'}
                   </p>
                 </div>

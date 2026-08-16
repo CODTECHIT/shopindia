@@ -50,7 +50,7 @@ export const OrdersPage: React.FC = () => {
                       </span>
                       <Badge tone={statusTone(o.status)}>{o.status}</Badge>
                     </div>
-                    <p className="text-[11px] text-brand-slate mt-0.5">
+                    <p className="text-xs text-brand-slate mt-0.5">
                       Order {o.orderNumber || o.id} • {o.date || '—'}
                     </p>
                   </div>
@@ -58,7 +58,7 @@ export const OrdersPage: React.FC = () => {
                 <div className="flex items-center gap-3 flex-shrink-0">
                   <div className="text-right">
                     <p className="font-bold text-brand-graphite font-numbers">₹{o.total.toLocaleString('en-IN')}</p>
-                    <p className="text-[10px] text-brand-slate">{o.items.length} item{o.items.length > 1 ? 's' : ''}</p>
+                    <p className="text-xs text-brand-slate">{o.items.length} item{o.items.length > 1 ? 's' : ''}</p>
                   </div>
                   <ChevronRight className={`w-4 h-4 text-brand-slate transition-transform ${isOpen ? 'rotate-90' : ''}`} />
                 </div>
@@ -96,7 +96,7 @@ export const OrdersPage: React.FC = () => {
                                 <img src={it.product.image} alt={it.product.title} className="w-12 h-12 rounded-lg object-cover bg-slate-100" />
                                 <div className="min-w-0 flex-1">
                                   <p className="text-xs font-bold text-brand-graphite line-clamp-1">{it.product.title}</p>
-                                  <p className="text-[11px] text-brand-slate">Qty {it.quantity}</p>
+                                  <p className="text-xs text-brand-slate">Qty {it.quantity}</p>
                                 </div>
                                 <span className="text-xs font-bold text-brand-graphite font-numbers">₹{(it.product.price * it.quantity).toLocaleString('en-IN')}</span>
                               </div>

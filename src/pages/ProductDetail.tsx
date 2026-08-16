@@ -44,6 +44,8 @@ export const ProductDetailPage: React.FC = () => {
     { name: 'Priya Patel', rating: 4, date: '1 month ago', comment: 'Highly recommended! Value for money and great customer support.' }
   ];
 
+  const similarProducts = product ? products.filter(p => p.id !== product.id && p.vertical === product.vertical).slice(0, 5) : [];
+
   // Desktop Page Layout
   const renderDesktop = () => {
     if (loading) {
@@ -101,7 +103,7 @@ export const ProductDetailPage: React.FC = () => {
 
               <img src={product.image} alt={product.title} className="max-h-full max-w-full object-contain rounded" />
               {product.isAssured && (
-                <div className="absolute bottom-4 left-4 z-10 flex items-center gap-0.5 bg-blue-50/95 text-[10px] font-black italic px-2 py-0.5 rounded border border-brand-blue/20 backdrop-blur-sm select-none shadow-sm">
+                <div className="absolute bottom-4 left-4 z-10 flex items-center gap-0.5 bg-blue-50/95 text-xs font-black italic px-2 py-0.5 rounded border border-brand-blue/20 backdrop-blur-sm select-none shadow-sm">
                   <span className="text-brand-blue">ShopIndia</span>
                   <span className="text-brand-orange">Assured</span>
                 </div>
@@ -233,7 +235,7 @@ export const ProductDetailPage: React.FC = () => {
                   <div key={i} className={`p-5 border rounded-card text-left shadow-soft ${isServices ? 'bg-[#2C2C2E] border-zinc-800 text-white' : 'bg-white border-brand-border'}`}>
                     <div className="flex justify-between items-center mb-2 leading-none font-heading">
                       <span className="font-extrabold text-xs">{rev.name}</span>
-                      <span className="text-[10px] text-brand-slate font-bold font-numbers">{rev.date}</span>
+                      <span className="text-xs text-brand-slate font-bold font-numbers">{rev.date}</span>
                     </div>
                     <div className="flex gap-0.5 text-[#ffe500] mb-2.5">
                       {Array.from({ length: rev.rating }).map((_, idx) => (
@@ -247,6 +249,50 @@ export const ProductDetailPage: React.FC = () => {
             </div>
           </div>
         </div>
+
+        {/* Desktop Recommended Products */}
+        {similarProducts.length > 0 && (
+          <div className="mt-16 pt-10 border-t border-brand-border/20">
+            <h2 className={`text-xl font-bold mb-6 font-heading ${isServices ? 'text-white' : 'text-brand-graphite'}`}>
+              Recommended for you
+            </h2>
+            <div className="grid grid-cols-5 gap-5">
+              {similarProducts.map((p) => {
+                const pDiscount = Math.round(((p.originalPrice - p.price) / p.originalPrice) * 100);
+                return (
+                  <div 
+                    key={p.id}
+                    onClick={() => {
+                      window.scrollTo({ top: 0, behavior: 'smooth' });
+                      navigateTo('detail', p.id);
+                    }}
+                    className={`border rounded-xl flex flex-col group cursor-pointer hover:shadow-hover-lift transition-all duration-300 overflow-hidden ${isServices ? 'bg-[#2C2C2E] border-zinc-800' : 'bg-white border-brand-border/60 hover:border-brand-blue/30'}`}
+                  >
+                    <div className="w-full aspect-square flex items-center justify-center p-4 bg-white relative">
+                      <img src={p.image} alt={p.title} className="max-h-full max-w-full object-contain group-hover:scale-105 transition-transform duration-300" />
+                      {pDiscount > 0 && (
+                        <span className="absolute top-2 left-2 bg-[#ECFDF5] border border-brand-green/10 text-brand-green text-[10px] font-black px-1.5 py-0.5 rounded shadow-sm font-numbers uppercase tracking-wider">
+                          {pDiscount}% OFF
+                        </span>
+                      )}
+                    </div>
+                    <div className="p-4 flex flex-col flex-grow">
+                      <h3 className={`text-xs font-bold line-clamp-2 leading-relaxed mb-2 font-heading ${isServices ? 'text-white' : 'text-brand-graphite group-hover:text-brand-blue'}`}>
+                        {p.title}
+                      </h3>
+                      <div className="mt-auto flex flex-col font-numbers">
+                        <span className={`text-sm font-black ${isServices ? 'text-white' : 'text-brand-graphite'}`}>₹{p.price.toLocaleString('en-IN')}</span>
+                        {p.originalPrice > p.price && (
+                          <span className="text-[10px] text-brand-slate line-through mt-0.5">₹{p.originalPrice.toLocaleString('en-IN')}</span>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+        )}
       </div>
     );
   };
@@ -315,7 +361,7 @@ export const ProductDetailPage: React.FC = () => {
           />
           
           {product.isAssured && (
-            <div className="absolute bottom-4 left-4 z-20 flex items-center gap-0.5 bg-white/95 text-[10px] font-black italic px-2 py-1 rounded-full border border-blue-100 shadow-[0_4px_12px_rgba(0,0,0,0.08)] backdrop-blur-md">
+            <div className="absolute bottom-4 left-4 z-20 flex items-center gap-0.5 bg-white/95 text-xs font-black italic px-2 py-1 rounded-full border border-blue-100 shadow-[0_4px_12px_rgba(0,0,0,0.08)] backdrop-blur-md">
               <span className="text-brand-blue">ShopIndia</span>
               <span className="text-brand-orange">Assured</span>
             </div>
@@ -327,7 +373,7 @@ export const ProductDetailPage: React.FC = () => {
           <div className="flex flex-col gap-3">
             <h1 className="text-[17px] font-extrabold leading-snug tracking-tight font-heading text-brand-graphite">{product.title}</h1>
             <div className="flex items-center gap-2.5 leading-none">
-              <div className="flex items-center justify-center gap-0.5 bg-[#17B169] text-white font-black text-[11px] px-2 py-0.5 rounded-[5px] font-numbers shadow-[0_2px_8px_rgba(23,177,105,0.25)]">
+              <div className="flex items-center justify-center gap-0.5 bg-[#17B169] text-white font-black text-xs px-2 py-0.5 rounded-[5px] font-numbers shadow-[0_2px_8px_rgba(23,177,105,0.25)]">
                 <span>{product.rating}</span>
                 <Star size={9} className="fill-white text-white" />
               </div>
@@ -341,14 +387,14 @@ export const ProductDetailPage: React.FC = () => {
             {product.originalPrice > product.price && (
               <>
                 <span className="text-[13px] text-slate-400 line-through mb-1 font-semibold">₹{product.originalPrice.toLocaleString('en-IN')}</span>
-                <span className="text-[10px] font-black text-brand-orange uppercase tracking-widest mb-1.5 bg-orange-50 px-1.5 py-0.5 rounded text-orange-600">{discount}% OFF</span>
+                <span className="text-xs font-black text-brand-orange uppercase tracking-widest mb-1.5 bg-orange-50 px-1.5 py-0.5 rounded text-orange-600">{discount}% OFF</span>
               </>
             )}
           </div>
 
           {/* Delivery checker */}
           <div className="flex flex-col gap-3 py-1">
-            <span className="text-[10px] uppercase font-black tracking-widest text-slate-400 font-heading">Delivery to</span>
+            <span className="text-xs uppercase font-black tracking-widest text-slate-400 font-heading">Delivery to</span>
             <form onSubmit={handlePincodeCheck} className="flex gap-2 w-full max-w-sm relative">
               <input
                 type="text"
@@ -358,12 +404,12 @@ export const ProductDetailPage: React.FC = () => {
                 onChange={(e) => setPincode(e.target.value)}
                 className="w-full pl-5 pr-24 py-3.5 bg-slate-100/80 border-transparent rounded-full text-[13px] font-bold focus:outline-none focus:bg-white focus:ring-2 focus:ring-brand-blue/20 focus:border-brand-blue/30 transition-all placeholder:text-slate-400"
               />
-              <button type="submit" className="absolute right-1.5 top-1.5 bottom-1.5 px-5 bg-zinc-900 text-white rounded-full text-[10px] font-black uppercase tracking-wider hover:bg-zinc-800 active:scale-95 transition-all shadow-sm">
+              <button type="submit" className="absolute right-1.5 top-1.5 bottom-1.5 px-5 bg-zinc-900 text-white rounded-full text-xs font-black uppercase tracking-wider hover:bg-zinc-800 active:scale-95 transition-all shadow-sm">
                 Check
               </button>
             </form>
             {pincodeCheckResult && (
-              <span className={`text-[11px] font-bold pl-1 ${pincodeCheckResult.includes('Invalid') ? 'text-brand-red' : 'text-[#17B169]'}`}>
+              <span className={`text-xs font-bold pl-1 ${pincodeCheckResult.includes('Invalid') ? 'text-brand-red' : 'text-[#17B169]'}`}>
                 {pincodeCheckResult}
               </span>
             )}
@@ -372,7 +418,7 @@ export const ProductDetailPage: React.FC = () => {
           {/* Key Specs */}
           {product.specs && Object.keys(product.specs).length > 0 && (
             <div className="flex flex-col gap-3 mt-1">
-              <span className="text-[10px] uppercase font-black tracking-widest text-slate-400 font-heading">Key Specifications</span>
+              <span className="text-xs uppercase font-black tracking-widest text-slate-400 font-heading">Key Specifications</span>
               <div className="flex flex-col gap-2.5">
                 {Object.entries(product.specs).map(([key, val]) => {
                   const keyLower = key.toLowerCase();
@@ -406,8 +452,8 @@ export const ProductDetailPage: React.FC = () => {
                 <ShieldCheck size={18} strokeWidth={2.5} />
               </div>
               <div className="flex flex-col">
-                <span className="text-[10px] font-black text-zinc-800 tracking-tight">100% Original</span>
-                <span className="text-[9px] font-bold text-slate-400">Products</span>
+                <span className="text-xs font-black text-zinc-800 tracking-tight">100% Original</span>
+                <span className="text-xs font-bold text-slate-400">Products</span>
               </div>
             </div>
             <div className="flex flex-col items-center text-center gap-2 relative before:content-[''] before:absolute before:left-0 before:top-[10%] before:h-[80%] before:w-px before:bg-slate-100">
@@ -415,8 +461,8 @@ export const ProductDetailPage: React.FC = () => {
                 <Truck size={18} strokeWidth={2.5} />
               </div>
               <div className="flex flex-col">
-                <span className="text-[10px] font-black text-zinc-800 tracking-tight">Fast Delivery</span>
-                <span className="text-[9px] font-bold text-slate-400">In Minutes</span>
+                <span className="text-xs font-black text-zinc-800 tracking-tight">Fast Delivery</span>
+                <span className="text-xs font-bold text-slate-400">In Minutes</span>
               </div>
             </div>
             <div className="flex flex-col items-center text-center gap-2 relative before:content-[''] before:absolute before:left-0 before:top-[10%] before:h-[80%] before:w-px before:bg-slate-100">
@@ -424,12 +470,56 @@ export const ProductDetailPage: React.FC = () => {
                 <RefreshCcw size={18} strokeWidth={2.5} />
               </div>
               <div className="flex flex-col">
-                <span className="text-[10px] font-black text-zinc-800 tracking-tight">Easy Returns</span>
-                <span className="text-[9px] font-bold text-slate-400">Hassle Free</span>
+                <span className="text-xs font-black text-zinc-800 tracking-tight">Easy Returns</span>
+                <span className="text-xs font-bold text-slate-400">Hassle Free</span>
               </div>
             </div>
           </div>
         </div>
+
+        {/* Mobile Recommended Products */}
+        {similarProducts.length > 0 && (
+          <div className={`mt-2 pt-6 pb-4 border-t ${isServices ? 'bg-[#1C1C1E] border-zinc-800' : 'bg-white border-slate-200/60'}`}>
+            <h2 className={`px-5 text-sm font-black uppercase tracking-widest font-heading mb-4 ${isServices ? 'text-white' : 'text-slate-400'}`}>
+              Recommended for you
+            </h2>
+            <div className="grid grid-cols-2 gap-3 px-4 pb-4">
+              {similarProducts.slice(0, 4).map((p) => {
+                const pDiscount = Math.round(((p.originalPrice - p.price) / p.originalPrice) * 100);
+                return (
+                  <div 
+                    key={p.id}
+                    onClick={() => {
+                      window.scrollTo({ top: 0, behavior: 'smooth' });
+                      navigateTo('detail', p.id);
+                    }}
+                    className={`w-full flex-col border rounded-xl flex group cursor-pointer overflow-hidden shadow-sm ${isServices ? 'bg-[#2C2C2E] border-zinc-800' : 'bg-white border-slate-200/60'}`}
+                  >
+                    <div className="w-full aspect-square flex items-center justify-center p-3 bg-white relative border-b border-slate-100">
+                      <img src={p.image} alt={p.title} className="max-h-full max-w-full object-contain" />
+                      {pDiscount > 0 && (
+                        <span className="absolute top-1.5 left-1.5 bg-[#ECFDF5] border border-brand-green/10 text-brand-green text-[9px] font-black px-1 py-0.5 rounded shadow-sm font-numbers uppercase tracking-widest">
+                          {pDiscount}% OFF
+                        </span>
+                      )}
+                    </div>
+                    <div className="p-3 flex flex-col flex-grow">
+                      <h3 className={`text-[11px] font-bold line-clamp-2 leading-snug mb-1.5 font-heading ${isServices ? 'text-white' : 'text-brand-graphite'}`}>
+                        {p.title}
+                      </h3>
+                      <div className="mt-auto flex flex-col font-numbers">
+                        <span className={`text-[13px] font-black tracking-tight ${isServices ? 'text-white' : 'text-brand-graphite'}`}>₹{p.price.toLocaleString('en-IN')}</span>
+                        {p.originalPrice > p.price && (
+                          <span className="text-[9px] text-slate-400 line-through mt-0.5">₹{p.originalPrice.toLocaleString('en-IN')}</span>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+        )}
 
         {/* Floating Mobile Bottom CTA Buttons (Pill shaped) */}
         <div className="fixed bottom-0 left-0 right-0 bg-white/95 backdrop-blur-xl border-t border-slate-200/60 z-45 text-center select-none shadow-[0_-8px_20px_-8px_rgba(0,0,0,0.1)] px-4 py-3 pb-safe">

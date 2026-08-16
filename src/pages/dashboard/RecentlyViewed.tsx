@@ -36,9 +36,9 @@ export const RecentlyViewedPage: React.FC = () => {
                   <Heart className={`w-3.5 h-3.5 ${isWish ? 'fill-red-500 text-red-500' : 'text-brand-slate'}`} />
                 </button>
               </div>
-              <h3 className="text-[11px] font-bold text-brand-graphite line-clamp-2 mt-2 font-heading">{p!.title}</h3>
+              <h3 className="text-xs font-bold text-brand-graphite line-clamp-2 mt-2 font-heading">{p!.title}</h3>
               <p className="text-xs font-extrabold font-numbers text-brand-graphite mt-0.5">₹{p!.price.toLocaleString('en-IN')}</p>
-              <button onClick={() => addToCart(p!)} className="mt-2 inline-flex items-center justify-center gap-1.5 px-2.5 py-1.5 bg-brand-blue/10 text-brand-blue rounded-button text-[11px] font-bold hover:bg-brand-blue hover:text-white transition-colors">
+              <button onClick={() => addToCart(p!)} className="mt-2 inline-flex items-center justify-center gap-1.5 px-2.5 py-1.5 bg-brand-blue/10 text-brand-blue rounded-button text-xs font-bold hover:bg-brand-blue hover:text-white transition-colors">
                 <ShoppingCart className="w-3 h-3" /> Buy Again
               </button>
             </div>

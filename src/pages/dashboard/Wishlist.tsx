@@ -33,7 +33,7 @@ export const WishlistPage: React.FC = () => {
                 <Trash2 className="w-4 h-4" />
               </button>
               {p!.originalPrice > p!.price && (
-                <span className="absolute top-2 left-2 px-2 py-0.5 rounded-full bg-brand-orange text-white text-[10px] font-black">
+                <span className="absolute top-2 left-2 px-2 py-0.5 rounded-full bg-brand-orange text-white text-xs font-black">
                   {Math.round(((p!.originalPrice - p!.price) / p!.originalPrice) * 100)}% OFF
                 </span>
               )}
@@ -42,11 +42,11 @@ export const WishlistPage: React.FC = () => {
             <h3 className="text-xs font-bold text-brand-graphite line-clamp-2 mt-3 font-heading">{p!.title}</h3>
             <div className="flex items-baseline gap-1.5 mt-1.5 font-numbers">
               <span className="font-extrabold text-brand-graphite">₹{p!.price.toLocaleString('en-IN')}</span>
-              {p!.originalPrice > p!.price && <span className="text-[11px] text-brand-slate line-through">₹{p!.originalPrice.toLocaleString('en-IN')}</span>}
+              {p!.originalPrice > p!.price && <span className="text-xs text-brand-slate line-through">₹{p!.originalPrice.toLocaleString('en-IN')}</span>}
             </div>
             <div className="mt-1 flex items-center gap-1.5">
               <BellRing className="w-3 h-3 text-amber-500" />
-              <span className="text-[10px] text-brand-slate font-semibold">Price drop & back-in-stock alerts</span>
+              <span className="text-xs text-brand-slate font-semibold">Price drop & back-in-stock alerts</span>
             </div>
 
             <div className="mt-3 flex gap-2 pt-3 border-t border-brand-border/50">
