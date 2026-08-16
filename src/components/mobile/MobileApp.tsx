@@ -9,7 +9,7 @@ import { CartPage } from '../../pages/Cart';
 import { OrdersPage } from '../../pages/Orders';
 import { ProfilePage } from '../../pages/Profile';
 import { NotificationsPage } from '../../pages/Notifications';
-import { Home, User, MapPin, X, Search, ChevronDown, ShoppingBag, Zap, Wrench, LayoutGrid, RotateCcw, Bell, ShoppingCart, ListOrdered } from 'lucide-react';
+import { Home, User, MapPin, X, Search, ChevronDown, ShoppingBag, Zap, Wrench, LayoutGrid, Bell, ShoppingCart, ListOrdered } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 
 export const MobileApp: React.FC = () => {

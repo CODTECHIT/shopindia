@@ -4,7 +4,7 @@ import { useProducts } from '../../hooks/useProducts';
 import { useCategories } from '../../hooks/useCategories';
 import { 
   Heart, ShieldCheck,
-  Clock, ChevronRight, Truck, Award, RotateCcw, Apple, Star
+  Clock, ChevronRight, Truck, Award, RotateCcw, Star
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { api } from '../../lib/api';
