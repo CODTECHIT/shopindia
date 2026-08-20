@@ -10,9 +10,14 @@ export const VendorProducts: React.FC = () => {
   const [modal, setModal] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [name, setName] = useState('');
+  const [brand, setBrand] = useState('');
   const [price, setPrice] = useState<number>(0);
   const [stock, setStock] = useState<number>(10);
   const [fulfillmentType, setFulfillmentType] = useState('traditional');
+  const [subVertical, setSubVertical] = useState('grocery');
+  const [isVeg, setIsVeg] = useState(true);
+  const [isRx, setIsRx] = useState(false);
+  const [vehicleType, setVehicleType] = useState('car');
   const [categoryId, setCategoryId] = useState('');
   const [categories, setCategories] = useState<any[]>([]);
   const [imageFile, setImageFile] = useState<File | null>(null);
@@ -36,8 +41,10 @@ export const VendorProducts: React.FC = () => {
 
   const resetForm = () => {
     setEditingId(null);
-    setName(''); setPrice(0); setStock(10);
-    setFulfillmentType('traditional'); setCategoryId(''); setImageFile(null);
+    setName(''); setBrand(''); setPrice(0); setStock(10);
+    setFulfillmentType('traditional'); setSubVertical('grocery');
+    setIsVeg(true); setIsRx(false); setVehicleType('car');
+    setCategoryId(''); setImageFile(null);
   };
 
   const openAdd = () => { resetForm(); setModal(true); };
@@ -45,9 +52,23 @@ export const VendorProducts: React.FC = () => {
   const openEdit = (p: any) => {
     setEditingId(p.id || p._id);
     setName(p.name);
+    setBrand(p.brand || '');
     setPrice(Number(p.basePrice || 0));
     setStock(Number(p.stock || 0));
     setFulfillmentType(p.fulfillmentType || 'traditional');
+
+    // Infer subVertical from tags
+    const tags = p.tags || [];
+    if (tags.includes('food')) setSubVertical('food');
+    else if (tags.includes('pharmacy')) setSubVertical('pharmacy');
+    else if (tags.includes('vehicle_service')) setSubVertical('vehicle_service');
+    else if (tags.includes('home_service')) setSubVertical('home_service');
+    else if (p.fulfillmentType === 'quick_commerce') setSubVertical('grocery');
+    else setSubVertical('retail');
+
+    setIsVeg(!tags.includes('Non-Veg'));
+    setIsRx(tags.includes('rx'));
+    setVehicleType(tags.includes('bike') ? 'bike' : 'car');
     setCategoryId(p.categoryId || '');
     setImageFile(null);
     setModal(true);
@@ -68,13 +89,16 @@ export const VendorProducts: React.FC = () => {
     const formData = new FormData();
     formData.append('image', imageFile);
     const token = localStorage.getItem('shopindia_vendor_token') || localStorage.getItem('shopindia_admin_token');
-    const API_BASE = import.meta.env.VITE_API_URL || 'http://localhost:5001';
+    const API_BASE = import.meta.env.VITE_API_URL ? import.meta.env.VITE_API_URL.replace(/\/api\/?$/, '') : '';
     const uploadRes = await fetch(`${API_BASE}/api/vendor/products/upload-image`, {
       method: 'POST',
       headers: { ...(token ? { Authorization: `Bearer ${token}` } : {}) },
       body: formData
     });
-    if (!uploadRes.ok) throw new Error('Image upload failed');
+    if (!uploadRes.ok) {
+      const errData = await uploadRes.json().catch(() => ({}));
+      throw new Error(errData.error || `Upload failed (HTTP ${uploadRes.status})`);
+    }
     const uploadData = await uploadRes.json();
     setUploading(false);
     return uploadData.url;
@@ -83,7 +107,34 @@ export const VendorProducts: React.FC = () => {
   const saveProduct = async (e: React.FormEvent) => {
     e.preventDefault();
     try {
-      const payload: any = { name, basePrice: price, stock, fulfillmentType };
+      // Find category object if selected
+      const selectedCat = categories.find((c: any) => c.id === categoryId);
+
+      // Build tags matching the sub-vertical
+      const tags: string[] = [subVertical];
+      if (selectedCat) tags.push(selectedCat.name);
+      if (subVertical === 'food') tags.push(isVeg ? 'Veg' : 'Non-Veg');
+      if (subVertical === 'pharmacy' && isRx) tags.push('rx');
+      if (subVertical === 'vehicle_service') tags.push(vehicleType);
+
+      // Determine fulfillment type
+      let finalFulfillment = fulfillmentType;
+      if (subVertical === 'grocery' || subVertical === 'food' || subVertical === 'pharmacy') {
+        finalFulfillment = 'quick_commerce';
+      } else if (subVertical === 'home_service' || subVertical === 'vehicle_service') {
+        finalFulfillment = 'hvac_service';
+      } else {
+        finalFulfillment = 'traditional';
+      }
+
+      const payload: any = {
+        name,
+        brand: brand || undefined,
+        basePrice: price,
+        stock,
+        fulfillmentType: finalFulfillment,
+        tags,
+      };
       if (categoryId) payload.categoryId = categoryId;
       let imageUrl = '';
       if (imageFile) imageUrl = await handleImageUpload();
@@ -176,9 +227,8 @@ export const VendorProducts: React.FC = () => {
                 <td className="px-5 py-4">
                   <button
                     onClick={() => toggleStock(p.id || p._id, p.isOutOfStock || p.stock <= 0)}
-                    className={`text-xs font-semibold px-3 py-1 rounded-full border transition-all ${
-                      (p.isOutOfStock || p.stock <= 0) ? 'bg-red-50 text-red-700 border-red-200' : 'bg-emerald-50 text-emerald-700 border-emerald-200'
-                    }`}
+                    className={`text-xs font-semibold px-3 py-1 rounded-full border transition-all ${(p.isOutOfStock || p.stock <= 0) ? 'bg-red-50 text-red-700 border-red-200' : 'bg-emerald-50 text-emerald-700 border-emerald-200'
+                      }`}
                   >
                     {(p.isOutOfStock || p.stock <= 0) ? 'Mark In-Stock' : 'In Stock (Click to Mark Out)'}
                   </button>
@@ -200,46 +250,138 @@ export const VendorProducts: React.FC = () => {
       </div>
 
       {modal && (
-        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4">
-          <form onSubmit={saveProduct} className="bg-white rounded-2xl p-6 w-full max-w-sm shadow-2xl space-y-4">
-            <h3 className="font-bold text-gray-900 text-lg">{editingId ? 'Edit Product' : 'Add New Product'}</h3>
+        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4 overflow-y-auto">
+          <form onSubmit={saveProduct} className="bg-white rounded-3xl p-6 w-full max-w-md shadow-2xl space-y-4 my-8 max-h-[90vh] overflow-y-auto">
+            <h3 className="font-bold text-gray-900 text-lg border-b pb-2">{editingId ? 'Edit Product / Service' : 'Add New Product / Service'}</h3>
+
             <div>
-              <label className="block text-xs font-semibold text-gray-600 mb-1">Product Title</label>
-              <input required value={name} onChange={e => setName(e.target.value)} placeholder="e.g. Split AC Filter" className="w-full px-3 py-2 border rounded-xl text-sm" />
-            </div>
-            <div>
-              <label className="block text-xs font-semibold text-gray-600 mb-1">Price (₹)</label>
-              <input type="number" required value={price} onChange={e => setPrice(Number(e.target.value))} className="w-full px-3 py-2 border rounded-xl text-sm font-numbers" />
-            </div>
-            <div>
-              <label className="block text-xs font-semibold text-gray-600 mb-1">Stock</label>
-              <input type="number" required value={stock} onChange={e => setStock(Number(e.target.value))} className="w-full px-3 py-2 border rounded-xl text-sm font-numbers" />
-            </div>
-            <div>
-              <label className="block text-xs font-semibold text-gray-600 mb-1">Fulfillment Channel</label>
-              <select value={fulfillmentType} onChange={e => setFulfillmentType(e.target.value)} className="w-full px-3 py-2 border rounded-xl text-sm">
-                <option value="traditional">Traditional E-Commerce</option>
-                <option value="quick_commerce">Quick Commerce (Instant)</option>
-                <option value="hvac">HVAC Service & Parts</option>
+              <label className="block text-xs font-semibold text-gray-600 mb-1">Target Sub-Vertical / Module</label>
+              <select
+                value={subVertical}
+                onChange={e => {
+                  const val = e.target.value;
+                  setSubVertical(val);
+                  if (val === 'grocery' || val === 'food' || val === 'pharmacy') setFulfillmentType('quick_commerce');
+                  else if (val === 'home_service' || val === 'vehicle_service') setFulfillmentType('hvac_service');
+                  else setFulfillmentType('traditional');
+                }}
+                className="w-full px-3 py-2 border rounded-xl text-sm font-semibold bg-slate-50"
+              >
+                <optgroup label="⚡ Quick Commerce">
+                  <option value="grocery">⚡ Instant Grocery (10-20 Mins)</option>
+                  <option value="food">🍔 Food Delivery (Restaurant & Kitchen)</option>
+                  <option value="pharmacy">💊 Pharmacy & Healthcare</option>
+                </optgroup>
+                <optgroup label="🛠️ Services Marketplace">
+                  <option value="home_service">🏠 Home Services ( Company Style)</option>
+                  <option value="vehicle_service">🚗 Vehicle Services (Technician Care)</option>
+                </optgroup>
+                <optgroup label="🛒 E-Commerce">
+                  <option value="retail">🛍️ Traditional Shopping (Courier)</option>
+                </optgroup>
               </select>
             </div>
+
+            <div>
+              <label className="block text-xs font-semibold text-gray-600 mb-1">Title / Service Name</label>
+              <input required value={name} onChange={e => setName(e.target.value)} placeholder="e.g. Hyderabadi Dum Biryani / AC Jet Service" className="w-full px-3 py-2 border rounded-xl text-sm" />
+            </div>
+
+            <div>
+              <label className="block text-xs font-semibold text-gray-600 mb-1">Brand / Restaurant / Provider Name</label>
+              <input value={brand} onChange={e => setBrand(e.target.value)} placeholder="e.g. Behrouz Biryani / AutoTech / Farm Fresh" className="w-full px-3 py-2 border rounded-xl text-sm" />
+            </div>
+
+            {/* Specialized Sub-Vertical Toggles */}
+            {subVertical === 'food' && (
+              <div className="p-3 bg-orange-50 rounded-xl border border-orange-200 flex items-center justify-between text-xs">
+                <span className="font-semibold text-orange-900">Dietary Type:</span>
+                <div className="flex gap-2">
+                  <button
+                    type="button"
+                    onClick={() => setIsVeg(true)}
+                    className={`px-3 py-1 rounded-lg font-bold ${isVeg ? 'bg-emerald-600 text-white' : 'bg-white text-gray-600'}`}
+                  >
+                    Veg 🌱
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setIsVeg(false)}
+                    className={`px-3 py-1 rounded-lg font-bold ${!isVeg ? 'bg-red-600 text-white' : 'bg-white text-gray-600'}`}
+                  >
+                    Non-Veg 🍗
+                  </button>
+                </div>
+              </div>
+            )}
+
+            {subVertical === 'pharmacy' && (
+              <div className="p-3 bg-blue-50 rounded-xl border border-blue-200 flex items-center justify-between text-xs">
+                <span className="font-semibold text-blue-900">Requires Doctor's Prescription (Rx)?</span>
+                <input
+                  type="checkbox"
+                  checked={isRx}
+                  onChange={e => setIsRx(e.target.checked)}
+                  className="w-4 h-4 text-blue-600 rounded"
+                />
+              </div>
+            )}
+
+            {subVertical === 'vehicle_service' && (
+              <div className="p-3 bg-indigo-50 rounded-xl border border-indigo-200 flex items-center justify-between text-xs">
+                <span className="font-semibold text-indigo-900">Applicable Vehicle:</span>
+                <select
+                  value={vehicleType}
+                  onChange={e => setVehicleType(e.target.value)}
+                  className="px-2 py-1 bg-white border rounded-lg text-xs"
+                >
+                  <option value="car">4-Wheeler (Car)</option>
+                  <option value="bike">2-Wheeler (Bike)</option>
+                  <option value="both">Both (Car & Bike)</option>
+                </select>
+              </div>
+            )}
+
+            <div className="grid grid-cols-2 gap-3">
+              <div>
+                <label className="block text-xs font-semibold text-gray-600 mb-1">Price (₹)</label>
+                <input type="number" required value={price} onChange={e => setPrice(Number(e.target.value))} className="w-full px-3 py-2 border rounded-xl text-sm font-numbers" />
+              </div>
+              <div>
+                <label className="block text-xs font-semibold text-gray-600 mb-1">Available Units / Capacity</label>
+                <input type="number" required value={stock} onChange={e => setStock(Number(e.target.value))} className="w-full px-3 py-2 border rounded-xl text-sm font-numbers" />
+              </div>
+            </div>
+
             <div>
               <label className="block text-xs font-semibold text-gray-600 mb-1">Category</label>
               <select value={categoryId} onChange={e => setCategoryId(e.target.value)} className="w-full px-3 py-2 border rounded-xl text-sm">
-                <option value="">Uncategorized</option>
-                {categories.filter((c: any) => !c.vertical || c.vertical === (fulfillmentType === 'quick_commerce' ? 'quick' : fulfillmentType === 'hvac' ? 'services' : 'shop')).map((c: any) => (
-                  <option key={c.id} value={c.id}>{c.name}</option>
-                ))}
+                <option value="">Select Category (Aisle)</option>
+                {categories
+                  .filter((c: any) => {
+                    const v = (c.vertical || '').toLowerCase();
+                    if (subVertical === 'grocery') return v === 'quick_grocery' || v === 'quick';
+                    if (subVertical === 'food') return v === 'quick_food';
+                    if (subVertical === 'pharmacy') return v === 'quick_pharmacy';
+                    if (subVertical === 'home_service') return v === 'services_home' || v === 'services';
+                    if (subVertical === 'vehicle_service') return v === 'services_vehicle';
+                    return v === 'shop';
+                  })
+                  .map((c: any) => (
+                    <option key={c.id} value={c.id}>{c.name}</option>
+                  ))}
               </select>
             </div>
+
             <div>
-              <label className="block text-xs font-semibold text-gray-600 mb-1">Product Image</label>
+              <label className="block text-xs font-semibold text-gray-600 mb-1">Product / Banner Image</label>
               <input type="file" accept="image/*" onChange={e => setImageFile(e.target.files?.[0] || null)} className="w-full px-3 py-2 border rounded-xl text-sm file:mr-4 file:py-1 file:px-3 file:rounded-full file:border-0 file:text-xs file:font-semibold file:bg-emerald-50 file:text-emerald-700 hover:file:bg-emerald-100" />
             </div>
-            <div className="flex gap-2">
-              <button type="button" onClick={() => { setModal(false); resetForm(); }} className="flex-1 py-2 border rounded-xl text-sm" disabled={uploading}>Cancel</button>
-              <button type="submit" disabled={uploading} className="flex-1 py-2 bg-[#10B981] text-white rounded-xl text-sm font-semibold hover:bg-[#059669] disabled:opacity-50 disabled:cursor-not-allowed">
-                {uploading ? 'Uploading...' : editingId ? 'Save Changes' : 'Add Product'}
+
+            <div className="flex gap-2 pt-2">
+              <button type="button" onClick={() => { setModal(false); resetForm(); }} className="flex-1 py-2.5 border rounded-xl text-sm font-semibold text-gray-600" disabled={uploading}>Cancel</button>
+              <button type="submit" disabled={uploading} className="flex-1 py-2.5 bg-[#10B981] text-white rounded-xl text-sm font-bold hover:bg-[#059669] shadow-md shadow-emerald-500/20 disabled:opacity-50">
+                {uploading ? 'Uploading...' : editingId ? 'Save Changes' : 'Publish Product'}
               </button>
             </div>
           </form>

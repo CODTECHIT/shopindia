@@ -58,7 +58,8 @@ router.get('/', customerAuth, async (req, res) => {
           include: {
             product: {
               include: {
-                images: true
+                images: true,
+                category: true,
               }
             }
           }
@@ -67,22 +68,42 @@ router.get('/', customerAuth, async (req, res) => {
       orderBy: { createdAt: 'desc' },
     });
 
-    const mappedOrders = orders.map((o) => ({
-      id: o.id,
-      orderNumber: o.orderNumber,
-      total: o.total,
-      status: o.status,
-      date: new Date(o.createdAt).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' }),
-      items: o.items.map((it) => ({
-        product: {
-          id: it.productId,
-          title: it.name,
-          price: it.price,
-          image: it.product && it.product.images && it.product.images.length ? it.product.images[0].url : '',
-        },
-        quantity: it.quantity,
-      })),
-    }));
+    const mappedOrders = orders.map((o) => {
+      let vert = o.type === 'quick_commerce' ? 'quick' : o.type === 'hvac_service' ? 'services' : o.type === 'traditional' ? 'shop' : null;
+      
+      // If default traditional, verify against item details to ensure correct vertical classification
+      const firstCat = o.items?.[0]?.product?.category;
+      const catV = (firstCat?.vertical || '').toLowerCase();
+      const catN = (firstCat?.name || '').toLowerCase();
+      const itemN = (o.items?.[0]?.name || '').toLowerCase();
+
+      if (catV.startsWith('quick') || catN.includes('food') || catN.includes('grocery') || catN.includes('biryani') || itemN.includes('biryani') || itemN.includes('pizza') || itemN.includes('sdf') || itemN.includes('thali')) {
+        vert = 'quick';
+      } else if (catV.startsWith('services') || catN.includes('repair') || catN.includes('service') || catN.includes('cleaning') || itemN.includes('ac') || itemN.includes('cleaning') || itemN.includes('towing') || itemN.includes('repair')) {
+        vert = 'services';
+      } else if (!vert) {
+        vert = 'shop';
+      }
+
+      return {
+        id: o.id,
+        orderNumber: o.orderNumber,
+        total: o.total,
+        status: o.status,
+        type: vert === 'quick' ? 'quick_commerce' : vert === 'services' ? 'hvac_service' : 'traditional',
+        vertical: vert,
+        date: new Date(o.createdAt).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' }),
+        items: o.items.map((it) => ({
+          product: {
+            id: it.productId,
+            title: it.name,
+            price: it.price,
+            image: it.product && it.product.images && it.product.images.length ? it.product.images[0].url : '',
+          },
+          quantity: it.quantity,
+        })),
+      };
+    });
 
     res.json({ orders: mappedOrders });
   } catch (err) {
@@ -108,7 +129,15 @@ router.post('/', async (req, res) => {
     const productIds = items.map((it) => it.productId);
     const products = await prisma.product.findMany({
       where: { id: { in: productIds }, status: 'active' },
-      select: { id: true, name: true, basePrice: true, vendorId: true, stock: true, isOutOfStock: true },
+      select: { 
+        id: true, 
+        name: true, 
+        basePrice: true, 
+        vendorId: true, 
+        stock: true, 
+        isOutOfStock: true,
+        category: { select: { vertical: true, name: true } }
+      },
     });
     const productMap = new Map(products.map((p) => [p.id, p]));
 
@@ -128,6 +157,23 @@ router.post('/', async (req, res) => {
         price: product.basePrice,
         quantity: it.quantity,
       });
+    }
+
+    // Auto-detect vertical if not passed
+    let resolvedVertical = vertical;
+    if (!resolvedVertical && products.length > 0) {
+      const firstCat = products[0].category;
+      const catV = (firstCat?.vertical || '').toLowerCase();
+      const catN = (firstCat?.name || '').toLowerCase();
+      const prodN = (products[0].name || '').toLowerCase();
+      
+      if (catV.startsWith('quick') || catN.includes('food') || catN.includes('grocery') || catN.includes('biryani') || prodN.includes('biryani') || prodN.includes('pizza') || prodN.includes('sdf') || prodN.includes('thali')) {
+        resolvedVertical = 'quick';
+      } else if (catV.startsWith('services') || catN.includes('repair') || catN.includes('service') || catN.includes('cleaning') || prodN.includes('ac') || prodN.includes('cleaning') || prodN.includes('towing')) {
+        resolvedVertical = 'services';
+      } else {
+        resolvedVertical = 'shop';
+      }
     }
 
     const customerId = resolveCustomerId(req) || (await getGuestCustomer()).id;
@@ -171,7 +217,7 @@ router.post('/', async (req, res) => {
         customerId,
         vendorId: resolved.length ? resolved[0].vendorId : null,
         branchId,
-        type: mapType(vertical),
+        type: mapType(resolvedVertical),
         status: 'placed',
         subtotal,
         discount,
@@ -219,6 +265,27 @@ router.post('/', async (req, res) => {
         }
       })
     );
+
+    // Save notification to PostgreSQL for the customer
+    if (customerId) {
+      const isQuick = order.type === 'quick_commerce';
+      const isService = order.type === 'hvac_service';
+      await prisma.userNotification.create({
+        data: {
+          userId: customerId,
+          category: 'order',
+          title: isQuick ? 'Arriving in 10-15 mins! ⚡' : isService ? 'Service Booked Successfully 🛠️' : 'Order Placed Successfully! 🎉',
+          message: isQuick 
+            ? `Your 10-Min order #${order.orderNumber} is placed and being packed at the dark store.`
+            : isService 
+            ? `Your service appointment #${order.orderNumber} has been booked. Technician will arrive at scheduled time.`
+            : `Your E-Commerce order #${order.orderNumber} is confirmed! Estimated delivery in 2-4 business days.`,
+          channel: 'in_app',
+          isRead: false,
+          link: `/orders/${order.id}`,
+        }
+      }).catch(err => console.error('Failed to create order placement notification', err));
+    }
 
     res.status(201).json({
       id: order.id,

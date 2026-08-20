@@ -95,7 +95,20 @@ export const CustomerProvider: React.FC<{ children: React.ReactNode }> = ({ chil
   const [paymentMethods, setPaymentMethods] = useState<PaymentMethod[]>(seedPayments().methods);
   const [transactions] = usePersistent<Transaction[]>('transactions', seedPayments().transactions);
   const [rewards] = usePersistent<Reward[]>('rewards', seedRewards());
-  const [notifications, setNotifications] = useState<DashboardNotification[]>(seedNotifications());
+  const [notifications, setNotifications] = useState<DashboardNotification[]>(() => {
+    try {
+      const saved = localStorage.getItem('shopindia_customer_notifications');
+      return saved ? JSON.parse(saved) : seedNotifications();
+    } catch {
+      return seedNotifications();
+    }
+  });
+
+  useEffect(() => {
+    try {
+      localStorage.setItem('shopindia_customer_notifications', JSON.stringify(notifications));
+    } catch {}
+  }, [notifications]);
   const [reviews, setReviews] = useState<Review[]>(seedReviews());
   const [coupons] = usePersistent<Coupon[]>('coupons', seedCoupons());
   const [wishlist, setWishlist] = useState<string[]>([]);

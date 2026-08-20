@@ -1,298 +1,474 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useMemo } from 'react';
 import { useApp } from '../../context/AppContext';
 import { useProducts } from '../../hooks/useProducts';
 import { useCategories } from '../../hooks/useCategories';
-import { Plus, Minus, Clock, ShoppingCart, ArrowRight, Heart, LayoutGrid } from 'lucide-react';
-import { motion, AnimatePresence } from 'framer-motion';
-import { api } from '../../lib/api';
+import {
+  Plus, Minus, Clock, ShoppingCart, ArrowRight, Heart, LayoutGrid,
+  Zap, UtensilsCrossed, Pill, Sparkles, UploadCloud, ShieldCheck
+} from 'lucide-react';
+import { motion } from 'framer-motion';
+import type { Product } from '../../data/types';
+import { FoodCustomizationModal } from '../common/FoodCustomizationModal';
+import { PrescriptionUploadModal } from '../common/PrescriptionUploadModal';
+
+type QuickSubVertical = 'grocery' | 'food' | 'pharmacy';
+
+const SUB_VERTICAL_TABS = [
+  {
+    id: 'grocery' as QuickSubVertical,
+    label: 'Instant Grocery',
+    tagline: '10-20 Min Delivery from Dark Store',
+    icon: Zap,
+    color: 'from-emerald-500 to-teal-600',
+    activeBg: 'bg-emerald-600 text-white',
+    badge: '10 MINS',
+  },
+  {
+    id: 'food' as QuickSubVertical,
+    label: 'Food Delivery',
+    tagline: 'Hot & Fresh Meals from Top Kitchens',
+    icon: UtensilsCrossed,
+    color: 'from-orange-500 to-amber-600',
+    activeBg: 'bg-orange-600 text-white',
+    badge: 'LIVE KITCHENS',
+  },
+  {
+    id: 'pharmacy' as QuickSubVertical,
+    label: 'Pharmacy Medicines',
+    tagline: 'Rx Medicines & Health Essentials',
+    icon: Pill,
+    color: 'from-blue-600 to-cyan-600',
+    activeBg: 'bg-blue-600 text-white',
+    badge: 'CERTIFIED PHARMA',
+  },
+];
+
+const QUICK_CATEGORIES_FALLBACK: Record<QuickSubVertical, string[]> = {
+  grocery: ['All Items', 'Fruits & Veggies', 'Dairy, Bread & Eggs', 'Snacks & Munchies', 'Cold Drinks & Juices', 'Personal Care'],
+  food: ['All Food', 'Biryani & Rice', 'Pizza & Fast Food', 'Thalis & Curries', 'Healthy & Bowls', 'Desserts & Shakes'],
+  pharmacy: ['All Medicines', 'Fever & Pain Relief', 'Cough & Cold', 'Vitamins & Immunity', 'First Aid & Care', 'Diabetes Care', 'Ayurveda'],
+};
 
 export const VerticalQuickCommerce: React.FC = () => {
   const { cart, addToCart, updateQuantity, navigateTo } = useApp();
   const { products } = useProducts();
-  const { categories } = useCategories();
+  const { categories: apiCategories } = useCategories();
+
+  const [activeSubVertical, setActiveSubVertical] = useState<QuickSubVertical>('grocery');
   const [selectedCatId, setSelectedCatId] = useState<string>('');
   const [wishlist, setWishlist] = useState<Record<string, boolean>>({});
-  const [currentSlide, setCurrentSlide] = useState(0);
-  const [isHoveringCarousel, setIsHoveringCarousel] = useState(false);
-  const [banners, setBanners] = useState<any[]>([]);
 
-  useEffect(() => {
-    api.get<{ banners: any[] }>('/api/banners')
-      .then(d => setBanners(d.banners.filter((b: any) => b.vertical === 'quick')))
-      .catch(console.error);
-  }, []);
+  // Modals state
+  const [customizingProduct, setCustomizingProduct] = useState<Product | null>(null);
+  const [rxModalOpen, setRxModalOpen] = useState(false);
+  const [selectedRxProduct, setSelectedRxProduct] = useState<Product | null>(null);
 
-  useEffect(() => {
-    if (isHoveringCarousel || banners.length === 0) return;
-    const timer = setInterval(() => {
-      setCurrentSlide(prev => (prev + 1) % banners.length);
-    }, 6000);
-    return () => clearInterval(timer);
-  }, [isHoveringCarousel, banners.length]);
+  // Reset category filter on sub-vertical change
+  const handleSubVerticalChange = (sub: QuickSubVertical) => {
+    setActiveSubVertical(sub);
+    setSelectedCatId('');
+  };
 
-  // Filter 10-Min quick commerce items
-  const quickProducts = products.filter(p => p.vertical === 'quick');
-  const quickCategories = categories.filter(c => c.vertical === 'quick');
-  
-  const activeProducts = selectedCatId === '' ? quickProducts : quickProducts.filter(p => p.category === selectedCatId);
+  // Filter products by vertical and active sub-vertical
+  const quickProducts = products.filter((p) => {
+    if (p.vertical !== 'quick') return false;
+    if (p.subVertical) return p.subVertical === activeSubVertical;
 
-  // Cart matching helper
+    // Fallback classification based on category or title
+    const text = `${p.category || ''} ${p.title || ''} ${p.description || ''}`.toLowerCase();
+    if (activeSubVertical === 'pharmacy') {
+      return text.includes('pharma') || text.includes('medicine') || text.includes('tablet') || text.includes('capsule') || text.includes('syrup') || text.includes('first aid');
+    }
+    if (activeSubVertical === 'food') {
+      return text.includes('food') || text.includes('biryani') || text.includes('pizza') || text.includes('burger') || text.includes('meal') || text.includes('paneer') || text.includes('kitchen') || text.includes('roll');
+    }
+    return !text.includes('pharma') && !text.includes('medicine') && !text.includes('biryani') && !text.includes('pizza') && !text.includes('burger');
+  });
+
+  const activeProducts = selectedCatId === '' || selectedCatId === 'All Items' || selectedCatId === 'All Food' || selectedCatId === 'All Medicines'
+    ? quickProducts
+    : quickProducts.filter((p) => p.category === selectedCatId || (p.tags && p.tags.includes(selectedCatId)));
+
   const getCartQty = (id: string) => {
-    const item = cart.find(i => i.product.id === id);
+    const item = cart.find((i) => i.product.id === id);
     return item ? item.quantity : 0;
   };
 
   const toggleWishlist = (productId: string, e: React.MouseEvent) => {
     e.stopPropagation();
-    setWishlist(prev => ({ ...prev, [productId]: !prev[productId] }));
+    setWishlist((prev) => ({ ...prev, [productId]: !prev[productId] }));
   };
 
-  const activeCartItems = cart.filter(i => i.product.vertical === 'quick');
+  const handleAddToCartWithCustomization = (product: Product, e: React.MouseEvent) => {
+    e.stopPropagation();
+    if (activeSubVertical === 'food') {
+      setCustomizingProduct(product);
+    } else if (activeSubVertical === 'pharmacy' && product.requiresPrescription) {
+      setSelectedRxProduct(product);
+      setRxModalOpen(true);
+    } else {
+      addToCart(product);
+    }
+  };
+
+  const activeCartItems = cart.filter((i) => i.product.vertical === 'quick');
   const activeCartCount = activeCartItems.reduce((acc, i) => acc + i.quantity, 0);
   const activeCartTotal = activeCartItems.reduce((acc, i) => acc + i.product.price * i.quantity, 0);
 
+  // Dynamically derive live category aisles from Admin API + Products
+  const subCategories = useMemo(() => {
+    const fromApi = apiCategories
+      .filter((c) => {
+        if (c.isActive === false) return false;
+        const v = (c.vertical || '').toLowerCase();
+        if (activeSubVertical === 'grocery') return v === 'quick_grocery' || v === 'quick';
+        if (activeSubVertical === 'food') return v === 'quick_food';
+        if (activeSubVertical === 'pharmacy') return v === 'quick_pharmacy';
+        return v === 'quick';
+      })
+      .map((c) => c.name);
+
+    const fromProds = quickProducts.map((p) => p.category).filter(Boolean);
+    const fallback = QUICK_CATEGORIES_FALLBACK[activeSubVertical] || [];
+    const defaultLabel = activeSubVertical === 'food' ? 'All Food' : activeSubVertical === 'pharmacy' ? 'All Medicines' : 'All Items';
+
+    const merged = Array.from(new Set([...fromApi, ...fromProds, ...fallback.slice(1)]));
+    return [defaultLabel, ...merged];
+  }, [apiCategories, activeSubVertical, quickProducts]);
+
   return (
     <div className="w-full flex flex-col min-h-screen bg-brand-bg text-brand-graphite relative select-none font-sans">
-      {/* Hero Banner Carousel */}
-      <div className="max-w-[1440px] mx-auto w-full px-8 pt-8">
-        <div 
-          className="w-full h-[260px] md:h-[320px] lg:h-[380px] rounded-hero overflow-hidden shadow-premium relative bg-zinc-950 group"
-          onMouseEnter={() => setIsHoveringCarousel(true)}
-          onMouseLeave={() => setIsHoveringCarousel(false)}
-        >
-          {banners.length > 0 ? (
-            <AnimatePresence mode="wait">
-              <motion.div
-                key={currentSlide}
-                initial={{ opacity: 0 }}
-                animate={{ opacity: 1 }}
-                exit={{ opacity: 0 }}
-                transition={{ duration: 0.8, ease: [0.16, 1, 0.3, 1] }}
-                className="absolute inset-0 w-full h-full"
-              >
-                {/* Main Image */}
-                <img
-                  src={banners[currentSlide]?.image}
-                  alt={banners[currentSlide]?.title}
-                  className="absolute inset-0 w-full h-full object-cover object-center select-none"
-                />
-                
-                <div className="absolute inset-y-0 left-0 pl-10 md:pl-20 flex flex-col justify-center max-w-xl z-10 text-left text-white select-none drop-shadow-md">
-                  <motion.span
-                    initial={{ opacity: 0, y: 10 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    transition={{ delay: 0.2, duration: 0.5 }}
-                    className="bg-brand-green/90 text-xs font-bold uppercase px-3 py-1 rounded-sm w-max tracking-widest mb-5 shadow-soft"
-                  >
-                    10-Min Delivery
-                  </motion.span>
-                  <motion.h2
-                    initial={{ opacity: 0, y: 15 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    transition={{ delay: 0.3, duration: 0.6 }}
-                    className="text-4xl font-bold tracking-tight mb-3 font-heading leading-tight drop-shadow-[0_2px_8px_rgba(0,0,0,0.4)]"
-                  >
-                    {banners[currentSlide]?.title}
-                  </motion.h2>
-                  <motion.p
-                    initial={{ opacity: 0, y: 15 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    transition={{ delay: 0.4, duration: 0.6 }}
-                    className="text-sm font-medium text-zinc-100 mb-8 leading-relaxed max-w-md drop-shadow-md"
-                  >
-                    {banners[currentSlide]?.subtitle}
-                  </motion.p>
-                  
-                  <motion.button
-                    initial={{ opacity: 0, scale: 0.95 }}
-                    animate={{ opacity: 1, scale: 1 }}
-                    transition={{ delay: 0.5, duration: 0.4 }}
-                    whileHover={{ scale: 1.02 }}
-                    whileTap={{ scale: 0.98 }}
-                    onClick={() => navigateTo('search')}
-                    className="group px-8 py-3.5 bg-white text-zinc-950 rounded-full font-bold text-xs tracking-wider shadow-[0_8px_20px_rgba(0,0,0,0.3)] hover:shadow-[0_8px_25px_rgba(255,255,255,0.2)] hover:bg-zinc-50 transition-all w-max uppercase flex items-center gap-2.5"
-                  >
-                    <span>Shop Collection</span>
-                    <span className="text-brand-green group-hover:translate-x-1 transition-transform">→</span>
-                  </motion.button>
-                </div>
-              </motion.div>
-            </AnimatePresence>
-          ) : (
-            <div className="absolute inset-0 flex items-center justify-center text-zinc-500 text-sm bg-[#FAF9F6]">Loading promotions...</div>
-          )}
-        </div>
-      </div>
-
-      <div className="max-w-[1440px] mx-auto w-full px-8 py-8 flex gap-6">
-        {/* Left Column: Vertical Category Navigation Menu (Stripe/Blinkit style) */}
-        <aside className="w-full max-w-[240px] flex flex-col bg-white border border-brand-border rounded-card shadow-premium shrink-0 h-fit sticky top-[130px]">
-          <span className="p-4 border-b border-brand-border font-extrabold text-xs uppercase tracking-wider text-brand-green font-heading">
-            Categories
-          </span>
-          <div className="flex flex-col py-2">
-            <button
-              onClick={() => setSelectedCatId('')}
-              className={`flex items-center gap-3.5 px-5 py-3.5 text-left transition-all border-l-4 font-bold text-xs ${
-                selectedCatId === '' 
-                ? 'bg-green-50/20 text-brand-green border-brand-green font-extrabold' 
-                : 'border-transparent hover:bg-slate-50/50 text-brand-slate hover:text-brand-graphite'
-              }`}
-            >
-              <div className="w-16 h-16 rounded-full bg-brand-green/10 border border-brand-green/20 overflow-hidden shrink-0 flex items-center justify-center p-1.5">
-                <LayoutGrid size={24} className="text-brand-green" />
-              </div>
-              <span className="font-heading text-sm font-extrabold">All Categories</span>
-            </button>
-            {quickCategories.map(cat => (
-              <button
-                key={cat.id}
-                onClick={() => setSelectedCatId(cat.id)}
-                className={`flex items-center gap-3.5 px-5 py-3.5 text-left transition-all border-l-4 font-bold text-xs ${
-                  selectedCatId === cat.id
-                    ? 'bg-green-50/20 text-brand-green border-brand-green font-extrabold'
-                    : 'border-transparent hover:bg-slate-50/50 text-brand-slate hover:text-brand-graphite'
-                }`}
-              >
-                <div className="w-16 h-16 rounded-full bg-slate-50 overflow-hidden shrink-0 flex items-center justify-center border border-brand-border">
-                  <img src={cat.image || undefined} alt={cat.name} className="w-full h-full object-cover" />
-                </div>
-                <span className="font-heading text-sm font-extrabold">{cat.name}</span>
-              </button>
-            ))}
-          </div>
-        </aside>
-
-        {/* Right Column: Grid and Products */}
-        <main className="flex-1 flex flex-col gap-6 text-left">
-          {/* Active Category Header */}
-          <div className="flex items-center justify-between border-b border-brand-border pb-3.5">
-            <h2 className="text-base font-extrabold text-brand-graphite flex items-center gap-2.5 font-heading uppercase tracking-wide">
-              <span>{quickCategories.find(c => c.id === selectedCatId)?.name}</span>
-              <span className="text-xs text-brand-slate font-bold font-numbers">({activeProducts.length} items)</span>
-            </h2>
-            <div className="flex items-center gap-1.5 text-xs text-brand-green bg-[#ECFDF5] px-4 py-1.5 rounded-full font-black border border-brand-green/10 shadow-soft">
-              <Clock size={13} />
-              <span>10 Min Delivery</span>
-            </div>
-          </div>
-
-          {/* Product Grid with design system cards (20px curves) */}
-          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4">
-            {activeProducts.map(product => {
-              const qty = getCartQty(product.id);
-              const discount = Math.round(((product.originalPrice - product.price) / product.originalPrice) * 100);
-              const isWishlisted = wishlist[product.id];
-
+      {/* 1. Sub-Vertical Segmented Switcher */}
+      <div className="max-w-[1440px] mx-auto w-full px-8 pt-6">
+        <div className="bg-white/80 backdrop-blur-md p-2 rounded-3xl border border-slate-200/80 shadow-sm flex flex-col md:flex-row items-center justify-between gap-3">
+          <div className="flex items-center gap-2 w-full md:w-auto overflow-x-auto pb-1 md:pb-0">
+            {SUB_VERTICAL_TABS.map((tab) => {
+              const Icon = tab.icon;
+              const isActive = activeSubVertical === tab.id;
               return (
-                <div
-                  key={product.id}
-                  className="bg-white border border-brand-border/60 rounded-card p-3.5 flex flex-col relative hover:shadow-md hover:border-brand-green/40 hover:-translate-y-1 transition-all duration-350 group h-full cursor-pointer"
-                  onClick={() => navigateTo('detail', product.id)}
+                <button
+                  key={tab.id}
+                  onClick={() => handleSubVerticalChange(tab.id)}
+                  className={`flex items-center gap-2.5 px-5 py-3 rounded-2xl font-extrabold text-xs transition-all whitespace-nowrap ${
+                    isActive
+                      ? `${tab.activeBg} shadow-lg shadow-black/10 scale-[1.02]`
+                      : 'text-slate-600 hover:text-slate-900 hover:bg-slate-100/80'
+                  }`}
                 >
-                  {/* Wishlist Button */}
-                  <motion.button
-                    whileTap={{ scale: 0.85 }}
-                    onClick={(e) => toggleWishlist(product.id, e)}
-                    className="absolute top-3 right-3 p-1.5 rounded-full bg-white/90 hover:bg-white text-zinc-400 hover:text-brand-red shadow-soft border border-brand-border/40 transition-colors z-10"
+                  <Icon className={`w-4 h-4 ${isActive ? 'text-white' : 'text-slate-500'}`} />
+                  <span className="font-heading tracking-wide">{tab.label}</span>
+                  <span
+                    className={`text-[10px] uppercase px-2 py-0.5 rounded-full font-black tracking-wider ${
+                      isActive ? 'bg-white/25 text-white' : 'bg-slate-200/80 text-slate-600'
+                    }`}
                   >
-                    <Heart size={12} className={isWishlisted ? "fill-brand-red text-brand-red" : ""} />
-                  </motion.button>
-
-                  {/* Discount tag overlay */}
-                  {discount > 0 && (
-                    <span className="absolute top-3 left-3 bg-[#ECFDF5] border border-brand-green/10 text-brand-green text-xs font-black px-2 py-0.5 rounded shadow-soft z-10 font-numbers uppercase tracking-wider">
-                      {discount}% OFF
-                    </span>
-                  )}
-
-                  {/* Image container */}
-                  <div className="w-full aspect-square flex items-center justify-center mb-3 bg-white rounded-card overflow-hidden">
-                    <img src={product.image} alt={product.title} className="max-h-full max-w-full object-contain group-hover:scale-105 transition-transform duration-300" />
-                  </div>
-
-                  {/* Time badge */}
-                  <div className="flex items-center gap-1 text-xs text-brand-green font-extrabold bg-[#ECFDF5] border border-brand-green/10 rounded-sm w-max px-2 py-0.5 mb-2.5 shadow-soft leading-none">
-                    <Clock size={10} className="text-brand-green" />
-                    <span>{product.deliveryTime}</span>
-                  </div>
-
-                  {/* Title & info */}
-                  <h3 className="text-xs font-bold text-brand-graphite line-clamp-2 leading-relaxed mb-1 min-h-[36px] group-hover:text-brand-green transition-colors font-heading">
-                    {product.title}
-                  </h3>
-                  <div className="text-xs text-brand-slate font-extrabold mb-3">
-                    {product.specs?.['Weight'] || product.specs?.['Volume'] || 'Pack'}
-                  </div>
-
-                  {/* Price & Add to Cart row */}
-                  <div className="flex items-center justify-between mt-auto font-numbers" onClick={(e) => e.stopPropagation()}>
-                    <div className="flex flex-col leading-none">
-                      <span className="text-sm font-extrabold text-brand-graphite">₹{product.price}</span>
-                      {product.originalPrice > product.price && (
-                        <span className="text-xs text-brand-slate line-through mt-0.5">₹{product.originalPrice}</span>
-                      )}
-                    </div>
-
-                    {qty === 0 ? (
-                      <motion.button
-                        whileTap={{ scale: 0.95 }}
-                        onClick={() => addToCart(product)}
-                        className="px-5 py-1.5 border border-brand-green/20 hover:border-brand-green bg-[#ECFDF5] text-brand-green text-xs font-black rounded-button hover:bg-brand-green/10 transition-colors uppercase tracking-wider shadow-soft select-none"
-                      >
-                        Add
-                      </motion.button>
-                    ) : (
-                      <div className="flex items-center border border-brand-green bg-brand-green text-white rounded-button overflow-hidden text-xs font-bold shadow-soft">
-                        <button
-                          onClick={() => updateQuantity(product.id, qty - 1)}
-                          className="px-2 py-1.5 hover:bg-emerald-700 transition-colors"
-                          aria-label="Decrease quantity"
-                        >
-                          <Minus size={11} strokeWidth={3} />
-                        </button>
-                        <span className="px-2.5 min-w-full max-w-[20px] text-center select-none">{qty}</span>
-                        <button
-                          onClick={() => updateQuantity(product.id, qty + 1)}
-                          className="px-2 py-1.5 hover:bg-emerald-700 transition-colors"
-                          aria-label="Increase quantity"
-                        >
-                          <Plus size={11} strokeWidth={3} />
-                        </button>
-                      </div>
-                    )}
-                  </div>
-                </div>
+                    {tab.badge}
+                  </span>
+                </button>
               );
             })}
           </div>
+
+          <div className="text-xs font-semibold text-slate-500 px-3 hidden lg:flex items-center gap-2">
+            <Sparkles className="w-3.5 h-3.5 text-amber-500 animate-pulse" />
+            <span>
+              {SUB_VERTICAL_TABS.find((t) => t.id === activeSubVertical)?.tagline}
+            </span>
+          </div>
+        </div>
+      </div>
+
+      {/* 2. Sub-Vertical Hero Banner Strip */}
+      <div className="max-w-[1440px] mx-auto w-full px-8 pt-5">
+        <div
+          className={`w-full p-6 md:p-8 rounded-hero overflow-hidden shadow-premium relative text-white bg-gradient-to-r ${
+            activeSubVertical === 'grocery'
+              ? 'from-emerald-700 via-teal-800 to-emerald-950'
+              : activeSubVertical === 'food'
+              ? 'from-orange-600 via-amber-700 to-orange-950'
+              : 'from-blue-700 via-indigo-800 to-slate-950'
+          }`}
+        >
+          <div className="relative z-10 max-w-2xl space-y-2">
+            <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-black uppercase tracking-wider bg-white/20 backdrop-blur-md">
+              <Clock className="w-3.5 h-3.5" />
+              {activeSubVertical === 'grocery' && 'Delivered in 10-15 Mins'}
+              {activeSubVertical === 'food' && 'Hot & Fresh In 25-35 Mins'}
+              {activeSubVertical === 'pharmacy' && 'Verified Pharmacy Dispatch in 20 Mins'}
+            </span>
+            <h2 className="text-2xl md:text-3xl font-black font-heading tracking-tight">
+              {activeSubVertical === 'grocery' && 'Fresh Groceries, Snacks & Daily Essentials'}
+              {activeSubVertical === 'food' && 'Order Food Online from Verified Kitchens'}
+              {activeSubVertical === 'pharmacy' && '100% Genuine Medicines & Health Wellness'}
+            </h2>
+            <p className="text-xs md:text-sm text-white/80 font-medium">
+              {activeSubVertical === 'grocery' && 'Dark-store stocked with fresh fruits, farm dairy, and top FMCG brands.'}
+              {activeSubVertical === 'food' && 'Live preparation tracking with food safety hygiene guarantee.'}
+              {activeSubVertical === 'pharmacy' && 'Upload doctor prescription for quick doorstep medicine delivery.'}
+            </p>
+
+            {activeSubVertical === 'pharmacy' && (
+              <div className="pt-2 flex items-center gap-3">
+                <button
+                  onClick={() => {
+                    setSelectedRxProduct(null);
+                    setRxModalOpen(true);
+                  }}
+                  className="px-5 py-2.5 bg-white text-blue-800 font-extrabold text-xs rounded-xl shadow-lg hover:bg-blue-50 transition-all flex items-center gap-2"
+                >
+                  <UploadCloud className="w-4 h-4 text-blue-600" />
+                  Upload Prescription (Rx)
+                </button>
+                <span className="text-xs text-white/80 flex items-center gap-1">
+                  <ShieldCheck className="w-4 h-4 text-emerald-400" /> Pharmacist Checked
+                </span>
+              </div>
+            )}
+          </div>
+        </div>
+      </div>
+
+      {/* 3. Main Catalog Area (Aisles & Product Grid) */}
+      <div className="max-w-[1440px] mx-auto w-full px-8 py-8 flex flex-col md:flex-row gap-8 items-start">
+        {/* Left Category Sidebar */}
+        <aside className="w-full md:w-64 shrink-0 flex flex-col gap-2 sticky top-28 bg-white p-4 rounded-card border border-slate-200/80 shadow-soft">
+          <div className="flex items-center gap-2 pb-3 mb-1 border-b border-slate-100 text-xs font-black uppercase tracking-wider text-slate-400 font-heading">
+            <LayoutGrid size={14} className="text-brand-slate" />
+            <span>Category Aisles</span>
+          </div>
+
+          <div className="flex flex-row md:flex-col gap-1.5 overflow-x-auto md:overflow-visible pb-2 md:pb-0">
+            {subCategories.map((catName) => {
+              const isSelected = selectedCatId === catName || (selectedCatId === '' && catName.startsWith('All'));
+              return (
+                <button
+                  key={catName}
+                  onClick={() => setSelectedCatId(catName.startsWith('All') ? '' : catName)}
+                  className={`flex items-center justify-between px-3.5 py-2.5 rounded-xl text-xs font-bold transition-all text-left whitespace-nowrap ${
+                    isSelected
+                      ? activeSubVertical === 'grocery'
+                        ? 'bg-emerald-50 text-emerald-800 border-l-4 border-emerald-600'
+                        : activeSubVertical === 'food'
+                        ? 'bg-orange-50 text-orange-800 border-l-4 border-orange-600'
+                        : 'bg-blue-50 text-blue-800 border-l-4 border-blue-600'
+                      : 'text-slate-600 hover:bg-slate-50 hover:text-slate-900'
+                  }`}
+                >
+                  <span>{catName}</span>
+                </button>
+              );
+            })}
+          </div>
+        </aside>
+
+        {/* Right Products Grid */}
+        <main className="flex-1 w-full min-w-0">
+          <div className="flex items-center justify-between mb-4">
+            <h3 className="font-heading font-black text-lg text-slate-800 flex items-center gap-2">
+              <span>{selectedCatId || subCategories[0]}</span>
+              <span className="text-xs font-semibold text-slate-400 bg-slate-100 px-2 py-0.5 rounded-full">
+                {activeProducts.length} items
+              </span>
+            </h3>
+          </div>
+
+          {activeProducts.length === 0 ? (
+            <div className="w-full py-16 text-center bg-white rounded-3xl border border-slate-200/80 p-8 space-y-3">
+              <div className="w-16 h-16 rounded-full bg-slate-100 text-slate-400 flex items-center justify-center mx-auto">
+                <LayoutGrid className="w-8 h-8" />
+              </div>
+              <h4 className="font-bold text-slate-700">No products found in this aisle</h4>
+              <p className="text-xs text-slate-500 max-w-sm mx-auto">
+                Try picking another category from the left aisle or switch between Grocery, Food, and Pharmacy above.
+              </p>
+            </div>
+          ) : (
+            <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4">
+              {activeProducts.map((product) => {
+                const qty = getCartQty(product.id);
+                const discount = product.originalPrice > product.price
+                  ? Math.round(((product.originalPrice - product.price) / product.originalPrice) * 100)
+                  : 0;
+
+                return (
+                  <motion.div
+                    key={product.id}
+                    layout
+                    initial={{ opacity: 0, y: 10 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    className="group bg-white rounded-card p-3.5 border border-slate-200/80 hover:border-slate-300 shadow-soft hover:shadow-premium transition-all duration-300 flex flex-col justify-between relative cursor-pointer"
+                    onClick={() => navigateTo('detail', product.id)}
+                  >
+                    {/* Wishlist Button */}
+                    <button
+                      onClick={(e) => toggleWishlist(product.id, e)}
+                      className="absolute top-3 right-3 p-1.5 rounded-full bg-white/80 backdrop-blur-md text-slate-400 hover:text-red-500 shadow-soft z-10"
+                    >
+                      <Heart size={14} className={wishlist[product.id] ? 'fill-red-500 text-red-500' : ''} />
+                    </button>
+
+                    {/* Discount Badge */}
+                    {discount > 0 && (
+                      <span className="absolute top-3 left-3 bg-red-50 text-red-600 text-[10px] font-black px-2 py-0.5 rounded shadow-sm z-10">
+                        {discount}% OFF
+                      </span>
+                    )}
+
+                    {/* Image Container */}
+                    <div className="w-full aspect-square flex items-center justify-center mb-3 bg-slate-50 rounded-2xl overflow-hidden p-2">
+                      <img
+                        src={product.image || 'https://images.unsplash.com/photo-1546069901-ba9599a7e63c?w=400&auto=format&fit=crop&q=60'}
+                        alt={product.title}
+                        className="max-h-full max-w-full object-contain group-hover:scale-105 transition-transform duration-300"
+                      />
+                    </div>
+
+                    {/* Domain Specific Badges */}
+                    <div className="space-y-1 mb-2">
+                      {activeSubVertical === 'food' && (
+                        <div className="flex items-center gap-1.5">
+                          <span
+                            className={`w-3 h-3 rounded-sm border flex items-center justify-center ${
+                              product.isVeg !== false ? 'border-emerald-600' : 'border-red-600'
+                            }`}
+                          >
+                            <span
+                              className={`w-1.5 h-1.5 rounded-full ${
+                                product.isVeg !== false ? 'bg-emerald-600' : 'bg-red-600'
+                              }`}
+                            />
+                          </span>
+                          <span className="text-[11px] font-bold text-slate-500 truncate">
+                            {product.restaurantName || product.brand || 'Cloud Kitchen'}
+                          </span>
+                        </div>
+                      )}
+
+                      {activeSubVertical === 'pharmacy' && product.requiresPrescription && (
+                        <div className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded bg-blue-50 text-blue-700 text-[10px] font-bold">
+                          <Pill size={10} />
+                          <span>Rx Prescription Required</span>
+                        </div>
+                      )}
+
+                      {/* Delivery Time Badge */}
+                      <div className="flex items-center gap-1 text-[11px] font-extrabold text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded-md w-max">
+                        <Clock size={10} />
+                        <span>{product.deliveryTime || (activeSubVertical === 'grocery' ? '10-15 Mins' : activeSubVertical === 'food' ? '25-30 Mins' : '20 Mins')}</span>
+                      </div>
+                    </div>
+
+                    {/* Title */}
+                    <h4 className="text-xs font-bold text-slate-800 line-clamp-2 leading-relaxed mb-1 min-h-[34px] group-hover:text-brand-green transition-colors">
+                      {product.title}
+                    </h4>
+
+                    {/* Quantity / Unit */}
+                    <div className="text-[11px] text-slate-400 font-semibold mb-3">
+                      {product.specs?.['Weight'] || product.packSize || product.cuisine || 'Standard Pack'}
+                    </div>
+
+                    {/* Price & Action Row */}
+                    <div className="flex items-center justify-between mt-auto pt-2 border-t border-slate-100" onClick={(e) => e.stopPropagation()}>
+                      <div className="flex flex-col leading-none">
+                        <span className="text-sm font-extrabold text-slate-900">₹{product.price}</span>
+                        {product.originalPrice > product.price && (
+                          <span className="text-[10px] text-slate-400 line-through mt-0.5">₹{product.originalPrice}</span>
+                        )}
+                      </div>
+
+                      {activeSubVertical === 'food' ? (
+                        <button
+                          onClick={(e) => handleAddToCartWithCustomization(product, e)}
+                          className="px-3.5 py-1.5 bg-orange-50 hover:bg-orange-100 text-orange-700 border border-orange-200 text-xs font-bold rounded-xl transition-all shadow-sm"
+                        >
+                          Customize +
+                        </button>
+                      ) : qty === 0 ? (
+                        <motion.button
+                          whileTap={{ scale: 0.95 }}
+                          onClick={(e) => handleAddToCartWithCustomization(product, e)}
+                          className={`px-4 py-1.5 text-xs font-black rounded-xl transition-all shadow-sm uppercase tracking-wider ${
+                            activeSubVertical === 'pharmacy'
+                              ? 'bg-blue-50 text-blue-700 hover:bg-blue-100 border border-blue-200'
+                              : 'bg-emerald-50 text-emerald-700 hover:bg-emerald-100 border border-emerald-200'
+                          }`}
+                        >
+                          Add
+                        </motion.button>
+                      ) : (
+                        <div className="flex items-center bg-emerald-600 text-white rounded-xl overflow-hidden text-xs font-bold shadow-sm">
+                          <button
+                            onClick={() => updateQuantity(product.id, qty - 1)}
+                            className="px-2 py-1.5 hover:bg-emerald-700 transition-colors"
+                          >
+                            <Minus size={11} strokeWidth={3} />
+                          </button>
+                          <span className="px-2 text-center select-none">{qty}</span>
+                          <button
+                            onClick={() => updateQuantity(product.id, qty + 1)}
+                            className="px-2 py-1.5 hover:bg-emerald-700 transition-colors"
+                          >
+                            <Plus size={11} strokeWidth={3} />
+                          </button>
+                        </div>
+                      )}
+                    </div>
+                  </motion.div>
+                );
+              })}
+            </div>
+          )}
         </main>
       </div>
 
-      {/* Floating Bottom Cart Bar for Quick Commerce (Blinkit style) */}
+      {/* Floating Bottom Cart Bar */}
       {activeCartCount > 0 && (
-        <div className="fixed bottom-6 left-1/2 -translate-x-1/2 w-full max-w-xl bg-brand-green text-white px-5 py-3 rounded-[20px] shadow-hover-lift flex items-center justify-between z-40 transition-transform duration-300 transform translate-y-0 scale-100 hover:bg-emerald-600">
+        <div className="fixed bottom-6 left-1/2 -translate-x-1/2 w-full max-w-xl bg-slate-900 text-white px-5 py-3 rounded-3xl shadow-2xl flex items-center justify-between z-40 transition-transform duration-300 hover:bg-black border border-white/10">
           <div className="flex items-center gap-3">
-            <div className="p-2 rounded bg-green-800/20 relative">
+            <div className="p-2 rounded-2xl bg-white/10 relative">
               <ShoppingCart size={18} />
-              <span className="absolute -top-1.5 -right-1.5 flex h-4 min-w-4 items-center justify-center rounded-full bg-brand-orange text-xs font-black text-white font-numbers">
+              <span className="absolute -top-1.5 -right-1.5 flex h-4 min-w-4 items-center justify-center rounded-full bg-emerald-500 text-[10px] font-black text-white">
                 {activeCartCount}
               </span>
             </div>
             <div className="flex flex-col leading-tight text-left">
-              <span className="font-extrabold text-sm font-numbers">₹{activeCartTotal.toLocaleString('en-IN')}</span>
-              <span className="text-xs text-green-100 font-extrabold uppercase tracking-widest font-heading">Checkout with Quick Cart</span>
+              <span className="font-extrabold text-sm">₹{activeCartTotal.toLocaleString('en-IN')}</span>
+              <span className="text-[10px] text-slate-300 uppercase tracking-wider font-semibold">
+                Quick Checkout • 10-25 Mins
+              </span>
             </div>
           </div>
           <button
             onClick={() => navigateTo('cart')}
-            className="flex items-center gap-1.5 bg-white text-brand-green px-5 py-2 rounded-button text-xs font-black shadow hover:bg-slate-50 transition-colors uppercase tracking-wider"
+            className="flex items-center gap-1.5 bg-emerald-500 hover:bg-emerald-400 text-slate-950 px-5 py-2 rounded-2xl text-xs font-black shadow-lg transition-colors uppercase tracking-wider cursor-pointer"
           >
-            <span>View Cart</span>
+            <span>Proceed to Pay</span>
             <ArrowRight size={14} />
           </button>
         </div>
       )}
+
+      {/* Sub-Vertical Modals */}
+      <FoodCustomizationModal
+        isOpen={Boolean(customizingProduct)}
+        onClose={() => setCustomizingProduct(null)}
+        product={customizingProduct}
+        onAddToCart={(p) => {
+          addToCart(p);
+        }}
+      />
+
+      <PrescriptionUploadModal
+        isOpen={rxModalOpen}
+        onClose={() => setRxModalOpen(false)}
+        productName={selectedRxProduct?.title}
+        onUploadSuccess={() => {
+          if (selectedRxProduct) {
+            addToCart(selectedRxProduct);
+          }
+        }}
+      />
     </div>
   );
 };

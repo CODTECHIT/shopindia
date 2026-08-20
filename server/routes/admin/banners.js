@@ -16,15 +16,17 @@ router.use(requireRole('super_admin', 'branch_manager'));
 router.post('/upload-image', upload.single('image'), async (req, res) => {
   try {
     if (!req.file) return res.status(400).json({ error: 'No image provided' });
+    const key = `banners/${Date.now()}-${req.file.originalname.replace(/[^a-zA-Z0-9.-]/g, '_')}`;
     const result = await uploadToS3({
-      key: `banners/${Date.now()}-${req.file.originalname}`,
+      key,
       body: req.file.buffer,
       contentType: req.file.mimetype,
       isPrivate: false,
     });
     res.json({ imageUrl: result.url });
   } catch (error) {
-    res.status(500).json({ error: error.message });
+    console.error('S3 upload error:', error);
+    res.status(500).json({ error: error.message || 'S3 upload failed' });
   }
 });
 

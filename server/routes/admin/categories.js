@@ -18,14 +18,18 @@ function slugify(name) {
 router.post('/upload-image', upload.single('image'), async (req, res) => {
   try {
     if (!req.file) return res.status(400).json({ error: 'No image provided' });
+    const key = `categories/${Date.now()}-${req.file.originalname.replace(/[^a-zA-Z0-9.-]/g, '_')}`;
     const result = await uploadToS3({
-      key: `categories/${Date.now()}-${req.file.originalname}`,
+      key,
       body: req.file.buffer,
       contentType: req.file.mimetype,
       isPrivate: false,
     });
     res.json({ imageUrl: result.url });
-  } catch (e) { res.status(500).json({ error: e.message }); }
+  } catch (e) {
+    console.error('S3 upload error:', e);
+    res.status(500).json({ error: e.message || 'S3 upload failed' });
+  }
 });
 
 // GET /api/admin/categories — list with product counts

@@ -69,7 +69,7 @@ router.post('/', async (req, res) => {
 router.post('/upload-image', upload.single('image'), async (req, res) => {
   try {
     if (!req.file) return res.status(400).json({ error: 'No image file provided.' });
-    const key = `products/${req.user.vendorId}/${Date.now()}-${req.file.originalname}`;
+    const key = `products/${req.user.vendorId}/${Date.now()}-${req.file.originalname.replace(/[^a-zA-Z0-9.-]/g, '_')}`;
     const result = await uploadToS3({
       key,
       body: req.file.buffer,
@@ -77,7 +77,10 @@ router.post('/upload-image', upload.single('image'), async (req, res) => {
       isPrivate: false,
     });
     res.json({ url: result.url, key });
-  } catch (err) { res.status(500).json({ error: err.message }); }
+  } catch (err) {
+    console.error('S3 upload error:', err);
+    res.status(500).json({ error: err.message || 'S3 upload failed' });
+  }
 });
 
 /** PUT /api/vendor/products/:id */

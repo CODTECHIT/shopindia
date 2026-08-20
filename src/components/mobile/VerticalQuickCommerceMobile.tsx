@@ -1,232 +1,313 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useMemo } from 'react';
 import { useApp } from '../../context/AppContext';
 import { useProducts } from '../../hooks/useProducts';
 import { useCategories } from '../../hooks/useCategories';
-import { Plus, Minus, ShoppingBag, Clock, ArrowRight, Heart, LayoutGrid } from 'lucide-react';
-import { motion, AnimatePresence } from 'framer-motion';
-import { api } from '../../lib/api';
+import {
+  Plus, Minus, ShoppingBag, Clock, ArrowRight, Heart,
+  Zap, UtensilsCrossed, Pill, ShieldCheck
+} from 'lucide-react';
+import type { Product } from '../../data/types';
+import { FoodCustomizationModal } from '../common/FoodCustomizationModal';
+import { PrescriptionUploadModal } from '../common/PrescriptionUploadModal';
+
+type QuickSubVertical = 'grocery' | 'food' | 'pharmacy';
+
+const MOBILE_SUB_TABS = [
+  { id: 'grocery' as QuickSubVertical, label: 'Instant', icon: Zap, color: 'bg-emerald-600' },
+  { id: 'food' as QuickSubVertical, label: 'Food', icon: UtensilsCrossed, color: 'bg-orange-600' },
+  { id: 'pharmacy' as QuickSubVertical, label: 'Pharma', icon: Pill, color: 'bg-blue-600' },
+];
+
+const QUICK_CATEGORIES_FALLBACK: Record<QuickSubVertical, string[]> = {
+  grocery: ['All', 'Fruits & Veggies', 'Dairy, Bread & Eggs', 'Snacks & Munchies', 'Cold Drinks & Juices', 'Personal Care'],
+  food: ['All', 'Biryani & Rice', 'Pizza & Fast Food', 'Thalis & Curries', 'Healthy & Bowls', 'Desserts & Shakes'],
+  pharmacy: ['All', 'Fever & Pain Relief', 'Cough & Cold', 'Vitamins & Immunity', 'First Aid & Care', 'Diabetes Care', 'Ayurveda'],
+};
 
 export const VerticalQuickCommerceMobile: React.FC = () => {
   const { cart, addToCart, updateQuantity, navigateTo } = useApp();
   const { products } = useProducts();
-  const { categories } = useCategories();
+  const { categories: apiCategories } = useCategories();
+
+  const [activeSubVertical, setActiveSubVertical] = useState<QuickSubVertical>('grocery');
   const [activeCat, setActiveCat] = useState('');
   const [wishlist, setWishlist] = useState<Record<string, boolean>>({});
-  const [currentSlide, setCurrentSlide] = useState(0);
-  const [banners, setBanners] = useState<any[]>([]);
 
-  useEffect(() => {
-    api.get<{ banners: any[] }>('/api/banners')
-      .then(d => setBanners(d.banners.filter((b: any) => b.vertical === 'quick')))
-      .catch(console.error);
-  }, []);
+  // Modals state
+  const [customizingProduct, setCustomizingProduct] = useState<Product | null>(null);
+  const [rxModalOpen, setRxModalOpen] = useState(false);
+  const [selectedRxProduct, setSelectedRxProduct] = useState<Product | null>(null);
 
-  useEffect(() => {
-    if (banners.length === 0) return;
-    const timer = setInterval(() => {
-      setCurrentSlide(prev => (prev + 1) % banners.length);
-    }, 5000);
-    return () => clearInterval(timer);
-  }, [banners.length]);
+  const handleSubVerticalChange = (sub: QuickSubVertical) => {
+    setActiveSubVertical(sub);
+    setActiveCat('');
+  };
 
-  const quickProducts = products.filter(p => p.vertical === 'quick');
-  const quickCategories = categories.filter(c => c.vertical === 'quick');
-  const currentProducts = !activeCat 
-    ? quickProducts 
-    : quickProducts.filter(p => p.category === activeCat);
+  const quickProducts = products.filter((p) => {
+    if (p.vertical !== 'quick') return false;
+    if (p.subVertical) return p.subVertical === activeSubVertical;
+
+    const text = `${p.category || ''} ${p.title || ''} ${p.description || ''}`.toLowerCase();
+    if (activeSubVertical === 'pharmacy') {
+      return text.includes('pharma') || text.includes('medicine') || text.includes('tablet') || text.includes('capsule') || text.includes('syrup') || text.includes('first aid');
+    }
+    if (activeSubVertical === 'food') {
+      return text.includes('food') || text.includes('biryani') || text.includes('pizza') || text.includes('burger') || text.includes('meal') || text.includes('paneer') || text.includes('kitchen') || text.includes('roll');
+    }
+    return !text.includes('pharma') && !text.includes('medicine') && !text.includes('biryani') && !text.includes('pizza') && !text.includes('burger');
+  });
+
+  const currentProducts = !activeCat || activeCat === 'All'
+    ? quickProducts
+    : quickProducts.filter((p) => p.category === activeCat || (p.tags && p.tags.includes(activeCat)));
 
   const getCartQty = (id: string) => {
-    const item = cart.find(i => i.product.id === id);
+    const item = cart.find((i) => i.product.id === id);
     return item ? item.quantity : 0;
   };
 
   const toggleWishlist = (productId: string, e: React.MouseEvent) => {
     e.stopPropagation();
-    setWishlist(prev => ({ ...prev, [productId]: !prev[productId] }));
+    setWishlist((prev) => ({ ...prev, [productId]: !prev[productId] }));
   };
 
-  const activeCartItems = cart.filter(i => i.product.vertical === 'quick');
+  const handleAddToCartWithCustomization = (product: Product, e: React.MouseEvent) => {
+    e.stopPropagation();
+    if (activeSubVertical === 'food') {
+      setCustomizingProduct(product);
+    } else if (activeSubVertical === 'pharmacy' && product.requiresPrescription) {
+      setSelectedRxProduct(product);
+      setRxModalOpen(true);
+    } else {
+      addToCart(product);
+    }
+  };
+
+  const activeCartItems = cart.filter((i) => i.product.vertical === 'quick');
   const activeCartCount = activeCartItems.reduce((acc, i) => acc + i.quantity, 0);
   const activeCartTotal = activeCartItems.reduce((acc, i) => acc + i.product.price * i.quantity, 0);
 
+  // Dynamic live categories from database
+  const subCategories = useMemo(() => {
+    const fromApi = apiCategories
+      .filter((c) => {
+        if (c.isActive === false) return false;
+        const v = (c.vertical || '').toLowerCase();
+        if (activeSubVertical === 'grocery') return v === 'quick_grocery' || v === 'quick';
+        if (activeSubVertical === 'food') return v === 'quick_food';
+        if (activeSubVertical === 'pharmacy') return v === 'quick_pharmacy';
+        return v === 'quick';
+      })
+      .map((c) => c.name);
+
+    const fromProds = quickProducts.map((p) => p.category).filter(Boolean);
+    const fallback = QUICK_CATEGORIES_FALLBACK[activeSubVertical] || [];
+
+    const merged = Array.from(new Set([...fromApi, ...fromProds, ...fallback.slice(1)]));
+    return ['All', ...merged];
+  }, [apiCategories, activeSubVertical, quickProducts]);
+
   return (
-    <div className="w-full flex flex-col gap-3 py-3.5 px-3 bg-[#FAF9F6] min-h-screen text-brand-graphite font-sans pb-28">
-      {/* 10 Min Header Strip */}
-      <div className="w-full py-2 px-3.5 rounded-[16px] bg-[#ECFDF5] text-brand-green flex justify-between items-center text-xs font-bold border border-brand-green/10 font-heading">
+    <div className="w-full flex flex-col gap-3 py-3 px-3 bg-[#FAF9F6] min-h-screen text-slate-800 font-sans pb-32">
+      {/* 1. Mobile Sub-Vertical Pill Switcher */}
+      <div className="flex items-center gap-1.5 p-1 bg-white rounded-2xl border border-slate-200/80 shadow-sm">
+        {MOBILE_SUB_TABS.map((tab) => {
+          const Icon = tab.icon;
+          const isActive = activeSubVertical === tab.id;
+          return (
+            <button
+              key={tab.id}
+              onClick={() => handleSubVerticalChange(tab.id)}
+              className={`flex-1 py-2 px-2 rounded-xl text-xs font-black flex items-center justify-center gap-1.5 transition-all ${
+                isActive
+                  ? `${tab.color} text-white shadow-md`
+                  : 'text-slate-600 hover:text-slate-900 bg-slate-50'
+              }`}
+            >
+              <Icon className="w-3.5 h-3.5" />
+              <span>{tab.label}</span>
+            </button>
+          );
+        })}
+      </div>
+
+      {/* 2. Top Info Strip */}
+      <div
+        className={`w-full py-2 px-3 rounded-2xl flex justify-between items-center text-xs font-bold border ${
+          activeSubVertical === 'grocery'
+            ? 'bg-emerald-50 text-emerald-800 border-emerald-200/60'
+            : activeSubVertical === 'food'
+            ? 'bg-orange-50 text-orange-800 border-orange-200/60'
+            : 'bg-blue-50 text-blue-800 border-blue-200/60'
+        }`}
+      >
         <span className="flex items-center gap-1.5">
-          <Clock size={12} className="animate-pulse" />
-          Delivered in 10 minutes from store
+          <Clock size={13} className="animate-pulse" />
+          {activeSubVertical === 'grocery' && 'Delivered in 10-15 mins'}
+          {activeSubVertical === 'food' && 'Hot & fresh in 25-30 mins'}
+          {activeSubVertical === 'pharmacy' && 'Verified Pharmacy Delivery'}
         </span>
-        <span className="text-xs uppercase tracking-wider bg-brand-green text-white px-2 py-0.5 rounded-full font-black">10 MINS</span>
-      </div>
-
-      {/* Hero Banner Carousel */}
-      <div className="w-full aspect-[2/1] rounded-[24px] overflow-hidden shadow-soft relative bg-zinc-950 mt-1 mb-2">
-        {banners.length > 0 ? (
-          <>
-            <AnimatePresence mode="wait">
-              <motion.div
-                key={currentSlide}
-                initial={{ opacity: 0 }}
-                animate={{ opacity: 1 }}
-                exit={{ opacity: 0 }}
-                transition={{ duration: 0.6 }}
-                className="absolute inset-0 w-full h-full"
-                onClick={() => navigateTo('search')}
-              >
-                <img src={banners[currentSlide].image} alt={banners[currentSlide].title} className="w-full h-full object-cover" />
-                <div className="absolute inset-0 flex flex-col justify-center px-6 text-white text-left select-none drop-shadow-md">
-                  <span className="text-[7.5px] bg-brand-green text-white font-black px-2 py-0.5 rounded w-max uppercase tracking-wider mb-2 shadow-soft">
-                    10-Min Delivery
-                  </span>
-                  <h3 className="text-xs font-black line-clamp-1 font-heading uppercase tracking-wide leading-tight drop-shadow">
-                    {banners[currentSlide].title}
-                  </h3>
-                  <p className="text-xs opacity-90 line-clamp-1 text-zinc-300 font-semibold mt-1">
-                    {banners[currentSlide].subtitle}
-                  </p>
-                </div>
-              </motion.div>
-            </AnimatePresence>
-
-            <div className="absolute bottom-3 left-0 right-0 flex justify-center gap-1.5 z-20">
-              {banners.map((_, idx) => (
-                <div
-                  key={idx}
-                  className={`h-1 rounded-full transition-all duration-300 ${
-                    idx === currentSlide ? 'w-4 bg-brand-green' : 'w-1 bg-white/40'
-                  }`}
-                />
-              ))}
-            </div>
-          </>
-        ) : (
-          <div className="absolute inset-0 flex flex-col items-center justify-center text-zinc-500 bg-[#FAF9F6] border border-brand-border">
-            <span className="text-xs font-bold">Loading...</span>
-          </div>
-        )}
-      </div>
-
-      {/* Category circular select scrollbar list */}
-      <div className="w-full flex gap-3 overflow-x-auto py-2.5 px-1 no-scrollbar select-none">
-        {/* 'All' Option */}
-        <div
-          onClick={() => setActiveCat('')}
-          className={`flex flex-col items-center shrink-0 w-[70px] text-center cursor-pointer transition-all ${
-            activeCat === '' ? 'scale-105' : 'opacity-85 hover:opacity-100'
+        <span
+          className={`text-[10px] uppercase tracking-wider text-white px-2 py-0.5 rounded-full font-black ${
+            activeSubVertical === 'grocery'
+              ? 'bg-emerald-600'
+              : activeSubVertical === 'food'
+              ? 'bg-orange-600'
+              : 'bg-blue-600'
           }`}
         >
-          <div className={`w-12 h-12 rounded-full border overflow-hidden mb-1.5 flex items-center justify-center bg-white transition-all shadow-sm ${
-            activeCat === '' ? 'border-brand-green ring-2 ring-emerald-200 shadow-md' : 'border-brand-border/80'
-          }`}>
-            <LayoutGrid size={22} className={activeCat === '' ? "text-brand-green" : "text-slate-600"} />
-          </div>
-          <div className="min-h-[28px] flex items-start justify-center w-full">
-            <span className={`text-[11px] font-bold leading-tight line-clamp-2 w-full ${
-              activeCat === '' ? 'text-brand-green font-extrabold' : 'text-slate-700'
-            }`}>
-              All
-            </span>
-          </div>
-        </div>
-
-        {quickCategories.map(cat => (
-          <div
-            key={cat.id}
-            onClick={() => setActiveCat(cat.id)}
-            className={`flex flex-col items-center shrink-0 w-[70px] text-center cursor-pointer transition-all ${
-              activeCat === cat.id ? 'scale-105' : 'opacity-85 hover:opacity-100'
-            }`}
-          >
-            <div className={`w-12 h-12 rounded-full border overflow-hidden mb-1.5 flex items-center justify-center bg-white transition-all shadow-sm ${
-              activeCat === cat.id ? 'border-brand-green ring-2 ring-emerald-200 shadow-md' : 'border-brand-border/80'
-            }`}>
-              <img src={cat.image || undefined} alt={cat.name} className="w-full h-full object-cover" />
-            </div>
-            <div className="min-h-[28px] flex items-start justify-center w-full">
-              <span className={`text-[11px] font-bold leading-tight line-clamp-2 w-full ${
-                activeCat === cat.id ? 'text-brand-green font-extrabold' : 'text-slate-700'
-              }`}>
-                {cat.name}
-              </span>
-            </div>
-          </div>
-        ))}
+          {activeSubVertical === 'grocery' ? '10 MINS' : activeSubVertical === 'food' ? 'KITCHEN' : 'RX PHARMA'}
+        </span>
       </div>
 
-      {/* Grid List (2-column layout) */}
-      <div className="grid grid-cols-2 gap-2.5 mt-1 select-none">
-        {currentProducts.map(product => {
+      {/* Pharmacy Prescription CTA banner on mobile */}
+      {activeSubVertical === 'pharmacy' && (
+        <div className="p-3 bg-gradient-to-r from-blue-700 to-indigo-800 text-white rounded-2xl flex items-center justify-between shadow-md">
+          <div className="space-y-0.5">
+            <h4 className="text-xs font-black flex items-center gap-1">
+              <ShieldCheck className="w-4 h-4 text-emerald-400" /> Have a Doctor's Prescription?
+            </h4>
+            <p className="text-[10px] text-blue-100">Upload now for quick pharmacist verification</p>
+          </div>
+          <button
+            onClick={() => {
+              setSelectedRxProduct(null);
+              setRxModalOpen(true);
+            }}
+            className="px-3 py-1.5 bg-white text-blue-800 font-extrabold text-[11px] rounded-xl shadow-sm hover:bg-blue-50 shrink-0"
+          >
+            Upload Rx
+          </button>
+        </div>
+      )}
+
+      {/* 3. Horizontal Category Chips */}
+      <div className="flex gap-1.5 overflow-x-auto pb-1 no-scrollbar -mx-1 px-1">
+        {subCategories.map((cat) => {
+          const isSelected = activeCat === cat || (!activeCat && cat === 'All');
+          return (
+            <button
+              key={cat}
+              onClick={() => setActiveCat(cat === 'All' ? '' : cat)}
+              className={`px-3 py-1.5 rounded-xl text-xs font-bold whitespace-nowrap transition-all ${
+                isSelected
+                  ? activeSubVertical === 'grocery'
+                    ? 'bg-emerald-600 text-white shadow-sm'
+                    : activeSubVertical === 'food'
+                    ? 'bg-orange-600 text-white shadow-sm'
+                    : 'bg-blue-600 text-white shadow-sm'
+                  : 'bg-white text-slate-600 border border-slate-200/80'
+              }`}
+            >
+              {cat}
+            </button>
+          );
+        })}
+      </div>
+
+      {/* 4. Product Cards Grid */}
+      <div className="grid grid-cols-2 gap-2.5">
+        {currentProducts.map((product) => {
           const qty = getCartQty(product.id);
-          const discount = Math.round(((product.originalPrice - product.price) / product.originalPrice) * 100);
-          const isWishlisted = wishlist[product.id];
+          const discount = product.originalPrice > product.price
+            ? Math.round(((product.originalPrice - product.price) / product.originalPrice) * 100)
+            : 0;
 
           return (
             <div
               key={product.id}
               onClick={() => navigateTo('detail', product.id)}
-              className="bg-white border border-brand-border/80 rounded-[16px] p-2.5 flex flex-col relative h-full cursor-pointer hover:shadow-soft shadow-sm active:scale-[0.98] transition-transform"
+              className="bg-white p-2.5 rounded-2xl border border-slate-200/80 shadow-sm flex flex-col justify-between relative"
             >
-              {/* Wishlist Button */}
-              <motion.button
-                whileTap={{ scale: 0.85 }}
+              <button
                 onClick={(e) => toggleWishlist(product.id, e)}
-                className="absolute top-2 right-2 p-1.5 rounded-full bg-white/95 text-zinc-400 hover:text-brand-red shadow-soft border border-brand-border transition-colors z-10"
+                className="absolute top-2 right-2 p-1 rounded-full bg-white/90 text-slate-400 hover:text-red-500 z-10 shadow-sm"
               >
-                <Heart size={11} className={isWishlisted ? "fill-brand-red text-brand-red" : ""} />
-              </motion.button>
+                <Heart size={12} className={wishlist[product.id] ? 'fill-red-500 text-red-500' : ''} />
+              </button>
 
-              {/* Discount tag overlay */}
               {discount > 0 && (
-                <span className="absolute top-2 left-2 bg-[#ECFDF5] text-brand-green text-xs font-black px-1.5 py-0.5 rounded shadow-soft z-10 font-numbers uppercase tracking-wider">
+                <span className="absolute top-2 left-2 bg-red-50 text-red-600 text-[9px] font-black px-1.5 py-0.5 rounded z-10">
                   {discount}% OFF
                 </span>
               )}
 
               {/* Product Image */}
-              <div className="w-full aspect-[5/4] flex items-center justify-center mb-2 bg-white rounded-[16px] overflow-hidden p-1 shadow-sm border border-brand-border/60">
-                <img src={product.image} alt={product.title} className="max-h-full max-w-full object-contain rounded" loading="lazy" decoding="async" />
+              <div className="w-full aspect-square bg-slate-50 rounded-xl overflow-hidden mb-2 flex items-center justify-center p-1">
+                <img
+                  src={product.image || 'https://images.unsplash.com/photo-1546069901-ba9599a7e63c?w=300&auto=format&fit=crop&q=60'}
+                  alt={product.title}
+                  className="max-h-full max-w-full object-contain"
+                />
               </div>
 
-              {/* Title & Info */}
-              <h3 className="text-xs font-bold text-brand-graphite line-clamp-2 leading-snug mb-0.5 min-h-[30px] font-heading">
-                {product.title}
-              </h3>
-              <span className="text-xs text-brand-slate font-extrabold mb-3.5">
-                {product.specs?.['Weight'] || product.specs?.['Volume'] || 'Pack'}
-              </span>
+              {/* Badges */}
+              <div className="space-y-0.5 mb-1.5">
+                {activeSubVertical === 'food' && (
+                  <div className="flex items-center gap-1 text-[10px] text-slate-500 font-semibold truncate">
+                    <span
+                      className={`w-2.5 h-2.5 rounded-xs border flex items-center justify-center shrink-0 ${
+                        product.isVeg !== false ? 'border-emerald-600' : 'border-red-600'
+                      }`}
+                    >
+                      <span className={`w-1 h-1 rounded-full ${product.isVeg !== false ? 'bg-emerald-600' : 'bg-red-600'}`} />
+                    </span>
+                    <span className="truncate">{product.restaurantName || 'Kitchen'}</span>
+                  </div>
+                )}
 
-              {/* Price & Quantity Actions Row */}
-              <div className="flex items-center justify-between mt-auto font-numbers" onClick={(e) => e.stopPropagation()}>
-                <div className="flex flex-col leading-none">
-                  <span className="text-xs font-extrabold text-brand-graphite">₹{product.price}</span>
+                {activeSubVertical === 'pharmacy' && product.requiresPrescription && (
+                  <span className="inline-block text-[9px] font-bold text-blue-700 bg-blue-50 px-1.5 py-0.5 rounded">
+                    Rx Required
+                  </span>
+                )}
+
+                <div className="flex items-center gap-1 text-[10px] font-extrabold text-emerald-700 bg-emerald-50 px-1.5 py-0.5 rounded w-max">
+                  <Clock size={9} />
+                  <span>{product.deliveryTime || (activeSubVertical === 'grocery' ? '10-15 Min' : '25 Min')}</span>
+                </div>
+              </div>
+
+              {/* Title */}
+              <h4 className="text-xs font-bold text-slate-800 line-clamp-2 leading-tight min-h-[30px] mb-1">
+                {product.title}
+              </h4>
+
+              {/* Price & Add */}
+              <div className="flex items-center justify-between mt-auto pt-1.5 border-t border-slate-100" onClick={(e) => e.stopPropagation()}>
+                <div>
+                  <span className="text-xs font-black text-slate-900">₹{product.price}</span>
                   {product.originalPrice > product.price && (
-                    <span className="text-xs text-brand-slate line-through mt-0.5">₹{product.originalPrice}</span>
+                    <span className="text-[9px] text-slate-400 line-through block">₹{product.originalPrice}</span>
                   )}
                 </div>
 
-                {qty === 0 ? (
-                  <motion.button
-                    whileTap={{ scale: 0.95 }}
-                    onClick={() => addToCart(product)}
-                    className="px-3.5 py-1.5 border border-brand-green/20 bg-[#ECFDF5] text-brand-green text-xs font-black rounded-button uppercase shadow-soft transition-colors"
+                {activeSubVertical === 'food' ? (
+                  <button
+                    onClick={(e) => handleAddToCartWithCustomization(product, e)}
+                    className="px-2.5 py-1 bg-orange-50 text-orange-700 border border-orange-200 text-[11px] font-bold rounded-lg"
+                  >
+                    Add +
+                  </button>
+                ) : qty === 0 ? (
+                  <button
+                    onClick={(e) => handleAddToCartWithCustomization(product, e)}
+                    className="px-3 py-1 bg-emerald-50 text-emerald-700 border border-emerald-200 text-[11px] font-black rounded-lg uppercase"
                   >
                     Add
-                  </motion.button>
+                  </button>
                 ) : (
-                  <div className="flex items-center border border-brand-green bg-brand-green text-white rounded-button overflow-hidden text-xs font-extrabold shadow-soft">
+                  <div className="flex items-center bg-emerald-600 text-white rounded-lg overflow-hidden text-xs font-bold">
                     <button
                       onClick={() => updateQuantity(product.id, qty - 1)}
-                      className="px-1.5 py-1.5 hover:bg-emerald-700 transition-colors"
-                      aria-label="Decrease quantity"
+                      className="px-1.5 py-1 hover:bg-emerald-700"
                     >
                       <Minus size={10} strokeWidth={3} />
                     </button>
-                    <span className="px-2 min-w-full max-w-[15px] text-center select-none">{qty}</span>
+                    <span className="px-1.5 text-[11px]">{qty}</span>
                     <button
                       onClick={() => updateQuantity(product.id, qty + 1)}
-                      className="px-1.5 py-1.5 hover:bg-emerald-700 transition-colors"
-                      aria-label="Increase quantity"
+                      className="px-1.5 py-1 hover:bg-emerald-700"
                     >
                       <Plus size={10} strokeWidth={3} />
                     </button>
@@ -238,30 +319,47 @@ export const VerticalQuickCommerceMobile: React.FC = () => {
         })}
       </div>
 
-      {/* Floating Bottom Cart Bar for Quick Commerce (Blinkit style on Mobile) */}
+      {/* Floating Bottom Cart for Mobile */}
       {activeCartCount > 0 && (
-        <div className="fixed bottom-16 left-3 right-3 bg-brand-green text-white px-4 py-2.5 rounded-[20px] shadow-hover-lift flex items-center justify-between z-40 transition-transform duration-300 hover:bg-emerald-600">
-          <div className="flex items-center gap-2">
-            <div className="p-1.5 rounded bg-green-800/40 relative">
-              <ShoppingBag size={15} />
-              <span className="absolute -top-1 -right-1 flex h-3.5 min-w-3.5 items-center justify-center rounded-full bg-brand-orange text-xs font-black text-white font-numbers">
+        <div className="fixed bottom-16 left-3 right-3 bg-slate-900 text-white px-4 py-2.5 rounded-2xl shadow-xl flex items-center justify-between z-40 border border-white/10">
+          <div className="flex items-center gap-2.5">
+            <div className="p-1.5 rounded-xl bg-white/15 relative">
+              <ShoppingBag size={16} />
+              <span className="absolute -top-1.5 -right-1.5 flex h-4 min-w-4 items-center justify-center rounded-full bg-emerald-500 text-[9px] font-black text-white">
                 {activeCartCount}
               </span>
             </div>
-            <div className="flex flex-col leading-none text-left">
-              <span className="font-extrabold text-xs font-numbers">₹{activeCartTotal.toLocaleString('en-IN')}</span>
-              <span className="text-xs text-emerald-100 font-extrabold uppercase tracking-widest font-heading">Quick Checkout</span>
+            <div className="flex flex-col leading-tight">
+              <span className="font-bold text-xs">₹{activeCartTotal.toLocaleString('en-IN')}</span>
+              <span className="text-[9px] text-slate-300">Quick Delivery</span>
             </div>
           </div>
           <button
             onClick={() => navigateTo('cart')}
-            className="flex items-center gap-1 bg-white text-brand-green px-3.5 py-1.5 rounded-button text-xs font-black shadow hover:bg-slate-50 transition-colors uppercase tracking-wider"
+            className="flex items-center gap-1 bg-emerald-500 text-slate-950 px-3.5 py-1.5 rounded-xl text-xs font-black"
           >
-            <span>Proceed</span>
+            <span>View Cart</span>
             <ArrowRight size={12} />
           </button>
         </div>
       )}
+
+      {/* Sub-Vertical Modals */}
+      <FoodCustomizationModal
+        isOpen={Boolean(customizingProduct)}
+        onClose={() => setCustomizingProduct(null)}
+        product={customizingProduct}
+        onAddToCart={(p) => addToCart(p)}
+      />
+
+      <PrescriptionUploadModal
+        isOpen={rxModalOpen}
+        onClose={() => setRxModalOpen(false)}
+        productName={selectedRxProduct?.title}
+        onUploadSuccess={() => {
+          if (selectedRxProduct) addToCart(selectedRxProduct);
+        }}
+      />
     </div>
   );
 };

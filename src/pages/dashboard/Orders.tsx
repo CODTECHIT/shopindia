@@ -1,64 +1,166 @@
 import React, { useState } from 'react';
 import { useApp } from '../../context/AppContext';
 import { PageHeader, Badge, statusTone, EmptyState, PrimaryButton, GhostButton } from '../../components/dashboard/DashboardUI';
-import { Package, X, Download, RotateCcw, Undo2, ArrowLeftRight, CheckCircle2, ChevronRight } from 'lucide-react';
+import { Package, X, Download, RotateCcw, Undo2, ArrowLeftRight, CheckCircle2, ChevronRight, Zap, Wrench } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { trackEvent } from '../../lib/customerApi';
-import type { OrderItem } from '../../context/AppContext';
+import type { OrderItem, VerticalType } from '../../context/AppContext';
 
-const STATUS_STEPS: Record<string, string[]> = {
+const QUICK_STEPS: Record<string, string[]> = {
+  pending: ['Order Placed', 'Awaiting Store Acceptance'],
+  placed: ['Order Placed', 'Packing at Dark Store'],
+  confirmed: ['Order Placed', 'Packing at Dark Store'],
+  packing: ['Order Placed', 'Packing at Dark Store', 'Packed & Ready'],
+  processing: ['Order Placed', 'Packing at Dark Store', 'Packed & Ready'],
+  shipped: ['Order Placed', 'Packed & Ready', 'Rider On The Way ⚡'],
+  on_the_way: ['Order Placed', 'Packed & Ready', 'Rider On The Way ⚡'],
+  delivered: ['Order Placed', 'Packed & Ready', 'Rider On The Way ⚡', 'Delivered to Doorstep 🎉'],
+};
+
+const SERVICE_STEPS: Record<string, string[]> = {
+  pending: ['Booking Requested', 'Confirming Slot'],
+  placed: ['Service Booked', 'Technician Being Assigned'],
+  confirmed: ['Service Booked', 'Certified Technician Assigned 👨‍🔧'],
+  processing: ['Service Booked', 'Technician Assigned', 'Preparing Equipment'],
+  shipped: ['Service Booked', 'Technician Assigned', 'Technician On The Way 🛠️'],
+  on_the_way: ['Service Booked', 'Technician Assigned', 'Technician On The Way 🛠️'],
+  delivered: ['Service Booked', 'Technician Arrived', 'Job Completed (30-Day Warranty Active) ✅'],
+  completed: ['Service Booked', 'Technician Arrived', 'Job Completed (30-Day Warranty Active) ✅'],
+};
+
+const ECOMMERCE_STEPS: Record<string, string[]> = {
   pending: ['Order Placed', 'Awaiting Confirmation'],
-  confirmed: ['Order Placed', 'Order Confirmed'],
-  processing: ['Order Placed', 'Order Confirmed', 'Processing'],
-  placed: ['Order Placed', 'Order Confirmed', 'Processing'],
-  packing: ['Order Placed', 'Order Confirmed', 'Processing', 'Packing'],
-  shipped: ['Order Placed', 'Order Confirmed', 'Processing', 'Packing', 'Shipped'],
-  in_transit: ['Order Placed', 'Order Confirmed', 'Processing', 'Packing', 'Shipped', 'In Transit'],
-  delivered: ['Order Placed', 'Order Confirmed', 'Processing', 'Packing', 'Shipped', 'In Transit', 'Delivered'],
+  placed: ['Order Placed', 'Order Confirmed by Seller'],
+  confirmed: ['Order Placed', 'Order Confirmed by Seller'],
+  processing: ['Order Placed', 'Order Confirmed', 'Processing Order'],
+  packing: ['Order Placed', 'Order Confirmed', 'Packed & Boxed'],
+  ready_to_ship: ['Order Placed', 'Order Confirmed', 'Packed & Boxed', 'Courier Manifested'],
+  shipped: ['Order Placed', 'Order Confirmed', 'Packed', 'Shipped via Express Courier 🚚'],
+  in_transit: ['Order Placed', 'Order Confirmed', 'Packed', 'Shipped', 'In Transit to Hub'],
+  out_for_delivery: ['Order Placed', 'Order Confirmed', 'Packed', 'Shipped', 'Out For Delivery Today 📦'],
+  delivered: ['Order Placed', 'Order Confirmed', 'Packed', 'Shipped', 'Out For Delivery', 'Delivered at Doorstep 🎁'],
 };
 
 export const OrdersPage: React.FC = () => {
   const { orders, cancelOrder, updateOrderStatus } = useApp();
   const [openId, setOpenId] = useState<string | null>(null);
+  const [filterVertical, setFilterVertical] = useState<'all' | VerticalType>('all');
   const [isProcessing, setIsProcessing] = useState(false);
+
+  const getOrderVertical = (o: any): VerticalType => {
+    if (o.vertical) return o.vertical;
+    if (o.type === 'quick_commerce') return 'quick';
+    if (o.type === 'hvac_service') return 'services';
+    const text = (o.items?.map((it: any) => it.product?.title || '').join(' ') || '').toLowerCase();
+    if (text.includes('ac') || text.includes('cleaning') || text.includes('repair') || text.includes('wash') || text.includes('service') || text.includes('towing')) return 'services';
+    if (text.includes('biryani') || text.includes('grocery') || text.includes('spray') || text.includes('food') || text.includes('veggie') || text.includes('munchies') || text.includes('sdf')) return 'quick';
+    return 'shop';
+  };
+
+  const filteredOrders = filterVertical === 'all'
+    ? orders
+    : orders.filter(o => getOrderVertical(o) === filterVertical);
+
+  const countQuick = orders.filter(o => getOrderVertical(o) === 'quick').length;
+  const countServices = orders.filter(o => getOrderVertical(o) === 'services').length;
+  const countShop = orders.filter(o => getOrderVertical(o) === 'shop').length;
+
   const openOrder = openId !== null ? orders.find((o) => (o.id || '') === openId) : null;
-  const steps = openOrder ? getSteps(openOrder.status) : [];
+  const orderVert = openOrder ? getOrderVertical(openOrder) : 'shop';
+  const steps = openOrder ? getVerticalSteps(openOrder.status, orderVert) : [];
   const cancelable = openOrder ? ['pending', 'placed', 'confirmed', 'processing', 'packing'].includes(openOrder.status) : false;
 
   return (
-    <div className="space-y-6">
-      <PageHeader title="My Orders" subtitle={`${orders.length} order${orders.length === 1 ? '' : 's'} in your account`} />
+    <div className="space-y-6 text-left">
+      <PageHeader 
+        title="My Orders & Bookings" 
+        subtitle={`${orders.length} total order${orders.length === 1 ? '' : 's'} across all modules`} 
+      />
 
-      {orders.length === 0 && (
-        <EmptyState icon={<Package className="w-6 h-6" />} title="No orders yet" message="Once you place an order, it will appear here with live tracking." />
+      {/* Vertical Filter Tabs */}
+      <div className="flex items-center gap-2 overflow-x-auto no-scrollbar pb-1">
+        {[
+          { id: 'all', label: `All Orders (${orders.length})` },
+          { id: 'quick', label: `⚡ 10 Min Delivery (${countQuick})` },
+          { id: 'services', label: `🛠️ Services & Bookings (${countServices})` },
+          { id: 'shop', label: `🛍️ Traditional Shopping (${countShop})` }
+        ].map(tab => (
+          <button
+            key={tab.id}
+            onClick={() => setFilterVertical(tab.id as any)}
+            className={`px-4 py-2 rounded-full text-xs font-bold whitespace-nowrap transition-all border ${
+              filterVertical === tab.id
+                ? 'bg-brand-graphite text-white border-brand-graphite shadow-sm'
+                : 'bg-white text-brand-slate border-brand-border hover:border-slate-300'
+            }`}
+          >
+            {tab.label}
+          </button>
+        ))}
+      </div>
+
+      {filteredOrders.length === 0 && (
+        <EmptyState 
+          icon={<Package className="w-6 h-6" />} 
+          title={filterVertical === 'services' ? 'No Service Bookings' : filterVertical === 'quick' ? 'No 10-Min Orders' : 'No Orders Yet'} 
+          message="Once you place an order or book a service, live real-time tracking will appear here." 
+        />
       )}
 
       <div className="flex flex-col gap-4">
-        {orders.map((o) => {
+        {filteredOrders.map((o) => {
           const isOpen = openId === o.id;
+          const v = getOrderVertical(o);
+          const firstImage = o.items?.[0]?.product?.image;
+
+          const vertBadge = v === 'quick' ? {
+            label: '⚡ 10 Min Delivery',
+            bg: 'bg-emerald-50 text-emerald-700 border-emerald-200'
+          } : v === 'services' ? {
+            label: '🛠️ Service Booking',
+            bg: 'bg-amber-50 text-amber-700 border-amber-200'
+          } : {
+            label: '🛍️ Courier E-Commerce',
+            bg: 'bg-blue-50 text-blue-700 border-blue-200'
+          };
+
           return (
             <motion.div key={o.id} layout className="bg-white border border-brand-border rounded-card shadow-premium overflow-hidden">
-              <button onClick={() => setOpenId(isOpen ? null : o.id)} className="w-full text-left p-5 flex items-center justify-between gap-3 hover:bg-slate-50/50 transition-colors">
-                <div className="flex items-center gap-4 min-w-0">
-                  <div className="w-11 h-11 rounded-xl bg-brand-blue/5 flex items-center justify-center text-brand-blue flex-shrink-0">
-                    <Package className="w-5 h-5" />
+              <button onClick={() => setOpenId(isOpen ? null : o.id)} className="w-full text-left p-4 sm:p-5 flex items-center justify-between gap-3 hover:bg-slate-50/50 transition-colors">
+                <div className="flex items-center gap-3.5 min-w-0">
+                  <div className="w-12 h-12 rounded-xl bg-slate-100 border border-brand-border/80 flex items-center justify-center flex-shrink-0 overflow-hidden">
+                    {firstImage ? (
+                      <img src={firstImage} alt="Product" className="w-full h-full object-cover" />
+                    ) : v === 'quick' ? (
+                      <Zap className="w-5 h-5 text-amber-500" />
+                    ) : v === 'services' ? (
+                      <Wrench className="w-5 h-5 text-amber-600" />
+                    ) : (
+                      <Package className="w-5 h-5 text-brand-blue" />
+                    )}
                   </div>
+
                   <div className="min-w-0">
-                    <div className="flex items-center gap-2 flex-wrap">
-                      <span className="font-bold text-sm text-brand-graphite">
-                        {o.items.map(it => it.product?.title || 'Product').join(', ') || 'Order'}
+                    <div className="flex items-center gap-2 flex-wrap mb-1">
+                      <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full border ${vertBadge.bg}`}>
+                        {vertBadge.label}
                       </span>
                       <Badge tone={statusTone(o.status)}>{o.status}</Badge>
                     </div>
+
+                    <span className="font-bold text-sm text-brand-graphite block truncate">
+                      {o.items.map(it => it.product?.title || 'Item').join(', ') || 'Order Details'}
+                    </span>
                     <p className="text-xs text-brand-slate mt-0.5">
-                      Order {o.orderNumber || o.id} • {o.date || '—'}
+                      Order {o.orderNumber || o.id} • {o.date || 'Today'}
                     </p>
                   </div>
                 </div>
+
                 <div className="flex items-center gap-3 flex-shrink-0">
                   <div className="text-right">
-                    <p className="font-bold text-brand-graphite font-numbers">₹{o.total.toLocaleString('en-IN')}</p>
-                    <p className="text-xs text-brand-slate">{o.items.length} item{o.items.length > 1 ? 's' : ''}</p>
+                    <p className="font-bold text-brand-graphite font-numbers text-sm">₹{o.total.toLocaleString('en-IN')}</p>
+                    <p className="text-[11px] text-brand-slate">{o.items.length} item{o.items.length > 1 ? 's' : ''}</p>
                   </div>
                   <ChevronRight className={`w-4 h-4 text-brand-slate transition-transform ${isOpen ? 'rotate-90' : ''}`} />
                 </div>
@@ -198,6 +300,12 @@ export const OrdersPage: React.FC = () => {
   );
 };
 
-function getSteps(status: string): string[] {
-  return STATUS_STEPS[status] || ['Order Placed', 'Order Confirmed', 'Processing', 'Shipped'];
+function getVerticalSteps(status: string, vertical: VerticalType): string[] {
+  if (vertical === 'quick') {
+    return QUICK_STEPS[status] || ['Order Placed', 'Packing at Store', 'Rider Dispatched', 'Delivered'];
+  }
+  if (vertical === 'services') {
+    return SERVICE_STEPS[status] || ['Service Booked', 'Technician Assigned', 'Technician On The Way', 'Job Completed'];
+  }
+  return ECOMMERCE_STEPS[status] || ['Order Placed', 'Order Confirmed', 'Packed', 'Shipped', 'Delivered'];
 }

@@ -1,7 +1,7 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import type { Product } from '../data/types';
 
-const RAW_API = import.meta.env.VITE_API_URL || 'http://localhost:5001';
+const RAW_API = import.meta.env.VITE_API_URL || '';
 const API_BASE = RAW_API.replace(/\/api\/?$/, '').replace(/\/$/, '');
 import { api } from '../lib/api';
 import { getCustomerToken } from '../lib/customerAuth';
@@ -106,8 +106,23 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   // Orders
   const [orders, setOrders] = useState<Order[]>([]);
 
-  // Notifications
-  const [notifications, setNotifications] = useState<Notification[]>([]);
+  // Notifications with persistent LocalStorage + Server Sync
+  const [notifications, setNotifications] = useState<Notification[]>(() => {
+    try {
+      const saved = localStorage.getItem('shopindia_notifications');
+      return saved ? JSON.parse(saved) : [];
+    } catch {
+      return [];
+    }
+  });
+
+  useEffect(() => {
+    try {
+      localStorage.setItem('shopindia_notifications', JSON.stringify(notifications));
+    } catch (e) {
+      console.error('Failed to save notifications to localStorage', e);
+    }
+  }, [notifications]);
 
   const addNotification = (n: Omit<Notification, 'id' | 'read' | 'timestamp'>) => {
     const newNotif: Notification = {
@@ -116,15 +131,33 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       read: false,
       timestamp: 'Just now'
     };
-    setNotifications(prev => [newNotif, ...prev]);
+    setNotifications(prev => {
+      const updated = [newNotif, ...prev];
+      try {
+        localStorage.setItem('shopindia_notifications', JSON.stringify(updated));
+      } catch {}
+      return updated;
+    });
   };
 
   const markAsRead = (id: string) => {
-    setNotifications(prev => prev.map(n => n.id === id ? { ...n, read: true } : n));
+    setNotifications(prev => {
+      const updated = prev.map(n => n.id === id ? { ...n, read: true } : n);
+      try {
+        localStorage.setItem('shopindia_notifications', JSON.stringify(updated));
+      } catch {}
+      return updated;
+    });
   };
 
   const markAllAsRead = () => {
-    setNotifications(prev => prev.map(n => ({ ...n, read: true })));
+    setNotifications(prev => {
+      const updated = prev.map(n => ({ ...n, read: true }));
+      try {
+        localStorage.setItem('shopindia_notifications', JSON.stringify(updated));
+      } catch {}
+      return updated;
+    });
   };
 
   // Fetch initial data from API
@@ -133,13 +166,37 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       const token = getCustomerToken();
       if (!token) return;
       try {
-        const [cartRes, ordersRes] = await Promise.allSettled([
+        const [cartRes, ordersRes, notifsRes] = await Promise.allSettled([
           api.get<{ items: any[] }>('/api/customer/cart').catch(() => null),
-          api.get<{ orders: Order[] }>('/api/orders').catch(() => null)
+          api.get<{ orders: Order[] }>('/api/orders').catch(() => null),
+          api.get<any>('/api/customer/notifications').catch(() => null)
         ]);
 
         if (cartRes.status === 'fulfilled' && cartRes.value?.items) setCart(cartRes.value.items);
         if (ordersRes.status === 'fulfilled' && ordersRes.value?.orders) setOrders(ordersRes.value.orders);
+        if (notifsRes.status === 'fulfilled' && notifsRes.value?.notifications && Array.isArray(notifsRes.value.notifications) && notifsRes.value.notifications.length > 0) {
+          setNotifications(prev => {
+            const serverNotifs = notifsRes.value.notifications.map((sn: any) => ({
+              id: sn.id || Math.random().toString(),
+              type: sn.type || 'order',
+              title: sn.title,
+              message: sn.message,
+              read: sn.isRead || false,
+              timestamp: sn.createdAt ? new Date(sn.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : 'Recently',
+              actionText: 'View Order',
+              icon: sn.type === 'quick' ? 'Zap' : sn.type === 'service' ? 'Wrench' : 'Package',
+              color: 'text-blue-600',
+              bg: 'bg-blue-50'
+            }));
+            const ids = new Set(prev.map(p => p.id));
+            const fresh = serverNotifs.filter((s: any) => !ids.has(s.id));
+            const combined = [...fresh, ...prev];
+            try {
+              localStorage.setItem('shopindia_notifications', JSON.stringify(combined));
+            } catch {}
+            return combined;
+          });
+        }
       } catch (err) {
         console.error('Failed to fetch App data', err);
       }
@@ -235,9 +292,9 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   };
 
   // Order placement (persists to the backend API)
-  const placeOrder = async (payload: { addressId: string; paymentMethodId: string; items: any[]; total: number }) => {
+  const placeOrder = async (payload: { addressId: string; paymentMethodId: string; items: any[]; total: number; vertical?: VerticalType }) => {
     try {
-      await api.post('/api/orders', payload);
+      await api.post('/api/orders', { ...payload, vertical: payload.vertical || currentVertical });
         // Fetch orders again to get the new order
         const res = await api.get<{ orders: Order[] }>('/api/orders');
         if (res.orders) setOrders(res.orders);
@@ -251,12 +308,12 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         // But since we are inside AppContext we can't easily import icons here without adding them to AppContext.
         addNotification({
           type: isQuick ? 'quick' : isService ? 'service' : 'order',
-          title: isQuick ? 'Arriving in 10 mins! ⚡' : isService ? 'Service Booked \uD83D\uDEE0\uFE0F' : 'Order Placed! \uD83C\uDF89',
+          title: isQuick ? 'Arriving in 10 mins! ⚡' : isService ? 'Service Booked 🛠️' : 'Order Placed! 🎉',
           message: isQuick 
             ? 'Your 10 Min delivery order has been placed and is being packed.' 
             : isService 
             ? 'Your service appointment has been successfully booked.' 
-            : 'Your order has been confirmed and is being processed.',
+            : 'Your order has been placed! Expected delivery in 2-4 business days via express courier.',
           actionText: 'Track Order',
           icon: isQuick ? 'Zap' : isService ? 'Wrench' : 'Package',
           color: isQuick ? 'text-[#E5B500]' : isService ? 'text-amber-600' : 'text-blue-600',

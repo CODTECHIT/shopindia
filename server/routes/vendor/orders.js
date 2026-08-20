@@ -87,14 +87,52 @@ router.patch('/:id/status', async (req, res) => {
           }
         })
       ]);
-      order = updatedOrder;
-    } else {
       order = await prisma.order.update({
         where: { id: req.params.id },
         data: { status },
         include: { items: true },
       });
     }
+
+    if (existing.customerId) {
+      let title = `Order Update: ${status.toUpperCase()}`;
+      let message = `Your order #${existing.orderNumber} status has been updated to ${status}.`;
+
+      if (status === 'confirmed') {
+        title = existing.type === 'traditional' ? 'Order Confirmed by Seller 🏪' : 'Order Confirmed! 🎉';
+        message = existing.type === 'traditional' 
+          ? `Your order #${existing.orderNumber} has been verified and seller is preparing your package.`
+          : `Your order #${existing.orderNumber} is confirmed by the merchant.`;
+      } else if (status === 'packing' || status === 'ready_to_ship') {
+        title = existing.type === 'quick_commerce' ? 'Packing your 10-Min Order 🛍️' : existing.type === 'traditional' ? 'Package Boxed & Ready 📦' : 'Items Packed & Ready 📦';
+        message = existing.type === 'traditional'
+          ? `Your order #${existing.orderNumber} is packed and ready for courier pickup.`
+          : `Your order #${existing.orderNumber} is packed and ready for delivery.`;
+      } else if (status === 'shipped') {
+        title = existing.type === 'quick_commerce' ? 'Rider On The Way! ⚡🛵' : 'Package Shipped & In Transit 🚚';
+        message = existing.type === 'traditional'
+          ? `Your order #${existing.orderNumber} has been dispatched via courier service.`
+          : `Your order #${existing.orderNumber} has been dispatched and is on the way!`;
+      } else if (status === 'delivered') {
+        title = existing.type === 'traditional' ? 'Package Delivered! 🎁' : 'Order Delivered! 🥳';
+        message = existing.type === 'traditional'
+          ? `Package #${existing.orderNumber} was delivered to your address. Enjoy your purchase!`
+          : `Order #${existing.orderNumber} was delivered. Enjoy your items!`;
+      }
+
+      await prisma.userNotification.create({
+        data: {
+          userId: existing.customerId,
+          category: 'order',
+          title,
+          message,
+          channel: 'in_app',
+          isRead: false,
+          link: `/orders/${existing.id}`,
+        }
+      }).catch(err => console.error('Failed to notify customer from vendor update', err));
+    }
+
     res.json(order);
   } catch (err) { res.status(500).json({ error: err.message }); }
 });

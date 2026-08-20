@@ -43,23 +43,23 @@ const AdminContent: React.FC = () => {
 
   const renderTab = () => {
     switch (tab) {
-      case 'dashboard':     return <Dashboard />;
-      case 'vendors':       return <VendorsPage onManage={setManagedVendor} />;
-      case 'users':         return <UsersPage />;
-      case 'products':      return <ProductsPage />;
-      case 'orders':        return <OrdersPage />;
-      case 'branches':      return <BranchesPage />;
-      case 'rbac':          return <RBACPage />;
+      case 'dashboard': return <Dashboard />;
+      case 'vendors': return <VendorsPage onManage={setManagedVendor} />;
+      case 'users': return <UsersPage />;
+      case 'products': return <ProductsPage />;
+      case 'orders': return <OrdersPage />;
+      case 'branches': return <BranchesPage />;
+      case 'rbac': return <RBACPage />;
       case 'service-areas': return <ServiceAreasPage />;
-      case 'support':       return <SupportPage />;
-      case 'commissions':   return <CommissionsPage />;
-      case 'riders':        return <RidersPage />;
-      case 'reports':       return <ReportsPage />;
-      case 'promotions':    return <PromotionsPage />;
+      case 'support': return <SupportPage />;
+      case 'commissions': return <CommissionsPage />;
+      case 'riders': return <RidersPage />;
+      case 'reports': return <ReportsPage />;
+      case 'promotions': return <PromotionsPage />;
       case 'notifications': return <NotificationsPage />;
-      case 'offers':        return <OffersPage />;
-      case 'categories':    return <CategoriesPage />;
-      default:              return <Dashboard />;
+      case 'offers': return <OffersPage />;
+      case 'categories': return <CategoriesPage />;
+      default: return <Dashboard />;
     }
   };
 

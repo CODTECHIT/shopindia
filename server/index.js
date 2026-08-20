@@ -50,29 +50,29 @@ app.use('/api/customer/analytics', require('./routes/customer/analytics'));
 app.use('/api/customer/orders', require('./routes/customer/order-actions'));
 
 // Admin routes (all guarded by verifyToken + requireRole in each route file)
-app.use('/api/admin/dashboard',    require('./routes/admin/dashboard'));
-app.use('/api/admin/users',        require('./routes/admin/users'));
-app.use('/api/admin/vendors',      require('./routes/admin/vendors'));
-app.use('/api/admin/products',     require('./routes/admin/products'));
-app.use('/api/admin/orders',       require('./routes/admin/orders'));
-app.use('/api/admin/branches',     require('./routes/admin/branches'));
-app.use('/api/admin/rbac',         require('./routes/admin/rbac'));
-app.use('/api/admin/service-areas',require('./routes/admin/serviceAreas'));
-app.use('/api/admin/support',      require('./routes/admin/support'));
-app.use('/api/admin/commissions',  require('./routes/admin/commissions'));
-app.use('/api/admin/riders',       require('./routes/admin/riders'));
-app.use('/api/admin/reports',      require('./routes/admin/reports'));
-app.use('/api/admin/offers',       require('./routes/admin/offers'));
-app.use('/api/admin/notifications',require('./routes/admin/notifications'));
-app.use('/api/admin/categories',   require('./routes/admin/categories'));
-app.use('/api/admin/banners',      require('./routes/admin/banners'));
+app.use('/api/admin/dashboard', require('./routes/admin/dashboard'));
+app.use('/api/admin/users', require('./routes/admin/users'));
+app.use('/api/admin/vendors', require('./routes/admin/vendors'));
+app.use('/api/admin/products', require('./routes/admin/products'));
+app.use('/api/admin/orders', require('./routes/admin/orders'));
+app.use('/api/admin/branches', require('./routes/admin/branches'));
+app.use('/api/admin/rbac', require('./routes/admin/rbac'));
+app.use('/api/admin/service-areas', require('./routes/admin/serviceAreas'));
+app.use('/api/admin/support', require('./routes/admin/support'));
+app.use('/api/admin/commissions', require('./routes/admin/commissions'));
+app.use('/api/admin/riders', require('./routes/admin/riders'));
+app.use('/api/admin/reports', require('./routes/admin/reports'));
+app.use('/api/admin/offers', require('./routes/admin/offers'));
+app.use('/api/admin/notifications', require('./routes/admin/notifications'));
+app.use('/api/admin/categories', require('./routes/admin/categories'));
+app.use('/api/admin/banners', require('./routes/admin/banners'));
 
 // Vendor routes (guarded by verifyToken + requireRole('vendor') in each file)
-app.use('/api/vendor/auth',       require('./routes/vendor/auth'));
-app.use('/api/vendor/products',   require('./routes/vendor/products'));
-app.use('/api/vendor/orders',     require('./routes/vendor/orders'));
-app.use('/api/vendor/analytics',  require('./routes/vendor/analytics'));
-app.use('/api/vendor/wallet',     require('./routes/vendor/wallet'));
+app.use('/api/vendor/auth', require('./routes/vendor/auth'));
+app.use('/api/vendor/products', require('./routes/vendor/products'));
+app.use('/api/vendor/orders', require('./routes/vendor/orders'));
+app.use('/api/vendor/analytics', require('./routes/vendor/analytics'));
+app.use('/api/vendor/wallet', require('./routes/vendor/wallet'));
 
 // ─── Global error handler ─────────────────────────────────────────────────────
 app.use((err, _req, res, _next) => {

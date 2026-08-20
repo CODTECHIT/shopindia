@@ -13,14 +13,21 @@ interface Category {
   _count?: { products: number };
 }
 
-const VERTICALS = ['shop', 'quick', 'services'];
+const VERTICAL_OPTIONS = [
+  { value: 'quick_grocery', label: '⚡ Instant Grocery' },
+  { value: 'quick_food', label: '🍔 Food Delivery' },
+  { value: 'quick_pharmacy', label: '💊 Pharmacy & Medicines' },
+  { value: 'services_home', label: '🏠 Home Services' },
+  { value: 'services_vehicle', label: '🚗 Vehicle Services' },
+  { value: 'shop', label: '🛍️ Traditional E-Commerce' },
+];
 
 export const CategoriesPage: React.FC = () => {
   const [cats, setCats] = useState<Category[]>([]);
   const [loading, setLoading] = useState(true);
   const [modal, setModal] = useState(false);
   const [editing, setEditing] = useState<Category | null>(null);
-  const [form, setForm] = useState({ name: '', vertical: 'shop', image: '', slug: '' });
+  const [form, setForm] = useState({ name: '', vertical: 'quick_grocery', image: '', slug: '' });
   const [error, setError] = useState<string | null>(null);
   const [uploading, setUploading] = useState(false);
   const [search, setSearch] = useState('');
@@ -48,7 +55,7 @@ export const CategoriesPage: React.FC = () => {
 
   useEffect(load, []);
 
-  const openCreate = () => { setEditing(null); setForm({ name: '', vertical: 'shop', image: '', slug: '' }); setError(null); setModal(true); };
+  const openCreate = () => { setEditing(null); setForm({ name: '', vertical: 'quick_grocery', image: '', slug: '' }); setError(null); setModal(true); };
   const openEdit = (c: Category) => { setEditing(c); setForm({ name: c.name, vertical: c.vertical, image: c.image || '', slug: c.slug || '' }); setError(null); setModal(true); };
 
   const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -97,7 +104,12 @@ export const CategoriesPage: React.FC = () => {
   const color: Record<string, string> = {
     shop: 'bg-blue-50 text-blue-700',
     quick: 'bg-emerald-50 text-emerald-700',
+    quick_grocery: 'bg-emerald-50 text-emerald-700',
+    quick_food: 'bg-orange-50 text-orange-700',
+    quick_pharmacy: 'bg-cyan-50 text-cyan-700',
     services: 'bg-amber-50 text-amber-700',
+    services_home: 'bg-amber-50 text-amber-700',
+    services_vehicle: 'bg-indigo-50 text-indigo-700',
   };
 
   return (
@@ -105,7 +117,7 @@ export const CategoriesPage: React.FC = () => {
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-2xl font-bold text-gray-900">Categories</h1>
-          <p className="text-sm text-gray-500">Manage storefront categories across Shop, Quick Commerce & Services</p>
+          <p className="text-sm text-gray-500">Manage dynamic storefront categories across E-Commerce, Quick Commerce & Services</p>
         </div>
         <div className="flex items-center gap-3">
           <input 
@@ -126,51 +138,48 @@ export const CategoriesPage: React.FC = () => {
           <thead className="bg-gray-50 border-b border-gray-100 text-gray-600">
             <tr>
               <th className="text-left px-5 py-3.5 font-semibold">Category</th>
-              <th className="text-left px-5 py-3.5 font-semibold">Vertical</th>
+              <th className="text-left px-5 py-3.5 font-semibold">Module / Vertical</th>
               <th className="text-left px-5 py-3.5 font-semibold">Products</th>
               <th className="text-left px-5 py-3.5 font-semibold">Status</th>
-              <th className="text-left px-5 py-3.5 font-semibold">Actions</th>
+              <th className="text-right px-5 py-3.5 font-semibold">Actions</th>
             </tr>
           </thead>
           <tbody className="divide-y divide-gray-50">
             {loading ? (
-              Array.from({ length: 4 }).map((_, i) => (
-                <tr key={i}><td colSpan={5} className="px-5 py-4"><div className="h-4 skeleton-shimmer rounded" /></td></tr>
-              ))
-            ) : cats.length === 0 ? (
-              <tr><td colSpan={5} className="text-center py-12 text-gray-400">No categories yet. Create one.</td></tr>
-            ) : filteredCats.length === 0 && search ? (
-              <tr>
-                <td colSpan={5} className="text-center py-12 text-gray-500">
-                  <p className="mb-4">No category found matching "{search}".</p>
-                  <button onClick={() => { openCreate(); setForm(prev => ({ ...prev, name: search })); }} className="px-4 py-2 bg-[#0F2C59] text-white rounded-xl text-sm font-semibold hover:bg-[#1a3d73]">
-                    Create "{search}"
-                  </button>
-                </td>
-              </tr>
+              <tr><td colSpan={5} className="text-center py-10 text-gray-400">Loading dynamic categories...</td></tr>
+            ) : filteredCats.length === 0 ? (
+              <tr><td colSpan={5} className="text-center py-10 text-gray-400">No categories found. Click "Add Category" to create one.</td></tr>
             ) : filteredCats.map(c => (
               <tr key={c.id} className="hover:bg-gray-50/50">
-                <td className="px-5 py-4">
-                  <div className="flex items-center gap-3">
-                    {c.image ? <img src={c.image} alt="" className="w-9 h-9 rounded-lg object-cover border border-gray-100" /> : <div className="w-9 h-9 rounded-lg bg-gray-100 flex items-center justify-center text-xs font-bold text-gray-400">{c.name[0]}</div>}
-                    <div>
-                      <p className="font-semibold text-gray-900">{c.name}</p>
-                      <p className="text-xs text-gray-400">{c.slug}</p>
-                    </div>
+                <td className="px-5 py-4 font-semibold text-gray-900 flex items-center gap-3">
+                  {c.image ? <img src={c.image} alt="" className="w-8 h-8 rounded-lg object-cover border" /> : <div className="w-8 h-8 rounded-lg bg-gray-100 flex items-center justify-center text-xs font-bold text-gray-400">{c.name[0]}</div>}
+                  <div>
+                    <div>{c.name}</div>
+                    <div className="text-xs text-gray-400 font-mono font-normal">/{c.slug}</div>
                   </div>
                 </td>
-                <td className="px-5 py-4 capitalize">
-                  <span className={`text-xs px-2.5 py-1 rounded-full font-medium ${color[c.vertical] ?? 'bg-gray-100 text-gray-600'}`}>{c.vertical}</span>
-                </td>
-                <td className="px-5 py-4 text-gray-600 font-numbers">{c._count?.products ?? 0}</td>
                 <td className="px-5 py-4">
-                  <span className={`text-xs px-2.5 py-1 rounded-full font-medium ${c.isActive ? 'bg-emerald-50 text-emerald-700' : 'bg-gray-100 text-gray-500'}`}>{c.isActive ? 'Active' : 'Inactive (Hidden)'}</span>
+                  <span className={`px-2.5 py-1 rounded-full text-xs font-semibold uppercase ${color[c.vertical] || 'bg-gray-50 text-gray-700'}`}>
+                    {c.vertical.replace('_', ' ')}
+                  </span>
                 </td>
+                <td className="px-5 py-4 font-numbers text-gray-600">{c._count?.products || 0}</td>
                 <td className="px-5 py-4">
-                  <div className="flex items-center gap-1">
-                    <button onClick={() => toggle(c.id)} title="Toggle active" className="p-1.5 rounded-lg hover:bg-gray-100 text-gray-500">{c.isActive ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}</button>
-                    <button onClick={() => openEdit(c)} title="Edit" className="p-1.5 rounded-lg hover:bg-gray-100 text-gray-500"><Edit2 className="w-4 h-4" /></button>
-                    <button onClick={() => remove(c.id)} title="Delete" className="p-1.5 rounded-lg hover:bg-red-50 text-red-500"><Trash2 className="w-4 h-4" /></button>
+                  <button onClick={() => toggle(c.id)} className={`px-2.5 py-1 rounded-full text-xs font-semibold ${c.isActive ? 'bg-emerald-50 text-emerald-700' : 'bg-gray-100 text-gray-500'}`}>
+                    {c.isActive ? 'Active' : 'Disabled'}
+                  </button>
+                </td>
+                <td className="px-5 py-4 text-right">
+                  <div className="flex items-center justify-end gap-1.5">
+                    <button onClick={() => toggle(c.id)} title={c.isActive ? 'Disable' : 'Enable'} className="p-2 rounded-lg bg-gray-50 text-gray-500 hover:bg-gray-100">
+                      {c.isActive ? <Eye className="w-4 h-4" /> : <EyeOff className="w-4 h-4" />}
+                    </button>
+                    <button onClick={() => openEdit(c)} title="Edit" className="p-2 rounded-lg bg-blue-50 text-blue-600 hover:bg-blue-100">
+                      <Edit2 className="w-4 h-4" />
+                    </button>
+                    <button onClick={() => remove(c.id)} title="Delete" className="p-2 rounded-lg bg-red-50 text-red-500 hover:bg-red-100">
+                      <Trash2 className="w-4 h-4" />
+                    </button>
                   </div>
                 </td>
               </tr>
@@ -185,8 +194,8 @@ export const CategoriesPage: React.FC = () => {
             <h3 className="font-bold text-gray-900 text-lg">{editing ? 'Edit Category' : 'Add Category'}</h3>
             {error && <div className="p-3 rounded-xl bg-red-50 text-red-600 text-sm font-semibold">{error}</div>}
             <div>
-              <label className="block text-xs font-semibold text-gray-600 mb-1">Name</label>
-              <input required value={form.name} onChange={e => setForm({ ...form, name: e.target.value })} placeholder="e.g. Mobiles & Tablets" className="w-full px-3 py-2 border rounded-xl text-sm" />
+              <label className="block text-xs font-semibold text-gray-600 mb-1">Category Name</label>
+              <input required value={form.name} onChange={e => setForm({ ...form, name: e.target.value })} placeholder="e.g. Biryani & Rice / Momo & Dimsums" className="w-full px-3 py-2 border rounded-xl text-sm" />
               {nameMatches.length > 0 && (
                 <div className="mt-2 text-xs text-amber-700 bg-amber-50 p-2.5 rounded-xl border border-amber-100 flex flex-col gap-1">
                   <span className="font-semibold">Similar existing categories:</span>
@@ -198,9 +207,9 @@ export const CategoriesPage: React.FC = () => {
             </div>
             <div className="grid grid-cols-2 gap-3">
               <div>
-                <label className="block text-xs font-semibold text-gray-600 mb-1">Vertical</label>
-                <select value={form.vertical} onChange={e => setForm({ ...form, vertical: e.target.value })} className="w-full px-3 py-2 border rounded-xl text-sm capitalize">
-                  {VERTICALS.map(v => <option key={v} value={v}>{v}</option>)}
+                <label className="block text-xs font-semibold text-gray-600 mb-1">Target Module / Vertical</label>
+                <select value={form.vertical} onChange={e => setForm({ ...form, vertical: e.target.value })} className="w-full px-3 py-2 border rounded-xl text-xs font-semibold">
+                  {VERTICAL_OPTIONS.map(v => <option key={v.value} value={v.value}>{v.label}</option>)}
                 </select>
               </div>
               <div>
@@ -209,7 +218,7 @@ export const CategoriesPage: React.FC = () => {
               </div>
             </div>
             <div>
-              <label className="block text-xs font-semibold text-gray-600 mb-1">Category Image (S3 Upload)</label>
+              <label className="block text-xs font-semibold text-gray-600 mb-1">Category Icon / Banner (S3 Upload)</label>
               <div className="flex items-center gap-4">
                 {form.image && (
                   <img src={form.image} alt="Preview" className="w-12 h-12 rounded-lg object-cover border" />

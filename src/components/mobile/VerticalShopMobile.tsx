@@ -27,7 +27,9 @@ export const VerticalShopMobile: React.FC = () => {
   const { categories } = useCategories();
   const shopProducts = products.filter(p => p.vertical === 'shop');
   
-  const shopCategories = categories.filter(c => c.vertical === 'shop');
+  const shopCategories = React.useMemo(() => {
+    return categories.filter(c => (c.vertical || '').toLowerCase() === 'shop' && c.isActive !== false);
+  }, [categories]);
 
   // Autoplay for Hero Carousel
   useEffect(() => {

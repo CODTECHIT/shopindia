@@ -1,316 +1,366 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useMemo } from 'react';
 import { useApp } from '../../context/AppContext';
 import { useProducts } from '../../hooks/useProducts';
 import { useCategories } from '../../hooks/useCategories';
-import { Star, Heart, Calendar, LayoutGrid } from 'lucide-react';
-import { motion, AnimatePresence } from 'framer-motion';
-import { api } from '../../lib/api';
+import {
+  Star, Heart, Calendar, Home, Wrench,
+  ShieldCheck, Clock, X
+} from 'lucide-react';
+import { motion } from 'framer-motion';
+import { VehicleSelectorModal } from '../common/VehicleSelectorModal';
+import type { Product } from '../../data/types';
+
+type ServiceSubVertical = 'home' | 'vehicle';
+
+const HOME_CATEGORIES = [
+  'All',
+  'AC Repair & Service',
+  'Deep House Cleaning',
+  'Electrician & Plumber',
+  'Appliance Maintenance',
+  'Salon & Grooming at Home',
+];
+
+const VEHICLE_CATEGORIES = [
+  'All',
+  'Periodic Car/Bike Service',
+  'Doorstep Foam Wash & Spa',
+  'Emergency Roadside Towing (24x7)',
+  'Battery Jumpstart & Check',
+  'Brakes, Tyres & Wheel Balancing',
+];
 
 export const VerticalServicesMobile: React.FC = () => {
   const { addToCart, navigateTo } = useApp();
   const { products } = useProducts();
-  const { categories } = useCategories();
+  const { categories: apiCategories } = useCategories();
+
+  const [activeSubVertical, setActiveSubVertical] = useState<ServiceSubVertical>('home');
   const [selectedCategory, setSelectedCategory] = useState('');
-  const [bookingServiceId, setBookingServiceId] = useState<string | null>(null);
+  const [bookingService, setBookingService] = useState<Product | null>(null);
   const [selectedDate, setSelectedDate] = useState('Tomorrow');
   const [selectedTime, setSelectedTime] = useState('10:00 AM');
   const [wishlist, setWishlist] = useState<Record<string, boolean>>({});
-  const [currentSlide, setCurrentSlide] = useState(0);
-  const [banners, setBanners] = useState<any[]>([]);
 
-  useEffect(() => {
-    api.get<{ banners: any[] }>('/api/banners')
-      .then(d => setBanners(d.banners.filter((b: any) => b.vertical === 'services')))
-      .catch(console.error);
-  }, []);
-
-  useEffect(() => {
-    if (banners.length === 0) return;
-    const timer = setInterval(() => {
-      setCurrentSlide(prev => (prev + 1) % banners.length);
-    }, 5000);
-    return () => clearInterval(timer);
-  }, [banners.length]);
-
-  const services = products.filter(p => p.vertical === 'services');
-  const serviceCategories = categories.filter(c => c.vertical === 'services');
-  const activeServices = selectedCategory === '' 
-    ? services 
-    : services.filter(p => p.category === selectedCategory);
+  // Selected Vehicle state
+  const [selectedVehicle, setSelectedVehicle] = useState<{
+    type: 'car' | 'bike';
+    brand: string;
+    model: string;
+    fuel?: string;
+  } | null>({
+    type: 'car',
+    brand: 'Hyundai',
+    model: 'Creta',
+    fuel: 'Petrol',
+  });
+  const [vehicleModalOpen, setVehicleModalOpen] = useState(false);
 
   const dates = ['Today', 'Tomorrow', 'Saturday', 'Sunday'];
   const times = ['08:00 AM', '10:00 AM', '01:00 PM', '04:00 PM', '06:00 PM'];
 
-  const handleBookClick = (serviceId: string) => {
-    setBookingServiceId(serviceId);
+  const services = products.filter((p) => {
+    if (p.vertical !== 'services') return false;
+    const isVehicle = p.subVertical === 'vehicle_service' || p.serviceType === 'vehicle' ||
+      p.category?.toLowerCase().includes('vehicle') || p.category?.toLowerCase().includes('car') || p.category?.toLowerCase().includes('bike') ||
+      p.title?.toLowerCase().includes('car') || p.title?.toLowerCase().includes('bike') || p.title?.toLowerCase().includes('towing') || p.title?.toLowerCase().includes('mechanic');
+
+    return activeSubVertical === 'vehicle' ? isVehicle : !isVehicle;
+  });
+
+  // Dynamically derive live category aisles from Admin API + Products
+  const activeCategories = useMemo(() => {
+    const fromApi = apiCategories
+      .filter((c) => {
+        if (c.isActive === false) return false;
+        const v = (c.vertical || '').toLowerCase();
+        if (activeSubVertical === 'home') return v === 'services_home' || v === 'services';
+        if (activeSubVertical === 'vehicle') return v === 'services_vehicle';
+        return v === 'services';
+      })
+      .map((c) => c.name);
+
+    const fromProds = services.map((p) => p.category).filter(Boolean);
+    const fallback = activeSubVertical === 'home' ? HOME_CATEGORIES : VEHICLE_CATEGORIES;
+
+    const merged = Array.from(new Set([...fromApi, ...fromProds, ...fallback.slice(1)]));
+    return ['All', ...merged];
+  }, [apiCategories, activeSubVertical, services]);
+
+  const currentServices = !selectedCategory || selectedCategory === 'All'
+    ? services
+    : services.filter((p) => p.category === selectedCategory || (p.tags && p.tags.includes(selectedCategory)));
+
+  const handleBookClick = (service: Product, e: React.MouseEvent) => {
+    e.stopPropagation();
+    setBookingService(service);
   };
 
   const toggleWishlist = (productId: string, e: React.MouseEvent) => {
     e.stopPropagation();
-    setWishlist(prev => ({ ...prev, [productId]: !prev[productId] }));
+    setWishlist((prev) => ({ ...prev, [productId]: !prev[productId] }));
   };
 
-  const confirmBooking = (service: any) => {
-    const bookingDetails = {
-      ...service,
+  const confirmBooking = () => {
+    if (!bookingService) return;
+    const bookingDetails: Product = {
+      ...bookingService,
       deliveryTime: `${selectedDate} at ${selectedTime}`,
       specs: {
-        ...service.specs,
+        ...bookingService.specs,
         'Scheduled Slot': `${selectedDate}, ${selectedTime}`,
-        'Technician': 'Certified Professional Assigned'
-      }
+        'Service Vertical': activeSubVertical === 'home' ? 'Home Services ( Company Style)' : `Vehicle Services (${selectedVehicle?.brand} ${selectedVehicle?.model})`,
+        'Technician': 'Certified Professional Assigned',
+        'Warranty': '30-Day Guarantee',
+      },
     };
     addToCart(bookingDetails);
-    setBookingServiceId(null);
+    setBookingService(null);
     navigateTo('cart');
   };
 
   return (
-    <div className="w-full flex flex-col gap-4 py-4 px-3 bg-[#FAF9F6] text-brand-slate min-h-screen pb-16 select-none text-left font-sans">
-      {/* Hero Banner Carousel (Now at the very top to match desktop) */}
-      <div className="w-full aspect-[2/1] rounded-[24px] overflow-hidden shadow-soft relative bg-zinc-950 mt-1 mb-2">
-        {banners.length > 0 ? (
-          <>
-            <AnimatePresence mode="wait">
-              <motion.div
-                key={currentSlide}
-                initial={{ opacity: 0 }}
-                animate={{ opacity: 1 }}
-                exit={{ opacity: 0 }}
-                transition={{ duration: 0.6 }}
-                className="absolute inset-0 w-full h-full"
-                onClick={() => navigateTo('search')}
-              >
-                <img src={banners[currentSlide].image} alt={banners[currentSlide].title} className="w-full h-full object-cover" />
-                <div className="absolute inset-0 flex flex-col justify-center px-6 text-white text-left select-none drop-shadow-md">
-                  <span className="text-[7.5px] bg-brand-blue text-white font-black px-2 py-0.5 rounded w-max uppercase tracking-wider mb-2 shadow-soft">
-                    Home Services
-                  </span>
-                  <h3 className="text-xs font-black line-clamp-1 font-heading uppercase tracking-wide leading-tight drop-shadow">
-                    {banners[currentSlide].title}
-                  </h3>
-                  <p className="text-xs opacity-90 line-clamp-1 text-zinc-300 font-semibold mt-1">
-                    {banners[currentSlide].subtitle}
-                  </p>
-                </div>
-              </motion.div>
-            </AnimatePresence>
-
-            <div className="absolute bottom-3 left-0 right-0 flex justify-center gap-1.5 z-20">
-              {banners.map((_, idx) => (
-                <div
-                  key={idx}
-                  className={`h-1 rounded-full transition-all duration-300 ${
-                    idx === currentSlide ? 'w-4 bg-brand-blue' : 'w-1 bg-white/40'
-                  }`}
-                />
-              ))}
-            </div>
-          </>
-        ) : (
-          <div className="absolute inset-0 flex flex-col items-center justify-center text-zinc-500 bg-[#FAF9F6] border border-brand-border">
-            <span className="text-xs font-bold">Loading...</span>
-          </div>
-        )}
-      </div>
-
-      {/* Top Banner Box (Now centered to match Desktop Search Header Banner) */}
-      <div className="w-full py-4 flex flex-col items-center justify-center text-center px-4">
-        <span className="text-xs font-black tracking-widest text-amber-700 uppercase bg-amber-50 px-3 py-1 rounded-full mb-3 border border-amber-200 font-heading">
-          PRO PROFESSIONAL HOME SERVICES
-        </span>
-        <h2 className="text-xl font-extrabold tracking-tight text-brand-graphite mb-1.5 leading-tight font-heading">
-          Certified Services at Your Doorstep
-        </h2>
-        <p className="text-xs text-brand-slate max-w-[280px] mb-2 leading-relaxed font-semibold">
-          Pre-vetted partners, strict safety protocols, and transparent upfront pricing.
-        </p>
-      </div>
-
-      {/* Category circular select scrollbar list */}
-      <div className="w-full flex gap-3 overflow-x-auto py-2.5 px-1 no-scrollbar select-none">
-        {/* 'All' Option */}
-        <div
-          onClick={() => setSelectedCategory('')}
-          className={`flex flex-col items-center shrink-0 w-[70px] text-center cursor-pointer transition-all ${
-            selectedCategory === '' ? 'scale-105' : 'opacity-85 hover:opacity-100'
-          }`}
+    <div className="w-full flex flex-col gap-3 py-3 px-3 bg-[#FAF9F6] min-h-screen text-slate-800 font-sans pb-32">
+      {/* 1. Mobile Sub-Vertical Switcher */}
+      <div className="flex items-center gap-1.5 p-1 bg-white rounded-2xl border border-slate-200 shadow-sm">
+        <button
+          onClick={() => {
+            setActiveSubVertical('home');
+            setSelectedCategory('');
+          }}
+          className={`flex-1 py-2 px-2 rounded-xl text-xs font-black flex items-center justify-center gap-1.5 transition-all ${activeSubVertical === 'home'
+              ? 'bg-amber-600 text-white shadow-md'
+              : 'text-slate-600 bg-slate-50'
+            }`}
         >
-          <div className={`w-12 h-12 rounded-full border overflow-hidden mb-1.5 flex items-center justify-center bg-white transition-all shadow-sm ${
-            selectedCategory === '' ? 'border-amber-500 ring-2 ring-amber-200 shadow-md' : 'border-brand-border/80'
-          }`}>
-            <LayoutGrid size={22} className={selectedCategory === '' ? "text-amber-600" : "text-slate-600"} />
-          </div>
-          <div className="min-h-[28px] flex items-start justify-center w-full">
-            <span className={`text-[11px] font-bold leading-tight line-clamp-2 w-full ${
-              selectedCategory === '' ? 'text-amber-600 font-extrabold' : 'text-slate-700'
-            }`}>
-              All
+          <Home className="w-3.5 h-3.5" />
+          <span>Home Services</span>
+        </button>
+
+        <button
+          onClick={() => {
+            setActiveSubVertical('vehicle');
+            setSelectedCategory('');
+          }}
+          className={`flex-1 py-2 px-2 rounded-xl text-xs font-black flex items-center justify-center gap-1.5 transition-all ${activeSubVertical === 'vehicle'
+              ? 'bg-blue-700 text-white shadow-md'
+              : 'text-slate-600 bg-slate-50'
+            }`}
+        >
+          <Wrench className="w-3.5 h-3.5" />
+          <span>Vehicle Care</span>
+        </button>
+      </div>
+
+      {/* 2. Top Info / Vehicle Selector Strip */}
+      {activeSubVertical === 'vehicle' ? (
+        <div className="p-3 bg-blue-50 border border-blue-200 rounded-2xl flex items-center justify-between">
+          <div className="text-xs">
+            <span className="text-slate-500 font-bold block text-[10px] uppercase">Selected Vehicle</span>
+            <span className="font-extrabold text-blue-950">
+              {selectedVehicle ? `${selectedVehicle.brand} ${selectedVehicle.model}` : 'Pick Vehicle'}
             </span>
           </div>
-        </div>
-
-        {serviceCategories.map(cat => (
-          <div
-            key={cat.id}
-            onClick={() => setSelectedCategory(cat.id)}
-            className={`flex flex-col items-center shrink-0 w-[70px] text-center cursor-pointer transition-all ${
-              selectedCategory === cat.id ? 'scale-105' : 'opacity-85 hover:opacity-100'
-            }`}
+          <button
+            onClick={() => setVehicleModalOpen(true)}
+            className="px-3 py-1 bg-blue-600 text-white text-[11px] font-bold rounded-xl shadow-sm"
           >
-            <div className={`w-12 h-12 rounded-full border overflow-hidden mb-1.5 flex items-center justify-center bg-white transition-all shadow-sm ${
-              selectedCategory === cat.id ? 'border-amber-500 ring-2 ring-amber-200 shadow-md' : 'border-brand-border/80'
-            }`}>
-              <img src={cat.image || undefined} alt={cat.name} className="w-full h-full object-cover" />
-            </div>
-            <div className="min-h-[28px] flex items-start justify-center w-full">
-              <span className={`text-[11px] font-bold leading-tight line-clamp-2 w-full ${
-                selectedCategory === cat.id ? 'text-amber-600 font-extrabold' : 'text-slate-700'
-              }`}>
-                {cat.name}
-              </span>
-            </div>
-          </div>
-        ))}
+            Change
+          </button>
+        </div>
+      ) : (
+        <div className="py-2 px-3 bg-amber-50 border border-amber-200 rounded-2xl flex items-center justify-between text-xs font-bold text-amber-900">
+          <span className="flex items-center gap-1.5">
+            <ShieldCheck size={14} className="text-amber-600" />
+            30-Day Service Guarantee
+          </span>
+          <span className="bg-amber-600 text-white text-[10px] px-2 py-0.5 rounded-full font-black">
+            PRO
+          </span>
+        </div>
+      )}
+
+      {/* 3. Horizontal Categories */}
+      <div className="flex gap-1.5 overflow-x-auto pb-1 no-scrollbar -mx-1 px-1">
+        {activeCategories.map((cat) => {
+          const isSelected = selectedCategory === cat || (!selectedCategory && cat === 'All');
+          return (
+            <button
+              key={cat}
+              onClick={() => setSelectedCategory(cat === 'All' ? '' : cat)}
+              className={`px-3 py-1.5 rounded-xl text-xs font-bold whitespace-nowrap transition-all ${isSelected
+                  ? activeSubVertical === 'home'
+                    ? 'bg-amber-600 text-white shadow-sm'
+                    : 'bg-blue-700 text-white shadow-sm'
+                  : 'bg-white text-slate-600 border border-slate-200'
+                }`}
+            >
+              {cat}
+            </button>
+          );
+        })}
       </div>
 
-      {/* Services List Feed */}
-      <div className="flex flex-col gap-3.5">
-        <span className="text-xs text-brand-slate uppercase font-black tracking-widest mb-1 font-heading">Recommended Packages</span>
-
-        {activeServices.map(service => {
-          const discount = Math.round(((service.originalPrice - service.price) / service.originalPrice) * 100);
-          const isWishlisted = wishlist[service.id];
+      {/* 4. Services List Cards */}
+      <div className="space-y-3">
+        {currentServices.map((service) => {
+          const discount = service.originalPrice > service.price
+            ? Math.round(((service.originalPrice - service.price) / service.originalPrice) * 100)
+            : 0;
 
           return (
             <div
               key={service.id}
-              className="bg-white border border-brand-border/80 rounded-[16px] p-3 flex gap-3 cursor-pointer relative shadow-sm"
               onClick={() => navigateTo('detail', service.id)}
+              className="bg-white p-3.5 rounded-2xl border border-slate-200 shadow-sm flex flex-col gap-2.5 relative"
             >
-              {/* Wishlist Button */}
-              <motion.button
-                whileTap={{ scale: 0.85 }}
+              {discount > 0 && (
+                <span className="absolute top-2 left-2 bg-emerald-600 text-white text-[9px] font-black px-1.5 py-0.5 rounded shadow-sm z-10">
+                  {discount}% OFF
+                </span>
+              )}
+
+              <button
                 onClick={(e) => toggleWishlist(service.id, e)}
-                className="absolute top-3.5 right-3.5 p-1.5 rounded-full bg-white/95 text-brand-slate hover:text-brand-red border border-brand-border transition-colors z-10"
+                className="absolute top-3 right-3 p-1.5 rounded-full bg-white/90 text-slate-400 hover:text-red-500 shadow-sm z-10"
               >
-                <Heart size={11} className={isWishlisted ? "fill-brand-red text-brand-red" : ""} />
-              </motion.button>
+                <Heart size={13} className={wishlist[service.id] ? 'fill-red-500 text-red-500' : ''} />
+              </button>
 
-              {/* Left Column: Info details */}
-              <div className="flex-1 flex flex-col justify-between">
-                <div>
-                  <h3 className="text-xs font-bold text-brand-graphite line-clamp-1 mb-1 pr-6 font-heading">{service.title}</h3>
-                  <div className="flex items-center gap-1.5 mb-2 leading-none">
-                    <div className="flex items-center gap-0.5 bg-amber-100 text-amber-800 font-black text-xs px-1.5 py-0.5 rounded font-numbers">
-                      <span>{service.rating}</span>
-                      <Star size={7} className="fill-amber-800 text-amber-800" />
-                    </div>
-                    <span className="text-xs text-brand-slate font-bold font-numbers">({service.ratingCount.toLocaleString('en-IN')} orders)</span>
+              <div className="flex gap-3">
+                {/* Image */}
+                <div className="w-24 h-24 rounded-xl bg-slate-100 overflow-hidden shrink-0 relative">
+                  <img
+                    src={service.image || 'https://images.unsplash.com/photo-1581094794329-c8112a89af12?w=300&auto=format&fit=crop&q=60'}
+                    alt={service.title}
+                    className="w-full h-full object-cover"
+                  />
+                  <div className="absolute bottom-1 left-1 bg-black/60 text-white text-[9px] font-bold px-1.5 py-0.5 rounded flex items-center gap-0.5">
+                    <Star className="w-2.5 h-2.5 fill-amber-400 text-amber-400" />
+                    <span>{service.rating || 4.8}</span>
                   </div>
-                  <p className="text-xs text-brand-slate leading-normal line-clamp-2 font-medium">{service.description}</p>
                 </div>
 
-                <div className="flex items-baseline gap-1.5 mt-3.5 leading-none font-numbers">
-                  <span className="text-xs font-extrabold text-brand-graphite">₹{service.price}</span>
-                  <span className="text-xs text-brand-slate line-through">₹{service.originalPrice}</span>
-                  <span className="text-xs text-amber-600 font-black bg-amber-50 px-1 py-0.2 rounded border border-amber-200">
-                    {discount}% OFF
-                  </span>
-                </div>
-              </div>
+                {/* Details */}
+                <div className="flex-1 min-w-0 flex flex-col justify-between">
+                  <div>
+                    <h4 className="text-xs font-bold text-slate-900 leading-snug line-clamp-2 mb-1">
+                      {service.title}
+                    </h4>
+                    <div className="flex items-center gap-1.5 text-[10px] text-slate-500 font-semibold mb-1">
+                      <Clock size={11} className="text-amber-600" />
+                      <span>{service.durationEstimate || '45-90 min'}</span>
+                    </div>
+                  </div>
 
-              {/* Right Column: Image and Book button */}
-              <div className="w-full max-w-[90px] flex flex-col items-center justify-between shrink-0" onClick={e => e.stopPropagation()}>
-                <div className="w-full max-w-[90px] aspect-[4/3] rounded-[16px] overflow-hidden bg-white border border-brand-border/60 mb-2 shadow-sm">
-                  <img src={service.image} alt={service.title} className="w-full h-full object-cover" />
+                  <div className="flex items-center justify-between mt-1">
+                    <div>
+                      <span className="text-sm font-black text-slate-900">₹{service.price}</span>
+                      {service.originalPrice > service.price && (
+                        <span className="text-[10px] text-slate-400 line-through block">₹{service.originalPrice}</span>
+                      )}
+                    </div>
+
+                    <button
+                      onClick={(e) => handleBookClick(service, e)}
+                      className={`px-3 py-1.5 text-xs font-black rounded-xl text-white shadow-sm flex items-center gap-1 ${activeSubVertical === 'home'
+                          ? 'bg-amber-600 hover:bg-amber-700'
+                          : 'bg-blue-600 hover:bg-blue-700'
+                        }`}
+                    >
+                      <Calendar size={11} />
+                      <span>Book Slot</span>
+                    </button>
+                  </div>
                 </div>
-                <motion.button
-                  whileTap={{ scale: 0.95 }}
-                  onClick={() => handleBookClick(service.id)}
-                  className="w-full py-2 bg-amber-100 text-amber-800 font-extrabold text-xs rounded-button uppercase tracking-wider shadow-soft transition-colors active:scale-95 font-heading"
-                >
-                  Book
-                </motion.button>
               </div>
             </div>
           );
         })}
       </div>
 
-      {/* Booking Slot bottom drawer sheet for Mobile Services */}
-      <AnimatePresence>
-        {bookingServiceId && (
-          <div className="fixed inset-0 bg-black/40 z-50 flex items-end justify-center backdrop-blur-xs">
-            <div className="absolute inset-0" onClick={() => setBookingServiceId(null)} />
-
-            <motion.div
-              initial={{ y: '100%' }}
-              animate={{ y: 0 }}
-              exit={{ y: '100%' }}
-              transition={{ type: 'spring', damping: 25, stiffness: 220 }}
-              className="w-full bg-white border-t border-brand-border rounded-t-bottom-nav p-5 pb-8 text-left z-50 shadow-elevated text-brand-graphite font-sans"
-            >
-              <div className="flex justify-between items-center border-b border-brand-border pb-3 mb-4 leading-none">
-                <span className="font-extrabold text-sm text-brand-graphite flex items-center gap-1.5 font-heading">
-                  <Calendar size={15} className="text-amber-500" />
-                  Select Booking Slot
-                </span>
-                <button onClick={() => setBookingServiceId(null)} className="text-brand-slate hover:text-brand-graphite font-bold p-1">
-                  ✕
-                </button>
+      {/* Slot Booking Dialog (Bottom Sheet Style) */}
+      {bookingService && (
+        <div className="fixed inset-0 z-50 flex items-end justify-center bg-black/60 backdrop-blur-xs">
+          <motion.div
+            initial={{ opacity: 0, y: 100 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: 100 }}
+            className="w-full bg-white rounded-t-3xl p-5 shadow-2xl space-y-4 max-h-[85vh] overflow-y-auto"
+          >
+            <div className="flex items-center justify-between border-b border-slate-100 pb-3">
+              <div>
+                <h3 className="font-bold text-sm text-slate-900">Select Date & Time Slot</h3>
+                <p className="text-xs text-slate-500 truncate max-w-[240px]">{bookingService.title}</p>
               </div>
-
-              {/* Choose Date */}
-              <span className="text-xs text-brand-slate uppercase font-black tracking-wider block mb-2 font-heading">Choose Date</span>
-              <div className="grid grid-cols-4 gap-2 mb-4">
-                {dates.map(date => (
-                  <button
-                    key={date}
-                    onClick={() => setSelectedDate(date)}
-                    className={`py-2 text-center font-bold text-xs rounded-button border transition-all ${
-                      selectedDate === date
-                        ? 'border-amber-500 bg-amber-50 text-amber-600 shadow-soft'
-                        : 'border-brand-border bg-brand-elevated text-brand-slate'
-                    }`}
-                  >
-                    {date}
-                  </button>
-                ))}
-              </div>
-
-              {/* Choose Arrival Time */}
-              <span className="text-xs text-brand-slate uppercase font-black tracking-wider block mb-2 font-heading">Choose Arrival Time</span>
-              <div className="grid grid-cols-3 gap-2 mb-6">
-                {times.map(time => (
-                  <button
-                    key={time}
-                    onClick={() => setSelectedTime(time)}
-                    className={`py-2 text-center font-bold text-xs rounded-button border transition-all ${
-                      selectedTime === time
-                        ? 'border-amber-500 bg-amber-50 text-amber-600 shadow-soft'
-                        : 'border-brand-border bg-brand-elevated text-brand-slate'
-                    }`}
-                  >
-                    {time}
-                  </button>
-                ))}
-              </div>
-
-              <motion.button
-                whileTap={{ scale: 0.95 }}
-                onClick={() => {
-                  const service = services.find(s => s.id === bookingServiceId);
-                  if (service) confirmBooking(service);
-                }}
-                className="w-full py-3 bg-services-gold hover:bg-services-gold/90 text-[#1C1C1E] font-extrabold text-xs rounded-button uppercase tracking-widest shadow-premium transition-all"
+              <button
+                onClick={() => setBookingService(null)}
+                className="p-1 rounded-full text-slate-400 hover:text-slate-600"
               >
-                Confirm Slot Booking
-              </motion.button>
-            </motion.div>
-          </div>
-        )}
-      </AnimatePresence>
+                <X size={18} />
+              </button>
+            </div>
+
+            <div>
+              <label className="block text-xs font-bold text-slate-600 uppercase mb-1.5">Date</label>
+              <div className="grid grid-cols-4 gap-1.5">
+                {dates.map((d) => (
+                  <button
+                    key={d}
+                    type="button"
+                    onClick={() => setSelectedDate(d)}
+                    className={`py-2 px-1 rounded-xl text-xs font-bold border ${selectedDate === d
+                        ? 'bg-amber-600 text-white border-amber-600'
+                        : 'bg-slate-50 text-slate-700 border-slate-200'
+                      }`}
+                  >
+                    {d}
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            <div>
+              <label className="block text-xs font-bold text-slate-600 uppercase mb-1.5">Time Slot</label>
+              <div className="grid grid-cols-3 gap-1.5">
+                {times.map((t) => (
+                  <button
+                    key={t}
+                    type="button"
+                    onClick={() => setSelectedTime(t)}
+                    className={`py-2 px-1 rounded-xl text-xs font-bold border ${selectedTime === t
+                        ? 'bg-amber-600 text-white border-amber-600'
+                        : 'bg-slate-50 text-slate-700 border-slate-200'
+                      }`}
+                  >
+                    {t}
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            <div className="p-3 bg-slate-50 rounded-2xl flex items-center justify-between text-xs font-bold">
+              <span className="text-slate-600">Total Payable:</span>
+              <span className="text-base font-black text-slate-900">₹{bookingService.price}</span>
+            </div>
+
+            <button
+              onClick={confirmBooking}
+              className="w-full py-3.5 bg-amber-600 text-white rounded-2xl text-xs font-black shadow-md shadow-amber-600/25"
+            >
+              Confirm Slot & Add to Cart
+            </button>
+          </motion.div>
+        </div>
+      )}
+
+      {/* Vehicle Selector Modal */}
+      <VehicleSelectorModal
+        isOpen={vehicleModalOpen}
+        onClose={() => setVehicleModalOpen(false)}
+        selectedVehicle={selectedVehicle}
+        onSelectVehicle={(v) => setSelectedVehicle(v)}
+      />
     </div>
   );
 };

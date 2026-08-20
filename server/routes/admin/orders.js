@@ -66,6 +66,52 @@ router.patch('/:id/status', async (req, res) => {
       where: { id: req.params.id },
       data: { status },
     });
+
+    if (order.customerId) {
+      let title = `Order Update: ${status.toUpperCase()}`;
+      let message = `Your order #${order.orderNumber} status has been updated to ${status}.`;
+
+      if (status === 'confirmed') {
+        title = order.type === 'traditional' ? 'Order Confirmed by Seller 🏪' : 'Order Confirmed! 🎉';
+        message = order.type === 'traditional' 
+          ? `Your order #${order.orderNumber} has been verified and seller is preparing the package.`
+          : `Your order #${order.orderNumber} is confirmed and sent to preparation.`;
+      } else if (status === 'processing' || status === 'preparing' || status === 'packing' || status === 'ready_to_ship') {
+        title = order.type === 'quick_commerce' ? 'Packing your 10-Min Order 🛍️' : order.type === 'traditional' ? 'Package Boxed & Ready 📦' : 'Items Packed & Ready 📦';
+        message = order.type === 'traditional'
+          ? `Your order #${order.orderNumber} is packed and awaiting courier pickup.`
+          : `Your order #${order.orderNumber} is packed and prepared for dispatch.`;
+      } else if (status === 'out_for_delivery' || status === 'on_the_way' || status === 'shipped' || status === 'dispatched') {
+        title = order.type === 'quick_commerce' 
+          ? 'Rider On The Way! ⚡🛵' 
+          : order.type === 'hvac_service' 
+          ? 'Technician On The Way 🛠️' 
+          : 'Package Shipped & In Transit 🚚';
+        message = order.type === 'quick_commerce'
+          ? `Your rider is on the way with order #${order.orderNumber}.`
+          : order.type === 'hvac_service'
+          ? `Your certified technician is heading to your address for order #${order.orderNumber}.`
+          : `Your package #${order.orderNumber} has been dispatched with express courier and is on its way.`;
+      } else if (status === 'delivered' || status === 'completed') {
+        title = order.type === 'hvac_service' ? 'Service Completed! ✅' : order.type === 'traditional' ? 'Package Delivered! 🎁' : 'Order Delivered! 🥳';
+        message = order.type === 'traditional'
+          ? `Package #${order.orderNumber} was successfully delivered to your doorstep. Enjoy your purchase!`
+          : `Order #${order.orderNumber} has been successfully delivered. Thank you for choosing ShopIndia!`;
+      }
+
+      await prisma.userNotification.create({
+        data: {
+          userId: order.customerId,
+          category: 'order',
+          title,
+          message,
+          channel: 'in_app',
+          isRead: false,
+          link: `/orders/${order.id}`,
+        }
+      }).catch(err => console.error('Failed to notify customer', err));
+    }
+
     res.json(order);
   } catch (err) { res.status(500).json({ error: err.message }); }
 });

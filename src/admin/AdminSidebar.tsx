@@ -56,11 +56,10 @@ export const AdminSidebar: React.FC<SidebarProps> = ({ currentTab, onTabChange }
               <button
                 key={item.id}
                 onClick={() => onTabChange(item.id)}
-                className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-medium transition-all ${
-                  active
+                className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-medium transition-all ${active
                     ? 'bg-white/15 text-white font-semibold shadow-inner'
                     : 'text-white/70 hover:bg-white/5 hover:text-white'
-                }`}
+                  }`}
               >
                 <Icon className="w-4 h-4" />
                 <span>{item.label}</span>

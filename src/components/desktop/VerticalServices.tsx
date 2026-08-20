@@ -1,471 +1,457 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useMemo } from 'react';
 import { useApp } from '../../context/AppContext';
 import { useProducts } from '../../hooks/useProducts';
 import { useCategories } from '../../hooks/useCategories';
-import { 
-  Star, Clock, CheckCircle2, Calendar, ShieldCheck, 
-  MapPin, Heart, LayoutGrid, MessageSquare, Bot, X
+import {
+  Star, Clock, Calendar, ShieldCheck,
+  Heart, LayoutGrid, X,
+  Home, Wrench, Shield, PhoneCall
 } from 'lucide-react';
-import { motion, AnimatePresence } from 'framer-motion';
-import { api } from '../../lib/api';
-import { ServiceQuickSupport } from '../common/ServiceQuickSupport';
+import { motion } from 'framer-motion';
+import { VehicleSelectorModal } from '../common/VehicleSelectorModal';
+import type { Product } from '../../data/types';
+
+type ServiceSubVertical = 'home' | 'vehicle';
+
+const HOME_CATEGORIES = [
+  'All Home Services',
+  'AC Repair & Service',
+  'Deep House Cleaning',
+  'Electrician & Plumber',
+  'Appliance Maintenance',
+  'Salon & Grooming at Home',
+  'Carpentry & Painting',
+];
+
+const VEHICLE_CATEGORIES = [
+  'All Vehicle Services',
+  'Periodic Car/Bike Service',
+  'Doorstep Foam Wash & Spa',
+  'Emergency Roadside Towing (24x7)',
+  'Battery Jumpstart & Check',
+  'Brakes, Tyres & Wheel Balancing',
+  'Engine & AC Diagnostics',
+];
 
 export const VerticalServices: React.FC = () => {
-  const { addToCart, navigateTo, location } = useApp();
+  const { addToCart, navigateTo } = useApp();
   const { products } = useProducts();
-  const { categories } = useCategories();
+  const { categories: apiCategories } = useCategories();
+
+  const [activeSubVertical, setActiveSubVertical] = useState<ServiceSubVertical>('home');
   const [selectedCategory, setSelectedCategory] = useState('');
-  const [desktopSupportOpen, setDesktopSupportOpen] = useState(false);
-  const [selectedServiceIdForBooking, setSelectedServiceIdForBooking] = useState<string | null>(null);
+
+  // Selected Vehicle state
+  const [selectedVehicle, setSelectedVehicle] = useState<{
+    type: 'car' | 'bike';
+    brand: string;
+    model: string;
+    fuel?: string;
+  } | null>({
+    type: 'car',
+    brand: 'Hyundai',
+    model: 'Creta',
+    fuel: 'Petrol',
+  });
+  const [vehicleModalOpen, setVehicleModalOpen] = useState(false);
+
+  // Booking Slot Modal
+  const [selectedServiceForBooking, setSelectedServiceForBooking] = useState<Product | null>(null);
   const [selectedDate, setSelectedDate] = useState('Tomorrow');
   const [selectedTime, setSelectedTime] = useState('10:00 AM');
   const [wishlist, setWishlist] = useState<Record<string, boolean>>({});
-  const [currentSlide, setCurrentSlide] = useState(0);
-  const [isHoveringCarousel, setIsHoveringCarousel] = useState(false);
-  const [banners, setBanners] = useState<any[]>([]);
-
-  useEffect(() => {
-    api.get<{ banners: any[] }>('/api/banners')
-      .then(d => setBanners(d.banners.filter((b: any) => b.vertical === 'services')))
-      .catch(console.error);
-  }, []);
-
-  useEffect(() => {
-    if (isHoveringCarousel || banners.length === 0) return;
-    const timer = setInterval(() => {
-      setCurrentSlide(prev => (prev + 1) % banners.length);
-    }, 6000);
-    return () => clearInterval(timer);
-  }, [isHoveringCarousel, banners.length]);
-
-  // Filter professional service vertical items
-  const services = products.filter(p => p.vertical === 'services');
-  const serviceCategories = categories.filter(c => c.vertical === 'services');
-  const activeServices = selectedCategory === '' 
-    ? services 
-    : services.filter(p => p.category === selectedCategory);
 
   const dates = ['Today', 'Tomorrow', 'Saturday', 'Sunday'];
   const times = ['08:00 AM', '10:00 AM', '01:00 PM', '04:00 PM', '06:00 PM'];
 
-  const handleBookNow = (service: any) => {
-    setSelectedServiceIdForBooking(service.id);
+  // Filter service items
+  const services = products.filter((p) => {
+    if (p.vertical !== 'services') return false;
+    const isVehicle = p.subVertical === 'vehicle_service' || p.serviceType === 'vehicle' ||
+      p.category?.toLowerCase().includes('vehicle') || p.category?.toLowerCase().includes('car') || p.category?.toLowerCase().includes('bike') ||
+      p.title?.toLowerCase().includes('car') || p.title?.toLowerCase().includes('bike') || p.title?.toLowerCase().includes('towing') || p.title?.toLowerCase().includes('mechanic');
+
+    return activeSubVertical === 'vehicle' ? isVehicle : !isVehicle;
+  });
+
+  // Dynamically derive live category aisles from Admin API + Products
+  const activeCategories = useMemo(() => {
+    const fromApi = apiCategories
+      .filter((c) => {
+        if (c.isActive === false) return false;
+        const v = (c.vertical || '').toLowerCase();
+        if (activeSubVertical === 'home') return v === 'services_home' || v === 'services';
+        if (activeSubVertical === 'vehicle') return v === 'services_vehicle';
+        return v === 'services';
+      })
+      .map((c) => c.name);
+
+    const fromProds = services.map((p) => p.category).filter(Boolean);
+    const fallback = activeSubVertical === 'home' ? HOME_CATEGORIES : VEHICLE_CATEGORIES;
+    const defaultLabel = activeSubVertical === 'home' ? 'All Home Services' : 'All Vehicle Services';
+
+    const merged = Array.from(new Set([...fromApi, ...fromProds, ...fallback.slice(1)]));
+    return [defaultLabel, ...merged];
+  }, [apiCategories, activeSubVertical, services]);
+
+  const filteredServices = selectedCategory === '' || selectedCategory.startsWith('All')
+    ? services
+    : services.filter((p) => p.category === selectedCategory || (p.tags && p.tags.includes(selectedCategory)));
+
+  const handleBookNow = (service: Product, e: React.MouseEvent) => {
+    e.stopPropagation();
+    setSelectedServiceForBooking(service);
+  };
+
+  const confirmBooking = () => {
+    if (!selectedServiceForBooking) return;
+    const bookingDetails: Product = {
+      ...selectedServiceForBooking,
+      deliveryTime: `${selectedDate} at ${selectedTime}`,
+      specs: {
+        ...selectedServiceForBooking.specs,
+        'Scheduled Slot': `${selectedDate}, ${selectedTime}`,
+        'Service Vertical': activeSubVertical === 'home' ? 'Home Services ( Company Style)' : `Vehicle Services (${selectedVehicle?.brand} ${selectedVehicle?.model})`,
+        'Technician': 'Certified Professional Assigned',
+        'Warranty': '30-Day Money Back Guarantee',
+      },
+    };
+    addToCart(bookingDetails);
+    setSelectedServiceForBooking(null);
+    navigateTo('cart');
   };
 
   const toggleWishlist = (productId: string, e: React.MouseEvent) => {
     e.stopPropagation();
-    setWishlist(prev => ({ ...prev, [productId]: !prev[productId] }));
-  };
-
-  const confirmBooking = (service: any) => {
-    const bookingDetails = {
-      ...service,
-      deliveryTime: `${selectedDate} at ${selectedTime}`,
-      specs: {
-        ...service.specs,
-        'Scheduled Slot': `${selectedDate}, ${selectedTime}`,
-        'Technician': 'Certified Professional Assigned'
-      }
-    };
-    addToCart(bookingDetails);
-    setSelectedServiceIdForBooking(null);
-    navigateTo('cart');
+    setWishlist((prev) => ({ ...prev, [productId]: !prev[productId] }));
   };
 
   return (
-    <div className="w-full flex flex-col min-h-screen bg-[#FAF9F6] text-brand-slate py-10 px-12 select-none font-sans text-left">
-      {/* Hero Banner Carousel */}
-      <div className="max-w-[1440px] mx-auto w-full mb-8">
-        <div 
-          className="w-full h-[260px] md:h-[320px] lg:h-[380px] rounded-hero overflow-hidden shadow-premium relative bg-zinc-950 group"
-          onMouseEnter={() => setIsHoveringCarousel(true)}
-          onMouseLeave={() => setIsHoveringCarousel(false)}
-        >
-          {banners.length > 0 ? (
-            <AnimatePresence mode="wait">
-              <motion.div
-                key={currentSlide}
-                initial={{ opacity: 0 }}
-                animate={{ opacity: 1 }}
-                exit={{ opacity: 0 }}
-                transition={{ duration: 0.8, ease: [0.16, 1, 0.3, 1] }}
-                className="absolute inset-0 w-full h-full"
-              >
-                {/* Main Image */}
-                <img
-                  src={banners[currentSlide]?.image}
-                  alt={banners[currentSlide]?.title}
-                  className="absolute inset-0 w-full h-full object-cover object-center select-none"
-                />
-                
-                <div className="absolute inset-y-0 left-0 pl-10 md:pl-20 flex flex-col justify-center max-w-xl z-10 text-left text-white select-none drop-shadow-md">
-                    <motion.span
-                      initial={{ opacity: 0, y: 10 }}
-                      animate={{ opacity: 1, y: 0 }}
-                      transition={{ delay: 0.2, duration: 0.5 }}
-                      className="bg-brand-blue/90 text-xs font-bold uppercase px-3 py-1 rounded-sm w-max tracking-widest mb-5 shadow-soft"
-                    >
-                      Home Services
-                    </motion.span>
-                    <motion.h2
-                      initial={{ opacity: 0, y: 15 }}
-                      animate={{ opacity: 1, y: 0 }}
-                      transition={{ delay: 0.3, duration: 0.6 }}
-                      className="text-4xl font-bold tracking-tight mb-3 font-heading leading-tight drop-shadow-[0_2px_8px_rgba(0,0,0,0.4)]"
-                    >
-                      {banners[currentSlide]?.title}
-                    </motion.h2>
-                    <motion.p
-                      initial={{ opacity: 0, y: 15 }}
-                      animate={{ opacity: 1, y: 0 }}
-                      transition={{ delay: 0.4, duration: 0.6 }}
-                      className="text-sm font-medium text-zinc-100 mb-8 leading-relaxed max-w-md drop-shadow-md"
-                    >
-                      {banners[currentSlide]?.subtitle}
-                    </motion.p>
-                    
-                    <motion.button
-                      initial={{ opacity: 0, scale: 0.95 }}
-                      animate={{ opacity: 1, scale: 1 }}
-                      transition={{ delay: 0.5, duration: 0.4 }}
-                      whileHover={{ scale: 1.02 }}
-                      whileTap={{ scale: 0.98 }}
-                      onClick={() => navigateTo('search')}
-                      className="group px-8 py-3.5 bg-white text-zinc-950 rounded-full font-bold text-xs tracking-wider shadow-[0_8px_20px_rgba(0,0,0,0.3)] hover:shadow-[0_8px_25px_rgba(255,255,255,0.2)] hover:bg-zinc-50 transition-all w-max uppercase flex items-center gap-2.5"
-                    >
-                      <span>Book Now</span>
-                      <span className="text-brand-blue group-hover:translate-x-1 transition-transform">→</span>
-                    </motion.button>
-                  </div>
-                </motion.div>
-              </AnimatePresence>
-          ) : (
-            <div className="absolute inset-0 flex items-center justify-center text-zinc-500 text-sm bg-[#FAF9F6]">Loading promotions...</div>
-          )}
-        </div>
-      </div>
-      {/* Search Header Banner */}
-      <div className="w-full py-12 flex flex-col items-center justify-center text-center max-w-[1440px] px-8 mx-auto">
-        <span className="text-xs font-black tracking-widest text-services-gold uppercase bg-services-gold/10 px-3.5 py-1.5 rounded-full mb-5 border border-services-gold/20 font-heading">
-          PRO PROFESSIONAL HOME SERVICES
-        </span>
-        <h1 className="text-3xl font-extrabold tracking-tight text-brand-graphite mb-2 leading-tight font-heading">
-          Certified Services at Your Doorstep
-        </h1>
-        <p className="text-xs text-brand-slate max-w-xl mb-8 leading-relaxed font-semibold">
-          Pre-vetted partners, strict safety protocols, and transparent upfront pricing.
-        </p>
-
-        {/* Location & Trust Bar */}
-        <div className="flex gap-8 items-center border border-brand-border/40 rounded-card bg-white p-5 w-full max-w-5xl shadow-soft">
-          <div className="flex items-center gap-3.5 border-r border-brand-border/40 pr-8 shrink-0">
-            <MapPin size={18} className="text-services-gold" />
-            <div className="text-left leading-tight">
-              <span className="text-xs text-brand-slate block font-black uppercase tracking-wider">Service Location</span>
-              <span className="text-xs font-bold text-brand-graphite max-w-[180px] truncate block">{location}</span>
-            </div>
-          </div>
-          <div className="flex-1 grid grid-cols-3 gap-4 text-left pl-4 font-bold text-xs">
-            <div className="flex items-center gap-2.5 text-brand-graphite">
-              <ShieldCheck size={16} className="text-services-gold" />
-              <span>Verified Experts</span>
-            </div>
-            <div className="flex items-center gap-2.5 text-brand-graphite">
-              <Clock size={16} className="text-services-gold" />
-              <span>Flexible Slots</span>
-            </div>
-            <div className="flex items-center gap-2.5 text-brand-graphite">
-              <CheckCircle2 size={16} className="text-services-gold" />
-              <span>Guarantee Cover</span>
-            </div>
-          </div>
-        </div>
-      </div>
-
-      {/* Category Select Cards (20px rounded) */}
-      <div className="max-w-[1440px] mx-auto w-full flex flex-wrap justify-center gap-5 mb-10 px-8">
-        <div
-          onClick={() => setSelectedCategory('')}
-          className={`border rounded-card p-5 flex flex-col items-center justify-center text-center cursor-pointer transition-all duration-300 min-w-full max-w-[160px] ${
-            selectedCategory === ''
-              ? 'border-services-gold bg-services-gold/5 shadow-soft scale-[1.03]'
-              : 'border-brand-border/40 bg-white hover:border-brand-border/60 hover:scale-[1.01]'
-          }`}
-        >
-          <div className="w-12 h-12 rounded-full overflow-hidden mb-3 flex items-center justify-center bg-services-gold/10 border border-services-gold/20">
-            <LayoutGrid size={24} className="text-services-gold" />
-          </div>
-          <span className="text-xs font-semibold uppercase tracking-wider text-brand-graphite font-heading">
-            All Categories
-          </span>
-        </div>
-        {serviceCategories.map(cat => (
-          <div
-            key={cat.id}
-            onClick={() => setSelectedCategory(cat.id)}
-            className={`border rounded-card p-5 flex flex-col items-center justify-center text-center cursor-pointer transition-all duration-300 min-w-[150px] ${
-              selectedCategory === cat.id
-                ? 'border-services-gold bg-services-gold/5 shadow-soft scale-[1.03]'
-                : 'border-brand-border/40 bg-white hover:border-brand-border/60 hover:scale-[1.01]'
-            }`}
-          >
-            <div className="w-12 h-12 rounded-full overflow-hidden mb-3 flex items-center justify-center bg-zinc-100 border border-brand-border/40">
-              <img src={cat.image || undefined} alt={cat.name} className="w-full h-full object-cover" />
-            </div>
-            <span className="text-xs font-extrabold text-brand-graphite tracking-wide font-heading">{cat.name}</span>
-          </div>
-        ))}
-      </div>
-
-      {/* Main Grid: Services Feed (Left) & Guarantee Box (Right) */}
-      <div className="max-w-[1440px] mx-auto w-full flex flex-col lg:flex-row gap-8 px-8">
-        {/* Left Side: Services List Feed */}
-        <div className="flex-1 flex flex-col gap-6">
-          <h2 className="text-sm font-black text-brand-graphite border-b border-brand-border/40 pb-3.5 flex items-center gap-2.5 uppercase tracking-wider font-heading">
-            <span>Available Packages</span>
-            <span className="text-xs text-brand-slate font-bold font-numbers">({activeServices.length} items)</span>
-          </h2>
-
-          <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
-            {activeServices.map(service => {
-
-              const isWishlisted = wishlist[service.id];
-
-              return (
-                <div
-                  key={service.id}
-                  className="bg-white border border-brand-border/40 rounded-card p-4 flex flex-col gap-4 hover:border-services-gold/30 hover:shadow-md hover:-translate-y-1 transition-all duration-350 relative group"
-                >
-                  {/* Wishlist Button */}
-                  <motion.button
-                    whileTap={{ scale: 0.85 }}
-                    onClick={(e) => toggleWishlist(service.id, e)}
-                    className="absolute top-4 right-4 p-2 rounded-full bg-white/90 text-brand-slate hover:text-brand-red border border-brand-border/40 shadow-sm transition-colors z-10"
-                  >
-                    <Heart size={13} className={isWishlisted ? "fill-brand-red text-brand-red" : ""} />
-                  </motion.button>
-
-                  {/* Service Image */}
-                  <div className="w-full aspect-[4/3] rounded-card overflow-hidden shrink-0 bg-zinc-100 border border-brand-border/40 flex items-center justify-center">
-                    <img src={service.image} alt={service.title} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300" />
-                  </div>
-
-                  {/* Content details */}
-                  <div className="flex flex-col flex-1 justify-between">
-                    <div>
-                      <h3 className="font-extrabold text-sm text-brand-graphite mb-1.5 line-clamp-1 group-hover:text-services-gold transition-colors duration-300 font-heading">
-                        {service.title}
-                      </h3>
-                      <div className="flex items-center gap-2 mb-2.5 leading-none">
-                        <div className="flex items-center gap-0.5 bg-services-gold text-[#1C1C1E] font-black text-xs px-1.5 py-0.5 rounded shadow-soft font-numbers">
-                          <span>{service.rating}</span>
-                          <Star size={8} className="fill-[#1C1C1E] text-[#1C1C1E]" />
-                        </div>
-                        <span className="text-xs text-brand-slate font-bold font-numbers">
-                          ({service.ratingCount.toLocaleString('en-IN')} bookings)
-                        </span>
-                      </div>
-                      <p className="text-xs text-brand-slate leading-relaxed line-clamp-2 font-medium mb-4">
-                        {service.description}
-                      </p>
-                    </div>
-
-                    <div className="flex items-center justify-between mt-auto">
-                      <div className="flex items-baseline gap-1.5 leading-none font-numbers flex-wrap">
-                        <span className="text-base font-extrabold text-brand-graphite">₹{service.price}</span>
-                        <span className="text-xs text-brand-slate line-through">₹{service.originalPrice}</span>
-                      </div>
-
-                      <motion.button
-                        whileTap={{ scale: 0.95 }}
-                        onClick={() => handleBookNow(service)}
-                        className="px-4 py-2 bg-services-gold hover:bg-services-gold/90 text-[#1C1C1E] font-extrabold text-xs tracking-wider rounded-button transition-colors uppercase whitespace-nowrap ml-2"
-                      >
-                        Book
-                      </motion.button>
-                    </div>
-                  </div>
-                </div>
-              );
-            })}
-          </div>
-        </div>
-
-        {/* Right Side: Trust & Verification Guarantee Widget & Quick Live Support */}
-        <div className="w-full lg:w-full max-w-[320px] shrink-0 flex flex-col gap-4">
-          {/* Live Support Card */}
-          <div className="bg-gradient-to-br from-amber-700 via-amber-600 to-amber-800 text-white rounded-card p-5 shadow-premium flex flex-col gap-3 text-left">
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-2">
-                <div className="w-8 h-8 rounded-full bg-white/20 flex items-center justify-center">
-                  <Bot size={18} className="text-white" />
-                </div>
-                <span className="font-black text-xs font-heading">24/7 Live Support</span>
-              </div>
-              <span className="flex items-center gap-1 text-[10px] bg-emerald-400 text-zinc-950 font-black px-2 py-0.5 rounded-full">
-                <span className="w-1.5 h-1.5 rounded-full bg-zinc-950 animate-pulse" />
-                Live
-              </span>
-            </div>
-            <p className="text-xs text-amber-100 leading-relaxed font-medium">
-              Have questions about booking, rescheduling, or need a technician callback? Chat with our instant assistant.
-            </p>
+    <div className="w-full flex flex-col min-h-screen bg-[#FAF9F6] text-slate-800 py-6 px-8 select-none font-sans">
+      <div className="max-w-[1440px] mx-auto w-full space-y-6">
+        {/* 1. Sub-Vertical Segmented Switcher */}
+        <div className="bg-white/90 backdrop-blur-md p-2 rounded-3xl border border-slate-200 shadow-sm flex flex-col md:flex-row items-center justify-between gap-3">
+          <div className="flex items-center gap-2 w-full md:w-auto">
             <button
-              onClick={() => setDesktopSupportOpen(true)}
-              className="w-full py-2.5 bg-white text-amber-800 hover:bg-amber-50 rounded-xl font-extrabold text-xs uppercase tracking-wider shadow-sm transition-all flex items-center justify-center gap-2 font-heading"
+              onClick={() => {
+                setActiveSubVertical('home');
+                setSelectedCategory('');
+              }}
+              className={`flex items-center gap-2.5 px-6 py-3 rounded-2xl font-extrabold text-xs transition-all ${activeSubVertical === 'home'
+                  ? 'bg-amber-600 text-white shadow-lg shadow-amber-600/20 scale-[1.02]'
+                  : 'text-slate-600 hover:text-slate-900 hover:bg-slate-100'
+                }`}
             >
-              <MessageSquare size={13} />
-              <span>Open Support Desk</span>
+              <Home className="w-4 h-4" />
+              <span>Home Services</span>
+              <span className={`text-[10px] uppercase px-2 py-0.5 rounded-full font-black ${activeSubVertical === 'home' ? 'bg-white/20 text-white' : 'bg-slate-100 text-slate-500'}`}>
+                Style
+              </span>
+            </button>
+
+            <button
+              onClick={() => {
+                setActiveSubVertical('vehicle');
+                setSelectedCategory('');
+              }}
+              className={`flex items-center gap-2.5 px-6 py-3 rounded-2xl font-extrabold text-xs transition-all ${activeSubVertical === 'vehicle'
+                  ? 'bg-blue-700 text-white shadow-lg shadow-blue-700/20 scale-[1.02]'
+                  : 'text-slate-600 hover:text-slate-900 hover:bg-slate-100'
+                }`}
+            >
+              <Wrench className="w-4 h-4" />
+              <span>Vehicle Services</span>
+              <span className={`text-[10px] uppercase px-2 py-0.5 rounded-full font-black ${activeSubVertical === 'vehicle' ? 'bg-white/20 text-white' : 'bg-slate-100 text-slate-500'}`}>
+                Technician Mkt
+              </span>
             </button>
           </div>
 
-          <div className="bg-white border border-brand-border/40 rounded-card p-5 flex flex-col gap-4 shadow-soft">
-            <span className="text-brand-graphite font-black text-xs uppercase tracking-widest border-b border-brand-border/40 pb-2.5 font-heading">
-              ShopIndia Promise
-            </span>
-            <div className="flex flex-col gap-5 text-xs font-semibold text-brand-slate">
-              <div className="flex gap-3 text-left">
-                <CheckCircle2 size={16} className="text-services-gold shrink-0 mt-0.5" />
-                <div className="flex flex-col leading-tight">
-                  <span className="font-bold text-brand-graphite mb-0.5 font-heading">Insurance Cover</span>
-                  <span className="text-xs text-brand-slate">Up to ₹10,000 protection against accidental damages.</span>
-                </div>
+          {/* Vehicle Selector Badge (if in Vehicle Mode) */}
+          {activeSubVertical === 'vehicle' ? (
+            <div className="flex items-center gap-2 bg-blue-50 border border-blue-200 px-4 py-2 rounded-2xl">
+              <div className="text-xs">
+                <span className="text-slate-500 font-semibold block text-[10px] uppercase">Active Vehicle:</span>
+                <span className="font-bold text-blue-900">
+                  {selectedVehicle ? `${selectedVehicle.brand} ${selectedVehicle.model} (${selectedVehicle.fuel})` : 'No vehicle selected'}
+                </span>
               </div>
-              <div className="flex gap-3 text-left">
-                <CheckCircle2 size={16} className="text-services-gold shrink-0 mt-0.5" />
-                <div className="flex flex-col leading-tight">
-                  <span className="font-bold text-brand-graphite mb-0.5 font-heading">Certified Partners Only</span>
-                  <span className="text-xs text-brand-slate">Thorough background check and training audits.</span>
-                </div>
-              </div>
-              <div className="flex gap-3 text-left">
-                <CheckCircle2 size={16} className="text-services-gold shrink-0 mt-0.5" />
-                <div className="flex flex-col leading-tight">
-                  <span className="font-bold text-brand-graphite mb-0.5 font-heading">No-Questions Re-servicing</span>
-                  <span className="text-xs text-brand-slate">If not satisfied, free re-service done in 4 days.</span>
-                </div>
-              </div>
+              <button
+                onClick={() => setVehicleModalOpen(true)}
+                className="px-3 py-1 bg-blue-600 hover:bg-blue-700 text-white rounded-xl text-xs font-bold transition-colors shadow-sm ml-2"
+              >
+                Change
+              </button>
             </div>
+          ) : (
+            <div className="text-xs font-semibold text-slate-500 flex items-center gap-2 px-3">
+              <ShieldCheck className="w-4 h-4 text-emerald-600" />
+              <span>30-Day Post-Service Warranty & Pre-Vetted Pros</span>
+            </div>
+          )}
+        </div>
+
+        {/* 2. Hero Banner */}
+        <div
+          className={`w-full p-8 rounded-hero text-white shadow-premium relative overflow-hidden bg-gradient-to-r ${activeSubVertical === 'home'
+              ? 'from-amber-700 via-amber-800 to-stone-900'
+              : 'from-blue-800 via-indigo-900 to-slate-950'
+            }`}
+        >
+          <div className="relative z-10 max-w-2xl space-y-3">
+            <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-black uppercase tracking-wider bg-white/15 backdrop-blur-md">
+              <Shield className="w-3.5 h-3.5" />
+              {activeSubVertical === 'home' ? ' Company Standardized Quality' : 'Doorstep & Garage Technician Network'}
+            </span>
+            <h1 className="text-3xl md:text-4xl font-black font-heading tracking-tight leading-tight">
+              {activeSubVertical === 'home'
+                ? 'Expert Home Cleaning, Repair & Grooming at Your Doorstep'
+                : 'Top-Rated Mechanics, Car Spa & Emergency 24x7 Towing'}
+            </h1>
+            <p className="text-xs md:text-sm text-white/80 font-medium">
+              {activeSubVertical === 'home'
+                ? 'Transparent rate cards, verified technicians with safety gear, and complete 30-day rework warranty.'
+                : 'Genuine OEM spare parts, live technician tracking, and upfront estimates with zero hidden charges.'}
+            </p>
           </div>
+        </div>
+
+        {/* 3. Main Catalog Area */}
+        <div className="flex flex-col md:flex-row gap-8 items-start">
+          {/* Left Category Filter */}
+          <aside className="w-full md:w-64 shrink-0 bg-white p-4 rounded-card border border-slate-200 shadow-soft sticky top-28 space-y-2">
+            <div className="flex items-center gap-2 pb-3 mb-1 border-b border-slate-100 text-xs font-black uppercase tracking-wider text-slate-400">
+              <LayoutGrid size={14} />
+              <span>{activeSubVertical === 'home' ? 'Home Categories' : 'Vehicle Categories'}</span>
+            </div>
+
+            <div className="flex flex-row md:flex-col gap-1.5 overflow-x-auto md:overflow-visible pb-2 md:pb-0">
+              {activeCategories.map((catName) => {
+                const isSelected = selectedCategory === catName || (selectedCategory === '' && catName.startsWith('All'));
+                return (
+                  <button
+                    key={catName}
+                    onClick={() => setSelectedCategory(catName.startsWith('All') ? '' : catName)}
+                    className={`flex items-center justify-between px-3.5 py-2.5 rounded-xl text-xs font-bold transition-all text-left whitespace-nowrap ${isSelected
+                        ? activeSubVertical === 'home'
+                          ? 'bg-amber-50 text-amber-900 border-l-4 border-amber-600'
+                          : 'bg-blue-50 text-blue-900 border-l-4 border-blue-600'
+                        : 'text-slate-600 hover:bg-slate-50 hover:text-slate-900'
+                      }`}
+                  >
+                    <span>{catName}</span>
+                  </button>
+                );
+              })}
+            </div>
+
+            {activeSubVertical === 'vehicle' && (
+              <div className="pt-4 border-t border-slate-100">
+                <div className="p-3 bg-red-50 border border-red-200 rounded-2xl text-xs text-red-900 space-y-1">
+                  <p className="font-bold flex items-center gap-1.5">
+                    <PhoneCall className="w-3.5 h-3.5 text-red-600 animate-bounce" /> 24x7 Roadside RSA
+                  </p>
+                  <p className="text-[11px] text-red-700">Call 1800-SHOP-INDIA for instant breakdown towing dispatch.</p>
+                </div>
+              </div>
+            )}
+          </aside>
+
+          {/* Right Services List */}
+          <main className="flex-1 w-full min-w-0">
+            <div className="flex items-center justify-between mb-4">
+              <h3 className="font-heading font-black text-lg text-slate-800 flex items-center gap-2">
+                <span>{selectedCategory || activeCategories[0]}</span>
+                <span className="text-xs font-semibold text-slate-400 bg-slate-100 px-2 py-0.5 rounded-full">
+                  {filteredServices.length} packages
+                </span>
+              </h3>
+            </div>
+
+            {filteredServices.length === 0 ? (
+              <div className="w-full py-16 text-center bg-white rounded-3xl border border-slate-200 p-8 space-y-3">
+                <div className="w-16 h-16 rounded-full bg-slate-100 text-slate-400 flex items-center justify-center mx-auto">
+                  <Wrench className="w-8 h-8" />
+                </div>
+                <h4 className="font-bold text-slate-700">No specific packages listed in this category</h4>
+                <p className="text-xs text-slate-500 max-w-sm mx-auto">
+                  Select another category or click Book Custom Inspection to send a certified technician for diagnostics.
+                </p>
+              </div>
+            ) : (
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                {filteredServices.map((service) => {
+                  const discount = service.originalPrice > service.price
+                    ? Math.round(((service.originalPrice - service.price) / service.originalPrice) * 100)
+                    : 0;
+
+                  return (
+                    <motion.div
+                      key={service.id}
+                      layout
+                      initial={{ opacity: 0, y: 10 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      className="group bg-white rounded-card p-4 border border-slate-200/80 hover:border-slate-300 shadow-soft hover:shadow-premium transition-all duration-300 flex flex-col justify-between relative cursor-pointer"
+                      onClick={() => navigateTo('detail', service.id)}
+                    >
+                      {discount > 0 && (
+                        <span className="absolute top-3 left-3 bg-emerald-600 text-white text-[10px] font-black px-2 py-0.5 rounded shadow-sm z-10">
+                          {discount}% OFF
+                        </span>
+                      )}
+
+                      <button
+                        onClick={(e) => toggleWishlist(service.id, e)}
+                        className="absolute top-3 right-3 p-1.5 rounded-full bg-white/80 backdrop-blur-md text-slate-400 hover:text-red-500 shadow-soft z-10"
+                      >
+                        <Heart size={14} className={wishlist[service.id] ? 'fill-red-500 text-red-500' : ''} />
+                      </button>
+
+                      {/* Image */}
+                      <div className="w-full h-40 bg-slate-100 rounded-2xl overflow-hidden mb-3 relative">
+                        <img
+                          src={service.image || 'https://images.unsplash.com/photo-1581094794329-c8112a89af12?w=500&auto=format&fit=crop&q=60'}
+                          alt={service.title}
+                          className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+                        />
+                        <div className="absolute bottom-2 left-2 flex items-center gap-1 bg-black/60 backdrop-blur-md text-white text-[10px] font-bold px-2 py-0.5 rounded-md">
+                          <Star className="w-3 h-3 text-amber-400 fill-amber-400" />
+                          <span>{service.rating || 4.8} ({service.ratingCount || 120})</span>
+                        </div>
+                      </div>
+
+                      {/* Title & Info */}
+                      <div className="space-y-1.5 mb-3">
+                        <div className="flex items-center gap-1.5 text-[11px] font-bold text-slate-500">
+                          <Clock size={12} className="text-amber-600" />
+                          <span>{service.durationEstimate || '45-90 mins service'}</span>
+                          <span>•</span>
+                          <span className="text-emerald-700 font-extrabold">30-Day Guarantee</span>
+                        </div>
+
+                        <h4 className="text-sm font-bold text-slate-900 group-hover:text-amber-700 transition-colors leading-snug">
+                          {service.title}
+                        </h4>
+
+                        <p className="text-xs text-slate-500 line-clamp-2">
+                          {service.description || 'Pre-vetted technician with specialized equipment, upfront diagnosis, and post-service cleanup.'}
+                        </p>
+                      </div>
+
+                      {/* Price & Book Button */}
+                      <div className="flex items-center justify-between pt-3 border-t border-slate-100" onClick={(e) => e.stopPropagation()}>
+                        <div>
+                          <span className="text-base font-black text-slate-900">₹{service.price}</span>
+                          {service.originalPrice > service.price && (
+                            <span className="text-xs text-slate-400 line-through block">₹{service.originalPrice}</span>
+                          )}
+                        </div>
+
+                        <button
+                          onClick={(e) => handleBookNow(service, e)}
+                          className={`px-5 py-2 text-xs font-black rounded-xl transition-all shadow-md flex items-center gap-1.5 text-white ${activeSubVertical === 'home'
+                              ? 'bg-amber-600 hover:bg-amber-700 shadow-amber-600/25'
+                              : 'bg-blue-600 hover:bg-blue-700 shadow-blue-600/25'
+                            }`}
+                        >
+                          <Calendar size={13} />
+                          <span>Book Slot</span>
+                        </button>
+                      </div>
+                    </motion.div>
+                  );
+                })}
+              </div>
+            )}
+          </main>
         </div>
       </div>
 
-      {/* Booking Slot Selection Modal Overlay (Frosted glass overlay) */}
-      {selectedServiceIdForBooking && (
-        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 p-4 select-none">
-          <div className="bg-white border border-brand-border/40 rounded-card max-w-md w-full p-6 text-left shadow-soft">
-            <h3 className="text-sm font-black text-brand-graphite mb-5 flex items-center gap-2 uppercase tracking-wide font-heading">
-              <Calendar size={18} className="text-services-gold" />
-              <span>Select Booking Slot</span>
-            </h3>
-
-            {/* Date selection */}
-            <span className="text-xs text-brand-slate uppercase font-black tracking-wider block mb-2 font-heading">Select Date</span>
-            <div className="grid grid-cols-4 gap-2 mb-5">
-              {dates.map(date => (
-                <button
-                  key={date}
-                  onClick={() => setSelectedDate(date)}
-                  className={`py-2 px-1 text-center font-bold text-xs rounded-button border transition-all ${
-                    selectedDate === date
-                      ? 'border-services-gold bg-services-gold/10 text-services-gold shadow-soft'
-                      : 'border-brand-border/40 bg-zinc-50 text-brand-slate hover:text-brand-graphite hover:border-brand-border'
-                  }`}
-                >
-                  {date}
-                </button>
-              ))}
-            </div>
-
-            {/* Time selection */}
-            <span className="text-xs text-brand-slate uppercase font-black tracking-wider block mb-2 font-heading">Select Time</span>
-            <div className="grid grid-cols-3 gap-2 mb-6">
-              {times.map(time => (
-                <button
-                  key={time}
-                  onClick={() => setSelectedTime(time)}
-                  className={`py-2 px-1 text-center font-bold text-xs rounded-button border transition-all ${
-                    selectedTime === time
-                      ? 'border-services-gold bg-services-gold/10 text-services-gold shadow-soft'
-                      : 'border-brand-border/40 bg-zinc-50 text-brand-slate hover:text-brand-graphite hover:border-brand-border'
-                  }`}
-                >
-                  {time}
-                </button>
-              ))}
-            </div>
-
-            {/* Actions */}
-            <div className="flex gap-3 justify-end pt-3 border-t border-brand-border/40">
+      {/* 4. Slot Booking Dialog */}
+      {selectedServiceForBooking && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm">
+          <motion.div
+            initial={{ opacity: 0, scale: 0.95 }}
+            animate={{ opacity: 1, scale: 1 }}
+            exit={{ opacity: 0, scale: 0.95 }}
+            className="bg-white rounded-3xl p-6 max-w-md w-full shadow-2xl border border-slate-200 space-y-5"
+          >
+            <div className="flex items-center justify-between border-b border-slate-100 pb-3">
+              <div>
+                <h3 className="font-bold text-base text-slate-900">Select Date & Time Slot</h3>
+                <p className="text-xs text-slate-500">{selectedServiceForBooking.title}</p>
+              </div>
               <button
-                onClick={() => setSelectedServiceIdForBooking(null)}
-                className="px-5 py-2 border border-brand-border/40 text-brand-slate hover:text-brand-graphite hover:border-brand-border/60 rounded-button text-xs font-semibold"
+                onClick={() => setSelectedServiceForBooking(null)}
+                className="p-1 rounded-full text-slate-400 hover:text-slate-600"
               >
-                Cancel
-              </button>
-              <button
-                onClick={() => {
-                  const service = services.find(s => s.id === selectedServiceIdForBooking);
-                  if (service) confirmBooking(service);
-                }}
-                className="px-5 py-2 bg-services-gold text-[#1C1C1E] hover:bg-services-gold/90 rounded-button text-xs font-black uppercase tracking-wider"
-              >
-                Confirm Slot
+                <X size={18} />
               </button>
             </div>
-          </div>
+
+            {/* Date Picker */}
+            <div>
+              <label className="block text-xs font-bold text-slate-600 uppercase mb-2">Select Date</label>
+              <div className="grid grid-cols-4 gap-2">
+                {dates.map((d) => (
+                  <button
+                    key={d}
+                    type="button"
+                    onClick={() => setSelectedDate(d)}
+                    className={`py-2 px-1 rounded-xl text-xs font-bold border transition-all ${selectedDate === d
+                        ? 'bg-amber-600 text-white border-amber-600 shadow-sm'
+                        : 'bg-slate-50 text-slate-700 border-slate-200 hover:bg-slate-100'
+                      }`}
+                  >
+                    {d}
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            {/* Time Picker */}
+            <div>
+              <label className="block text-xs font-bold text-slate-600 uppercase mb-2">Select Time Window</label>
+              <div className="grid grid-cols-3 gap-2">
+                {times.map((t) => (
+                  <button
+                    key={t}
+                    type="button"
+                    onClick={() => setSelectedTime(t)}
+                    className={`py-2 px-1 rounded-xl text-xs font-bold border transition-all ${selectedTime === t
+                        ? 'bg-amber-600 text-white border-amber-600 shadow-sm'
+                        : 'bg-slate-50 text-slate-700 border-slate-200 hover:bg-slate-100'
+                      }`}
+                  >
+                    {t}
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            {/* Total & Confirm */}
+            <div className="p-3 bg-slate-50 rounded-2xl flex items-center justify-between text-xs font-bold">
+              <span className="text-slate-600">Total Payable:</span>
+              <span className="text-base font-black text-slate-900">₹{selectedServiceForBooking.price}</span>
+            </div>
+
+            <button
+              onClick={confirmBooking}
+              className="w-full py-3.5 bg-amber-600 hover:bg-amber-700 text-white rounded-2xl text-xs font-black shadow-lg shadow-amber-600/25 transition-all"
+            >
+              Confirm Slot & Add to Cart
+            </button>
+          </motion.div>
         </div>
       )}
 
-      {/* Floating Live Support & AI Chat Launcher Button (Desktop Bottom-Right) */}
-      <motion.button
-        whileHover={{ scale: 1.05 }}
-        whileTap={{ scale: 0.95 }}
-        onClick={() => setDesktopSupportOpen(true)}
-        className="fixed bottom-8 right-8 z-40 bg-gradient-to-r from-amber-600 to-amber-700 hover:from-amber-700 hover:to-amber-800 text-white rounded-full px-5 py-3.5 shadow-elevated flex items-center gap-3 border border-amber-400/40 transition-all font-heading font-extrabold text-xs tracking-wider uppercase cursor-pointer select-none"
-      >
-        <div className="relative">
-          <MessageSquare size={18} />
-          <span className="absolute -top-1 -right-1 w-2.5 h-2.5 rounded-full bg-emerald-400 border-2 border-white animate-pulse" />
-        </div>
-        <span>Live Support & Chat</span>
-      </motion.button>
-
-      {/* Desktop Support Modal Dialog */}
-      <AnimatePresence>
-        {desktopSupportOpen && (
-          <div className="fixed inset-0 bg-black/60 z-50 flex items-center justify-center p-6 backdrop-blur-xs text-left select-none">
-            <div className="absolute inset-0" onClick={() => setDesktopSupportOpen(false)} />
-            
-            <motion.div
-              initial={{ scale: 0.95, opacity: 0 }}
-              animate={{ scale: 1, opacity: 1 }}
-              exit={{ scale: 0.95, opacity: 0 }}
-              className="bg-white rounded-3xl w-full max-w-2xl max-h-[90vh] overflow-y-auto p-6 shadow-elevated border border-brand-border relative z-10 text-brand-graphite font-sans"
-            >
-              <div className="flex justify-between items-center border-b border-brand-border pb-3 mb-4">
-                <div className="flex items-center gap-2.5">
-                  <div className="w-9 h-9 rounded-full bg-amber-100 text-amber-800 flex items-center justify-center">
-                    <Bot size={18} />
-                  </div>
-                  <div>
-                    <h3 className="font-extrabold text-base text-brand-graphite font-heading">24/7 Services Support & Live Chat</h3>
-                    <p className="text-xs text-slate-400 font-medium">Instant AI Answers, Technician Help & Ticket Desk</p>
-                  </div>
-                </div>
-                <button
-                  onClick={() => setDesktopSupportOpen(false)}
-                  className="w-8 h-8 rounded-full bg-slate-100 hover:bg-slate-200 flex items-center justify-center text-slate-500 font-bold transition-colors"
-                >
-                  <X size={16} />
-                </button>
-              </div>
-
-              <ServiceQuickSupport />
-            </motion.div>
-          </div>
-        )}
-      </AnimatePresence>
+      {/* Vehicle Selector Modal */}
+      <VehicleSelectorModal
+        isOpen={vehicleModalOpen}
+        onClose={() => setVehicleModalOpen(false)}
+        selectedVehicle={selectedVehicle}
+        onSelectVehicle={(v) => setSelectedVehicle(v)}
+      />
     </div>
   );
 };

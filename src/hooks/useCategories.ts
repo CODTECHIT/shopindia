@@ -11,7 +11,7 @@ export interface ApiCategory {
   productCount: number;
 }
 
-const RAW_BASE = import.meta.env.VITE_API_URL || 'http://localhost:5001';
+const RAW_BASE = import.meta.env.VITE_API_URL || '';
 const BASE = RAW_BASE.replace(/\/api\/?$/, '').replace(/\/$/, '');
 
 /** Fetches live categories from the API. Falls back to the static mock list on error. */
